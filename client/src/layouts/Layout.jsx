@@ -1,28 +1,28 @@
-import React from "react";
-import { Outlet, NavLink } from "react-router-dom";
-import "./layout.css";
-import Sidebar from "../components/Sidebar";
-import ChatView from "../components/ChatView";
-import DynamicPanel from "../components/DynamicPanel";
-// import { ChatProvider } from "../context_providers/SocketContext";
+import ServerList from "../components/ServerList";
+import MainPanel from "../components/MainPanel";
+import Header from "../components/Header";
+import { useState } from "react";
 
 const Layout = () => {
+  const [headerContent, setHeaderContent] = useState("Hello");
+  const updateHeader = (newContent) => {
+    setHeaderContent(newContent);
+  };
+  console.log("layout");
   return (
-    <div className="container-fluid">
-      <div className="row">
-        <div className="col-12">
-          <div className="main-board d-flex rounded-4">
-            <Sidebar />
-            <div
-              id="contentArea"
-              className="position-relative rounded-start-4 d-flex"
-            >
-              <Outlet />
-            </div>
-          </div>
-        </div>
+    <>
+      <Header content={headerContent} />
+      <div
+        id="responiveContainer"
+        style={{ minHeight: 100 + "vh" }}
+        className="d-flex w-100"
+      >
+        <ServerList updateHeader={updateHeader} />
+        {/* <Sidebar /> */}
+        <MainPanel />
+        {/* <Outlet /> */}
       </div>
-    </div>
+    </>
   );
 };
 

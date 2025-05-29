@@ -1,62 +1,90 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { useState, useEffect } from "react";
-import Login from "./views/Login";
-import Layout from "./layout/Layout";
-import Signup from "./views/Signup";
-import VerifyEmail from "./views/VerifyEmail";
-import ErrorPage from "./views/ErrorPage";
-import Explore from "./components/Explore";
-import Chats from "./components/Chats";
-import ChatView from "./components/ChatView";
-import { socket } from "./socket.js";
-import Home from "./views/Home";
-import { SocketProvider } from "./context_providers/SocketContext.jsx";
-import Group from "./components/Group.jsx";
+import Layout from "./layouts/Layout";
+import MainPanel from "./components/MainPanel";
+import GroupChatPanel from "./components/GroupChatPanel";
+import DmPanel from "./components/DmPanel";
+import Sidebar from "./components/Sidebar";
+import DmSidebarNav from "./components/DmSidebarNav";
+// import { socket } from "./socket.js";
+// import { SocketProvider } from "./context_providers/SocketContext.jsx";
 
 function App() {
   const router = createBrowserRouter([
     {
-      path: "/login",
-      element: <Login />,
-    },
-    {
-      path: "/signup",
-      element: <Signup />,
-    },
-    {
-      path: "/logout",
-    },
-    {
-      path: "/verify-email",
-      element: <VerifyEmail />,
-    },
-    {
-      // path: "/",
-      element: (
-        <SocketProvider>
-          <Layout />
-        </SocketProvider>
-      ),
-      errorElement: <ErrorPage />,
+      path: "/",
+      element: <Layout />,
       children: [
         {
-          path: "/",
-          element: <Home />,
-        },
-        {
-          path: "/explore",
-          element: <Explore />,
-        },
-        {
-          path: "/explore/chat-view/:userId",
-          element: <ChatView />,
-        },
-        {
-          path: "/explore/groups/:id",
-          element: <Group />,
+          // index: true,
+          element: <MainPanel />,
+          children: [
+            {
+              index: true,
+              element: <DmPanel />,
+            },
+          ],
         },
       ],
     },
+
+    // ^ --------------
+
+    // {
+    //   element: <MainPanel />,
+    //   children: [
+    //     {
+    //       element: <Sidebar />,
+    //       children: [
+    //         {
+    //           index: true,
+    //           element: <DmSidebarNav />,
+    //         },
+    //       ],
+    //     },
+    //   ],
+    // },
+
+    //^ ------------
+
+    // { path: "/friends", element: <Sidebar /> },
+    // {
+    //   path: "/login",
+    //   element: <Login />,
+    // },
+    // {
+    //   path: "/signup",
+    //   element: <Signup />,
+    // },
+    // {
+    //   path: "/logout",
+    // },
+    // {
+    //   // path: "/",
+    //   element: (
+    //     <SocketProvider>
+    //       <Layout />
+    //     </SocketProvider>
+    //   ),
+    //   errorElement: <ErrorPage />,
+    //   children: [
+    //     {
+    //       path: "/",
+    //       element: <Home />,
+    //     },
+    //     {
+    //       path: "/explore",
+    //       element: <Explore />,
+    //     },
+    //     {
+    //       path: "/explore/chat-view/:userId",
+    //       element: <DmPanel />,
+    //     },
+    //     {
+    //       path: "/explore/groups/:id",
+    //       element: <Group />,
+    //     },
+    //   ],
+    // },
   ]);
 
   return <RouterProvider router={router} />;
