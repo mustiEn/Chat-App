@@ -3,6 +3,8 @@ import Popover from "./Popover";
 import { IoAdd } from "react-icons/io5";
 import Button from "react-bootstrap/esm/Button";
 import { NavLink } from "react-router-dom";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const DmHistory = () => {
   const popOverContent = (content) => {
@@ -17,6 +19,20 @@ const DmHistory = () => {
   const popOverTrigger = (icon) => {
     return <div>{icon}</div>;
   };
+  const box = ({ children }) => {
+    return (
+      <div
+        style={{
+          border: "1px solid black",
+          width: "50%",
+          height: "50px",
+          display: "block",
+        }}
+      >
+        {children}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -29,13 +45,13 @@ const DmHistory = () => {
           />
         </div>
         <ul className="d-flex flex-column gap-1">
-          {Array.from({ length: 3 }, (_, index) => (
-            <li key={index}>
+          {/* {Array.from({ length: 3 }, (_, i) => (
+            <li key={i}>
               <Button
                 variant={"dark"}
                 as={NavLink}
-                to={`/dm`}
-                className="w-100"
+                to={`/@mef`}
+                className={i == 0 ? "active w-100" : "w-100"}
               >
                 <div className="d-flex align-items-center gap-3">
                   <img
@@ -47,7 +63,32 @@ const DmHistory = () => {
                 </div>
               </Button>
             </li>
-          ))}
+          
+          ))} */}
+          <div>
+            <SkeletonTheme
+              baseColor="#212020e3"
+              enableAnimation={false}
+              height={20}
+              borderRadius={20}
+            >
+              <div className="d-flex flex-column gap-3">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div className="d-flex align-items-center gap-2">
+                    <Skeleton circle width={32} height={32} />
+                    <div
+                      style={{
+                        width: "150px",
+                        display: "block",
+                      }}
+                    >
+                      <Skeleton />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SkeletonTheme>
+          </div>
         </ul>
       </div>
     </>

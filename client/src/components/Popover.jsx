@@ -2,7 +2,7 @@ import React from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import BootstrapPopover from "react-bootstrap/Popover";
 
-const Popover = ({ content, trigger, updateHeader }) => {
+const Popover = ({ content, trigger }) => {
   const popover = (
     <BootstrapPopover id="popover-basic" className="bg-dark">
       <BootstrapPopover.Body
@@ -19,7 +19,6 @@ const Popover = ({ content, trigger, updateHeader }) => {
       trigger={["hover", "focus"]}
       placement="right"
       overlay={popover}
-      onclick={() => updateHeader(Math.floor(Math.random() * 100))}
     >
       {trigger}
     </OverlayTrigger>

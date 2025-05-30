@@ -15,15 +15,42 @@ function App() {
       element: <Layout />,
       children: [
         {
-          // index: true,
           element: <MainPanel />,
           children: [
             {
-              index: true,
+              path: "@me",
               element: <DmPanel />,
+            },
+            {
+              path: "/group-chat",
+              element: <GroupChatPanel />,
             },
           ],
         },
+
+        // {
+        //   element: <MainPanel />,
+        //   children: [
+        //     {
+        //       index: true,
+        //       element: (
+        //         <>
+        //           <Sidebar />
+        //           <DmPanel />
+        //         </>
+        //       ),
+        //     },
+        //     {
+        //       path: "/groupchat",
+        //       element: (
+        //         <>
+        //           <Sidebar />
+        //           <GroupChatPanel/>
+        //         </>
+        //       ),
+        //     },
+        //   ],
+        // },
       ],
     },
 
