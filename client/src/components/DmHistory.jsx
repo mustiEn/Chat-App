@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Popover from "./Popover";
 import { IoAdd } from "react-icons/io5";
 import Button from "react-bootstrap/esm/Button";
-import { NavLink } from "react-router-dom";
-import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
+import { NavLink, useNavigate } from "react-router-dom";
+import DmHistorySkeleton from "./DmHistorySkeleton";
+import "../css/friends.css";
 
 const DmHistory = () => {
+  const navigate = useNavigate();
   const popOverContent = (content) => {
     return (
       <div className="d-flex flex-column">
@@ -19,21 +20,10 @@ const DmHistory = () => {
   const popOverTrigger = (icon) => {
     return <div>{icon}</div>;
   };
-  const box = ({ children }) => {
-    return (
-      <div
-        style={{
-          border: "1px solid black",
-          width: "50%",
-          height: "50px",
-          display: "block",
-        }}
-      >
-        {children}
-      </div>
-    );
-  };
 
+  useEffect(() => {
+    navigate("/@me/3");
+  }, []);
   return (
     <>
       <div className="px-2 w-100">
@@ -45,15 +35,32 @@ const DmHistory = () => {
           />
         </div>
         <ul className="d-flex flex-column gap-1">
-          {/* {Array.from({ length: 3 }, (_, i) => (
-            <li key={i}>
+          {Array.from({ length: 4 }, (_, i) => (
+            <li
+              key={i}
+              // className="position-relative"
+              style={{ width: "100%", height: 45 }}
+            >
               <Button
                 variant={"dark"}
                 as={NavLink}
-                to={`/@mef`}
-                className={i == 0 ? "active w-100" : "w-100"}
+                to={`/@me/${i}`}
+                className={"position-relative w-100 h-100"}
               >
-                <div className="d-flex align-items-center gap-3">
+                <div
+                  className="position-absolute w-100 h-100 top-0 start-0 z-0"
+                  style={{
+                    // backgroundImage: "url(../../public/bg.gif)",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "cover",
+                    backgroundPosition: "100% 30%",
+                    maskImage:
+                      "linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0))",
+                    WebkitMaskImage:
+                      "linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0))",
+                  }}
+                ></div>
+                <div className="d-flex align-items-center gap-3 position-absolute z-1">
                   <img
                     src="https://placehold.co/32"
                     className="rounded-circle"
@@ -63,32 +70,8 @@ const DmHistory = () => {
                 </div>
               </Button>
             </li>
-          
-          ))} */}
-          <div>
-            <SkeletonTheme
-              baseColor="#212020e3"
-              enableAnimation={false}
-              height={20}
-              borderRadius={20}
-            >
-              <div className="d-flex flex-column gap-3">
-                {Array.from({ length: 6 }, (_, i) => (
-                  <div className="d-flex align-items-center gap-2">
-                    <Skeleton circle width={32} height={32} />
-                    <div
-                      style={{
-                        width: "150px",
-                        display: "block",
-                      }}
-                    >
-                      <Skeleton />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SkeletonTheme>
-          </div>
+          ))}
+          {/* <DmHistorySkeleton /> */}
         </ul>
       </div>
     </>

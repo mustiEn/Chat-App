@@ -5,6 +5,11 @@ import GroupChatPanel from "./components/GroupChatPanel";
 import DmPanel from "./components/DmPanel";
 import Sidebar from "./components/Sidebar";
 import DmSidebarNav from "./components/DmSidebarNav";
+import FriendsPanel from "./components/FriendsPanel";
+import OnlineFriends from "./components/OnlineFriends";
+import AllFriends from "./components/AllFriends";
+import Shop from "./components/Shop";
+import AddFriend from "./components/AddFriend";
 // import { socket } from "./socket.js";
 // import { SocketProvider } from "./context_providers/SocketContext.jsx";
 
@@ -18,12 +23,38 @@ function App() {
           element: <MainPanel />,
           children: [
             {
-              path: "@me",
-              element: <DmPanel />,
+              path: "friends",
+              element: <FriendsPanel />,
+              children: [
+                {
+                  index: true,
+                  element: <OnlineFriends />,
+                },
+                {
+                  path: "all",
+                  element: <AllFriends />,
+                },
+                {
+                  path: "add-friend",
+                  element: <AddFriend />,
+                },
+              ],
             },
             {
-              path: "/group-chat",
+              path: "@me/:userId?",
+              element: <DmPanel />,
+            },
+            // {
+            //   path: "@me/:userId?",
+            //   element: <DmPanel />,
+            // },
+            {
+              path: "group-chat",
               element: <GroupChatPanel />,
+            },
+            {
+              path: "shop",
+              element: <Shop />,
             },
           ],
         },

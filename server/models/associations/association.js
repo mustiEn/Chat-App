@@ -1,14 +1,14 @@
-import { Friend } from "./Friends.js";
+import { Friend } from "./Friend.js";
 import { Group } from "./Group.js";
-import { Message } from "./Messages.js";
-import { User } from "./Users.js";
+import { DirectMessage } from "./DirectMessage.js";
+import { User } from "./User.js";
 
 export const setUpAssociation = () => {
-  Message.belongsTo(User, {
+  DirectMessage.belongsTo(User, {
     foreignKey: "from",
     onDelete: "CASCADE",
   });
-  User.hasMany(Message, {
+  User.hasMany(DirectMessage, {
     foreignKey: "from",
     onDelete: "CASCADE",
   });

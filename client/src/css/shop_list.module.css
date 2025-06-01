@@ -1,0 +1,41 @@
+.card-div {
+  width: 300px;
+  height: 375px;
+  border: 1px solid #353539;
+}
+
+.card-body-div {
+  background-color: #1d1e21;
+}
+
+.card-img-div,
+.card-bg-div {
+  height: 250px;
+  background-color: #212126;
+}
+
+.profile {
+  opacity: 0;
+  transition: 0.5s;
+}
+
+.product-bg {
+  /* background-image: url(/kaneki-2.gif); */
+  background-size: 100% 125%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: 0.5s;
+}
+
+.card-product-profile-icon:hover .profile {
+  opacity: 1;
+}
+
+.card-product-bg:hover .product-bg {
+  opacity: 0.5;
+}
+
+.product-skeleton-outer {
+  background-color: #36363a;
+  /* #2a2a2c */
+}

@@ -1,0 +1,43 @@
+.online-friends,
+.all-friends {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.online-friends:hover,
+.all-friends:hover {
+  border: 1px solid rgb(255, 255, 255, 0.05);
+  background-color: rgb(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.gif-hover {
+  position: relative;
+  width: 300px; /* Set to the width of your image */
+  height: auto;
+}
+
+.gif-hover img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: block;
+}
+
+.gif-hover .static {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.gif-hover .animated {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.gif-hover:hover .animated {
+  opacity: 1;
+}
+
+.gif-hover:hover .static {
+  opacity: 0;
+}

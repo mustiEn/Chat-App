@@ -6,7 +6,11 @@ const Sidebar = ({ path }) => {
   console.log(path);
 
   const renderSidebarNav = () => {
-    return path.slice(-3) == "@me" ? <DmSidebarNav /> : <GroupChatSidebarNav />;
+    return path.includes("@me") || path.includes("shop") ? (
+      <DmSidebarNav />
+    ) : (
+      <GroupChatSidebarNav />
+    );
   };
   return (
     <>
