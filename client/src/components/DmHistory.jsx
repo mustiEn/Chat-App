@@ -21,9 +21,10 @@ const DmHistory = () => {
     return <div>{icon}</div>;
   };
 
-  useEffect(() => {
-    navigate("/@me/3");
-  }, []);
+  //! bak
+  // useEffect(() => {
+  //   navigate("/@me/3");
+  // }, []);
   return (
     <>
       <div className="px-2 w-100">
@@ -50,7 +51,7 @@ const DmHistory = () => {
                 <div
                   className="position-absolute w-100 h-100 top-0 start-0 z-0"
                   style={{
-                    // backgroundImage: "url(../../public/bg.gif)",
+                    // backgroundImage: "url(/atomic.gif)",
                     backgroundRepeat: "no-repeat",
                     backgroundSize: "cover",
                     backgroundPosition: "100% 30%",

@@ -1,5 +1,6 @@
 import React from "react";
 import Card from "react-bootstrap/Card";
+import Skeleton from "react-loading-skeleton";
 
 const ProductProfileIcons = ({ styles }) => {
   const icons = [
@@ -23,14 +24,24 @@ const ProductProfileIcons = ({ styles }) => {
         <Card
           className={`rounded-3 ${styles["card-product-profile-icon"]} ${styles["card-div"]}`}
         >
-          <div className={`${styles["card-img-div"]} position-relative`}>
-            <img
+          <div
+            className={`${styles["card-profile-icon-inner"]} position-relative`}
+          >
+            <Skeleton
+              circle
+              width={150}
+              height={150}
+              baseColor="#36363a"
+              enableAnimation={false}
+              className="position-absolute translate-middle top-50 start-50"
+            />
+            {/* <img
               src={"https://placehold.co/150"}
               className="rounded-circle position-absolute translate-middle top-50 start-50"
               width={150}
               height={150}
               alt=""
-            />
+            /> */}
             <img
               src={"mona.jpg"}
               className={`${styles.profile} rounded-circle position-absolute translate-middle top-50 start-50 z-1`}

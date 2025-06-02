@@ -1,5 +1,5 @@
 import React from "react";
-import ProductProfileSkeleton from "./ProductProfileSkeleton";
+import ProductBackgroundSkeleton from "./ProductBackgroundSkeleton";
 import Card from "react-bootstrap/Card";
 
 const ProductBackground = ({ styles }) => {
@@ -15,11 +15,9 @@ const ProductBackground = ({ styles }) => {
         <Card
           className={`rounded-3 ${styles["card-product-bg"]} ${styles["card-div"]}`}
         >
-          <div className={`${styles["card-bg-div"]} position-relative`}>
-            <div
-              className={`${styles["product-skeleton-outer"]} w-100 h-100 position-relative top-0`}
-            >
-              <ProductProfileSkeleton />
+          <div className={`${styles["card-bg-inner"]} position-relative`}>
+            <div className={`w-100 h-100 position-relative top-0`}>
+              <ProductBackgroundSkeleton />
             </div>
 
             <div
@@ -29,7 +27,9 @@ const ProductBackground = ({ styles }) => {
               }}
             ></div>
           </div>
-          <Card.Body className={`${styles["card-body-div"]} text-white`}>
+          <Card.Body
+            className={`${styles["card-body-div"]} text-white position-relative z-1`}
+          >
             <Card.Title>Card Title</Card.Title>
             <Card.Text>£10.99</Card.Text>
           </Card.Body>

@@ -8,8 +8,9 @@
   background-color: #1d1e21;
 }
 
-.card-img-div,
-.card-bg-div {
+.card-profile-icon-inner,
+.card-bg-inner,
+.card-animated-view-inner {
   height: 250px;
   background-color: #212126;
 }
@@ -27,6 +28,16 @@
   transition: 0.5s;
 }
 
+.product-animated-view {
+  opacity: 0;
+  transition: 0.5s;
+}
+
+.profile-skeleton {
+  opacity: 1;
+  transition: 0.9s;
+}
+
 .card-product-profile-icon:hover .profile {
   opacity: 1;
 }
@@ -35,7 +46,15 @@
   opacity: 0.5;
 }
 
-.product-skeleton-outer {
-  background-color: #36363a;
-  /* #2a2a2c */
+.card-animated-view:hover :is(.product-animated-view, .profile) {
+  opacity: 1;
+}
+
+.card-animated-view:hover .profile-skeleton {
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.filter {
+  background-image: linear-gradient(to bottom, black, transparent, black);
 }
