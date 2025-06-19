@@ -7,20 +7,13 @@ const MainPanel = () => {
   const location = useLocation();
   const [path, setPath] = useState(location.pathname);
 
-  useEffect(() => {
-    setPath(location.pathname);
-  }, [location.pathname]);
-  console.log(location.pathname);
-
   return (
     <>
-      <div
-        id="mainPanel"
-        className="d-flex border border-start w-100"
-        style={{ height: "100vh" }}
-      >
+      <div id="mainPanel" className="d-flex w-100">
         <Sidebar path={path} />
-        <Outlet />
+        <div className="d-flex flex-column border border-white border-opacity-25 border-start-0 border-end-0 w-100">
+          <Outlet />
+        </div>
       </div>
     </>
   );

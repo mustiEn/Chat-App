@@ -7,7 +7,7 @@ import FriendsPanelTop from "./FriendsPanelTop";
 const AllFriends = () => {
   return (
     <>
-      <FriendsPanelTop />
+      {/* <FriendsPanelTop /> */}
       <div className="text-white">AllFriends</div>
       <div style={{ width: 300, height: 250 }}>
         <SkeletonTheme

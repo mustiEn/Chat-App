@@ -1,15 +1,17 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  useNavigate,
+} from "react-router-dom";
 import Layout from "./layouts/Layout";
 import MainPanel from "./components/MainPanel";
 import GroupChatPanel from "./components/GroupChatPanel";
 import DmPanel from "./components/DmPanel";
-import Sidebar from "./components/Sidebar";
-import DmSidebarNav from "./components/DmSidebarNav";
 import FriendsPanel from "./components/FriendsPanel";
-import OnlineFriends from "./components/OnlineFriends";
-import AllFriends from "./components/AllFriends";
 import Shop from "./components/Shop";
-import AddFriend from "./components/AddFriend";
+import Login from "./views/Login";
+import * as Loader from "./loaders/index.js";
+import Logout from "./views/Logout.jsx";
 // import { socket } from "./socket.js";
 // import { SocketProvider } from "./context_providers/SocketContext.jsx";
 
@@ -20,41 +22,45 @@ function App() {
       element: <Layout />,
       children: [
         {
+          path: "@me",
           element: <MainPanel />,
           children: [
             {
-              path: "friends",
+              // path: "friends",
+              index: true,
               element: <FriendsPanel />,
-              children: [
-                {
-                  index: true,
-                  element: <OnlineFriends />,
-                },
-                {
-                  path: "all",
-                  element: <AllFriends />,
-                },
-                {
-                  path: "add-friend",
-                  element: <AddFriend />,
-                },
-              ],
+              // children: [
+              //   {
+              //     index: true,
+              //     element: <OnlineFriends />,
+              //   },
+              //   {
+              //     path: "all",
+              //     element: <AllFriends />,
+              //   },
+              //   {
+              //     path: "add-friend",
+              //     element: <AddFriend />,
+              //   },
+              // ],
             },
             {
-              path: "@me/:userId?",
+              path: ":userId",
               element: <DmPanel />,
-            },
-            // {
-            //   path: "@me/:userId?",
-            //   element: <DmPanel />,
-            // },
-            {
-              path: "group-chat",
-              element: <GroupChatPanel />,
+              // loader:Loader.loadUserDm
             },
             {
               path: "shop",
               element: <Shop />,
+            },
+          ],
+        },
+        {
+          path: "/group-chat",
+          element: <MainPanel />,
+          children: [
+            {
+              element: <GroupChatPanel />,
             },
           ],
         },
@@ -83,6 +89,18 @@ function App() {
         //   ],
         // },
       ],
+    },
+    {
+      path: "/login",
+      element: <Login />,
+    },
+    {
+      path: "/logout",
+      element: <Logout />,
+      loader: async () => {
+        const res = await fetch("/api/logout");
+        return res;
+      },
     },
 
     // ^ --------------

@@ -1,11 +1,33 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
+import React, { useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import FriendsPanelTop from "./FriendsPanelTop";
+import OnlineFriends from "./OnlineFriends";
+import AllFriends from "./AllFriends";
+import AddFriend from "./AddFriend";
 
 const FriendsPanel = () => {
+  const pathname = useLocation().pathname;
+  const [activeComp, setActiveComp] = useState(0);
+  const renderComponent = () => {
+    let comp;
+    if (activeComp == 0) {
+      comp = <OnlineFriends />;
+    } else if (activeComp == 1) {
+      comp = <AllFriends />;
+    } else {
+      comp = <AddFriend />;
+    }
+    return comp;
+  };
+  console.log(" FriendsPanel rendered");
+
   return (
     <>
-      <div className="d-flex w-100">
-        <Outlet />
+      <div className="fs-2 text-white">
+        <FriendsPanelTop props={[setActiveComp, activeComp]} />
+        FriendsPanel
+        {/* <Outlet /> */}
+        {renderComponent()}
       </div>
     </>
   );

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { NavLink, useLoaderData } from "react-router-dom";
+import React, { useContext, useState } from "react";
+import { NavLink, useLoaderData, useLocation } from "react-router-dom";
 import { TbActivity } from "react-icons/tb";
 import { IoAddCircleSharp } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
@@ -8,10 +8,12 @@ import Popover from "./Popover";
 import "../css/server_list.css";
 import AppsModal from "./AppsModal";
 import AddServerModal from "./AddServerModal";
+import HeaderContext from "../contexts/HeaderContext";
 
-const ServerList = ({ updateHeader }) => {
+const ServerList = () => {
   // const servers = useLoaderData();
   // const servers = Array.from({length:5})
+  const setHeader = useContext(HeaderContext);
   const [showAppsModal, setShowAppsModal] = useState(false);
   const [showAddServerModal, setShowAddServerModal] = useState(false);
   const concatFirstLetters = (name) => {
@@ -23,7 +25,7 @@ const ServerList = ({ updateHeader }) => {
 
     return result;
   };
-  const popOverContent = (content = {}) => {
+  const popOverContent = (content) => {
     return (
       <div className="d-flex flex-column">
         <div style={{ fontSize: 13, color: "#bdbbbb" }} className="fw-bold">
@@ -37,12 +39,13 @@ const ServerList = ({ updateHeader }) => {
       </div>
     );
   };
-  const popOverTrigger = (link, server = null, icon = null) => {
+  const popOverTrigger = (link, server = null, icon = null, content) => {
     return (
       <Button
         variant={"dark"}
         className={"d-flex justify-content-center align-items-center mx-1 p-0"}
         style={{ width: 40, height: 35, fontSize: 20 }}
+        // onClick={() => setHeader(content)}
         as={NavLink}
         to={link}
       >
@@ -74,19 +77,23 @@ const ServerList = ({ updateHeader }) => {
       </Button>
     );
   };
-
   return (
     <>
       <div id="serverList" className="d-flex flex-column gap-2 px-2">
         <Popover
           content={popOverContent("Direct Messages")}
-          trigger={popOverTrigger("/@me", undefined, <TbActivity />)}
+          trigger={popOverTrigger("/@me", undefined, <TbActivity />, "Friends")}
         />
         {Array.from({ length: 5 }, (_, server) => (
           <Popover
             key={server}
             content={popOverContent(server + 1)}
-            trigger={popOverTrigger("/group-chat", server + 1)}
+            trigger={popOverTrigger(
+              "/group-chat",
+              server + 1,
+              undefined,
+              "Jack Daniels"
+            )}
           />
         ))}
         <Popover

@@ -1,14 +1,23 @@
 import { sequelize } from "./db.js";
 import { DataTypes } from "sequelize";
 
-export const DirectMessage = sequelize.define("direct_message", {
-  from: {
-    type: DataTypes.INTEGER,
+export const DirectMessage = sequelize.define(
+  "direct_message",
+  {
+    message: {
+      type: DataTypes.STRING,
+    },
+    clientOffset: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   },
-  to: {
-    type: DataTypes.INTEGER,
-  },
-  message: {
-    type: DataTypes.STRING,
-  },
-});
+  {
+    indexes: [
+      {
+        unique: true,
+        fields: ["clientOffset"],
+      },
+    ],
+  }
+);

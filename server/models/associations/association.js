@@ -1,27 +1,35 @@
-import { Friend } from "./Friend.js";
-import { Group } from "./Group.js";
-import { DirectMessage } from "./DirectMessage.js";
-import { User } from "./User.js";
+import { Group } from "../Group.js";
+import { DirectMessage } from "../DirectMessage.js";
+import { User } from "../User.js";
 
 export const setUpAssociation = () => {
   DirectMessage.belongsTo(User, {
-    foreignKey: "from",
-    onDelete: "CASCADE",
+    foreignKey: "from_id",
   });
   User.hasMany(DirectMessage, {
-    foreignKey: "from",
-    onDelete: "CASCADE",
+    foreignKey: "from_id",
+  });
+  DirectMessage.belongsTo(User, {
+    foreignKey: "to_id",
+  });
+  User.hasMany(DirectMessage, {
+    foreignKey: "to_id",
   });
 
-  User.belongsToMany(Group, { through: "user_groups" });
-  Group.belongsToMany(User, { through: "user_groups" });
-
-  Friend.belongsTo(User, {
-    foreignKey: "account_followed_id",
-    onDelete: "CASCADE",
+  User.belongsToMany(Group, {
+    through: "group_members",
+    foreignKey: "user_id",
   });
-  User.hasMany(Friend, {
-    foreignKey: "account_followed_id",
-    onDelete: "CASCADE",
+  Group.belongsToMany(User, {
+    through: "group_members",
+    foreignKey: "group_id",
+  });
+
+  User.belongsToMany(User, {
+    through: "friends",
+    as: "friend",
+    foreignKey: "user_id",
+    otherKey: "friend_id",
+    timestamps: true,
   });
 };

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useContext } from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import BootstrapPopover from "react-bootstrap/Popover";
+import HeaderContext from "../contexts/HeaderContext";
 
 const Popover = ({ content, trigger }) => {
   const popover = (
@@ -19,6 +20,8 @@ const Popover = ({ content, trigger }) => {
       trigger={["hover", "focus"]}
       placement="right"
       overlay={popover}
+      container={document.getElementById("root")}
+      // delay={{ show: 100, hide: 100 }}
     >
       {trigger}
     </OverlayTrigger>

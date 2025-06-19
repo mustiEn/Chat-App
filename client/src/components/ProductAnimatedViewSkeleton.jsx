@@ -47,7 +47,7 @@ const ProductAnimatedViewSkeleton = ({ styles, animatedViewName }) => {
                     className={`d-flex align-items-center gap-2 ${styles["profile"]} position-absolute z-2`}
                   >
                     <img
-                      src="mona.jpg"
+                      src="/mona.jpg"
                       width={32}
                       height={32}
                       className="rounded-circle"

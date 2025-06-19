@@ -1,6 +1,8 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import FriendProfile from "./FriendProfile";
+import DmDisplay from "./DmDisplay";
+import DmPanelTop from "./DmPanelTop";
 
 const DmPanel = () => {
   const params = useParams();
@@ -8,8 +10,16 @@ const DmPanel = () => {
 
   return (
     <>
-      <div className="text-white fs-3">DmPanel == {userId}</div>
-      <FriendProfile />
+      <DmPanelTop user={""} />
+      <div
+        className="d-flex flex-grow-1 w-100"
+        style={{
+          minHeight: 0,
+        }}
+      >
+        <DmDisplay />
+        <FriendProfile />
+      </div>
     </>
   );
 };

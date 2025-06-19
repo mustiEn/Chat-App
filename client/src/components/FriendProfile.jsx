@@ -10,13 +10,16 @@ const FriendProfile = () => {
     <>
       <div
         id={styles["friend-profile"]}
-        className="d-flex flex-column position-relative h-100 text-white ms-auto"
+        className="d-flex flex-column position-relative text-white h-100 ms-auto"
       >
         <div className={`${styles["friend-profile-bg"]} bg-dark w-100`}></div>
         <div
           className="flex-grow-1 position-relative z-1 px-2"
+          // style={{
+          //   backgroundColor: "transparent",
+          // }}
           style={{
-            backgroundColor: "transparent",
+            backgroundColor: "rgb(25, 25, 25)",
           }}
         >
           <div

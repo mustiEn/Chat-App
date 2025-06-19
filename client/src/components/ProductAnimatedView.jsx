@@ -17,9 +17,10 @@ const ProductAnimatedView = ({ styles }) => {
   ];
   return (
     <>
-      {animatedViews.map((view) => (
+      {animatedViews.map((view, i) => (
         <Card
           className={`rounded-3 ${styles["card-div"]} ${styles["card-animated-view"]}`}
+          key={i}
         >
           <div
             className={`${styles["card-animated-view-inner"]} position-relative`}

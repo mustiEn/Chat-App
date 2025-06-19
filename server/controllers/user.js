@@ -1,21 +1,36 @@
 import express from "express";
-import { logger } from "../utils/constants.js";
+import { logger } from "../utils/index.js";
 import { validationResult, matchedData } from "express-validator";
-import { User } from "../models/Users.js";
+import { User } from "../models/User.js";
 import { Op, QueryTypes } from "sequelize";
-import { Message } from "../models/Messages.js";
 import moment from "moment";
 import { sequelize } from "../models/db.js";
+import { DirectMessage } from "../models/DirectMessage.js";
 
-const chats = async (req, res, next) => {
+export const getDmHistory = async (req, res, next) => {
   try {
-    res.status(200).json({ sdf: "dsf" });
+    const { userId: receiverId } = req.params;
+    const userId = req.session.passport.user;
+    const dms = await DirectMessage.findAll({
+      where: {
+        from_id: {
+          [Op.or]: [userId, receiverId],
+        },
+        to_id: {
+          [Op.or]: [userId, receiverId],
+        },
+      },
+      order: [["createdAt", "ASC"]],
+    });
+    console.log("dms ", dms.length);
+
+    res.status(200).json({ dms, userId: userId });
   } catch (error) {
     next(error);
   }
 };
 
-const exploreUsers = async (req, res, next) => {
+export const exploreUsers = async (req, res, next) => {
   try {
     const result = validationResult(req);
     if (!result.isEmpty()) {
@@ -38,7 +53,7 @@ const exploreUsers = async (req, res, next) => {
   }
 };
 
-const getChatHistory = async (req, res, next) => {
+export const getChatHistory = async (req, res, next) => {
   try {
     const { receiverId } = req.params;
     const authenticatedUserId = req.session.passport.user;
@@ -69,7 +84,7 @@ const getChatHistory = async (req, res, next) => {
   }
 };
 
-const getGroup = async (req, res, next) => {
+export const getGroup = async (req, res, next) => {
   try {
     const sql = `SELECT * FROM group_messages`;
     const result = await sequelize.query(sql, {
@@ -80,5 +95,3 @@ const getGroup = async (req, res, next) => {
     next(error);
   }
 };
-
-export { chats, exploreUsers, getChatHistory, getGroup };

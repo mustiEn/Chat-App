@@ -7,7 +7,6 @@ const DmSidebarNav = () => {
 
   return (
     <>
-      <div className="fs-3 text-white">DM SIDEBAR NAV</div>
       <DmSidebarNavTop />
       <DmHistory />
     </>

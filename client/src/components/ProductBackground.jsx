@@ -11,9 +11,10 @@ const ProductBackground = ({ styles }) => {
   ];
   return (
     <>
-      {bgs.map((bg) => (
+      {bgs.map((bg, i) => (
         <Card
           className={`rounded-3 ${styles["card-product-bg"]} ${styles["card-div"]}`}
+          key={i}
         >
           <div className={`${styles["card-bg-inner"]} position-relative`}>
             <div className={`w-100 h-100 position-relative top-0`}>

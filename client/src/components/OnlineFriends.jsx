@@ -5,7 +5,7 @@ import FriendsPanelTop from "./FriendsPanelTop";
 const OnlineFriends = () => {
   return (
     <>
-      <FriendsPanelTop />
+      {/* <FriendsPanelTop /> */}
 
       <div className="position-relative">
         {/* <img

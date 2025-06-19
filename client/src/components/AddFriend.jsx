@@ -6,7 +6,7 @@ import Button from "react-bootstrap/esm/Button";
 const AddFriend = () => {
   return (
     <>
-      <FriendsPanelTop />
+      {/* <FriendsPanelTop /> */}
 
       <div className="d-flex w-100">
         <div>

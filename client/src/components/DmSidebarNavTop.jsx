@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useContext } from "react";
 import Button from "react-bootstrap/esm/Button";
 import { FaUsers } from "react-icons/fa6";
 import { IoMdStarOutline } from "react-icons/io";
 import { AiOutlineShop } from "react-icons/ai";
 import { NavLink } from "react-router-dom";
+import HeaderContext from "../contexts/HeaderContext";
 
 const DmSidebarNavTop = () => {
+  const setHeader = useContext(HeaderContext);
   const links = [
-    { content: "Friends", icon: <FaUsers />, link: "@me" },
+    { content: "Friends", icon: <FaUsers />, link: "/@me" },
     { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
     { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
   ];
@@ -28,6 +30,8 @@ const DmSidebarNavTop = () => {
                 as={NavLink}
                 to={link.link}
                 className="d-flex w-100"
+                onClick={() => setHeader(link.content)}
+                end
               >
                 <div>{link.icon}</div>
                 <div>{link.content}</div>
