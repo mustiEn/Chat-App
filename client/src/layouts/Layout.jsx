@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import HeaderProvider from "../contexts/HeaderContext";
 import { socket } from "../socket";
+import { Toaster } from "react-hot-toast";
 
 const Layout = () => {
   const [header, setHeader] = useState("Friends");
@@ -16,6 +17,7 @@ const Layout = () => {
   };
   const getInitial = (userId) => {
     socket.auth.userId = userId;
+    console.log(userId);
   };
   const onDisconnect = () => {
     console.log("❌ Socket disconnected");
@@ -43,6 +45,26 @@ const Layout = () => {
   return (
     <>
       <Header content={header} />
+      {/* <div
+        className="d-flex"
+        style={{
+          width: 700,
+          height: 700,
+        }}
+      >
+        <div
+          className="1 border border-primary"
+          style={{
+            width: 250,
+          }}
+        ></div>
+        <div
+          className="2 border border-danger"
+          style={{
+            width: 250,
+          }}
+        ></div>
+      </div> */}
       <div
         id="responiveContainer"
         className="d-flex w-100 flex-grow-1"
@@ -55,6 +77,7 @@ const Layout = () => {
           <Outlet />
         </HeaderProvider.Provider>
       </div>
+      <Toaster position="top-right" />
     </>
   );
 };

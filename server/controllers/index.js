@@ -1,6 +1,6 @@
 import express from "express";
 import { logger } from "../utils/index.js";
-// import { validationResult, matchedData } from "express-validator";
+import { validationResult, matchedData } from "express-validator";
 import { User } from "../models/User.js";
 import { v4 as uuidv4 } from "uuid";
 // import { io } from "../server.js";

@@ -1,25 +1,30 @@
 import React from "react";
-import styles from "../css/friend_profile.module.css";
 import Badge from "react-bootstrap/esm/Badge";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import Dropdown from "react-bootstrap/Dropdown";
 import { Link } from "react-router-dom";
 
-const FriendProfile = () => {
+const FriendProfile = ({ styles, showOffset }) => {
   return (
     <>
       <div
-        id={styles["friend-profile"]}
-        className="d-flex flex-column position-relative text-white h-100 ms-auto"
+        className={`${
+          styles["offCanvas"]
+        } d-flex flex-column flex-shrink-0 text-white ${
+          showOffset ? styles["show"] : ""
+        }`}
+        // style={{
+        //   height: "50%",
+        // }}
       >
         <div className={`${styles["friend-profile-bg"]} bg-dark w-100`}></div>
         <div
-          className="flex-grow-1 position-relative z-1 px-2"
+          className="position-relative z-1 px-2 h-100"
           // style={{
           //   backgroundColor: "transparent",
           // }}
           style={{
-            backgroundColor: "rgb(25, 25, 25)",
+            backgroundColor: "rgb(27 26 26)",
           }}
         >
           <div
@@ -64,7 +69,7 @@ const FriendProfile = () => {
           </DropdownButton>
         </div>
         <div
-          className={`${styles["product-bg"]} position-absolute z-0 top-0 w-100 h-100`}
+          className={`${styles["friend-profile-bg"]} position-absolute z-0 top-0 h-100`}
           // style={{
           //   backgroundImage:
           //     "linear-gradient(to bottom, rgba(0, 0, 0, 0.0), rgba(0, 0, 0, 0.77)),url(/kaneki-2.gif)",

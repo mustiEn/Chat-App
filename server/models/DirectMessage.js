@@ -5,11 +5,25 @@ export const DirectMessage = sequelize.define(
   "direct_message",
   {
     message: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(1600),
     },
     clientOffset: {
       type: DataTypes.UUID,
       allowNull: true,
+    },
+    reply_to_msg_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    is_edited: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    is_pinned: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
     },
   },
   {

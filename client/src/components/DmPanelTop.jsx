@@ -4,50 +4,117 @@ import Button from "react-bootstrap/esm/Button";
 import Form from "react-bootstrap/Form";
 import { RxCross2, RxDrawingPin } from "react-icons/rx";
 import { CgProfile } from "react-icons/cg";
-import styles from "../css/dm_panel_top.module.css";
+import stylesPanelTop from "../css/dm_panel_top.module.css";
 import PinnedMsgsModal from "./PinnedMsgsModal";
+import Popover from "./Popover";
+import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 
-const DmPanelTop = ({ user }) => {
+const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
   const [search, setSearch] = useState("");
-  const [show, setShow] = useState(false);
-  const ref = useRef(null);
-  const handleCloseDiv = (event) => {
-    // console.log("clicked outside");
-    if (ref.current && !ref.current.contains(event.target)) {
-      // console.log("clicked outside 11");
-      setShow(false);
+  const { userId: receiverId } = useParams();
+  const [isPinnedMsgsFetched, setIsPinnedMsgsFetched] = useState(false);
+  const [showPinnedMsgs, setShowPinnedMsgs] = useState(false);
+  const [pinnedMsgs, setPinnedMsgs] = useState([]);
+  const handlePinnedMsgsToggle = () => setShowPinnedMsgs((prev) => !prev);
+  const [showPinnedMsgsDeleteModal, setShowPinnedMsgsDeleteModal] =
+    useState(false);
+  const pinnedMsgsModalRef = useRef(null);
+  const [isPending, setIsPending] = useState(false);
+  let isOpen = false;
+  const handleClosePinnedMsgs = (event) => {
+    const deleteModal = document.querySelector(".fade.modal.show");
+    if (isOpen && !deleteModal) {
+      isOpen = false;
+      return;
+    } else if (deleteModal) {
+      isOpen = true;
+      return;
+    } else if (
+      pinnedMsgsModalRef.current &&
+      !pinnedMsgsModalRef.current.contains(event.target)
+    ) {
+      setShowPinnedMsgs(false);
     }
+  };
+  const fetchPinnedMsgs = async () => {
+    if (isPinnedMsgsFetched) return;
+    setIsPending(true);
+    try {
+      const res = await fetch(`/api/dm/pinned-messages/${receiverId}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message);
+      }
+
+      setPinnedMsgs(data);
+    } catch (error) {
+      console.log(error.message);
+      toast.error(error.message);
+    }
+    setIsPending(false);
+    setIsPinnedMsgsFetched(true);
   };
   const clearSearch = () => setSearch("");
 
   useEffect(() => {
-    document.addEventListener("click", handleCloseDiv);
-
+    document.addEventListener("click", handleClosePinnedMsgs);
     return () => {
-      document.removeEventListener("click", handleCloseDiv);
+      document.removeEventListener("click", handleClosePinnedMsgs);
     };
   }, []);
 
+  useEffect(() => {
+    setIsPinnedMsgsFetched(false);
+  }, [receiverId]);
+
   return (
     <>
-      <div className="border-bottom border-opacity-25 border-white w-100">
+      <div className="border-bottom border-opacity-25 border-white w-100 position-relative">
         <div
           className="d-flex px-2 w-100 text-white mt-2 mb-1"
           style={{ height: 38 }}
         >
           <div className="d-flex align-items-center gap-2">
             <img src="https://placehold.co/25" alt="" />
-            <div className="fs-6">Dev2Github</div>
+            <div className="fs-6">{receiver.display_name}</div>
           </div>
           <div className="d-flex align-items-center gap-2 ms-auto">
-            <RxDrawingPin
-              className="ms-auto fs-5"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShow(true);
-              }}
+            <Popover
+              content={
+                <div className="fw-bold popover-content">Pinned Messages</div>
+              }
+              trigger={
+                <RxDrawingPin
+                  className={`ms-auto fs-5 ${
+                    showPinnedMsgs && stylesPanelTop["active"]
+                  } ${stylesPanelTop["dm-panel-top-icon"]}`}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    handlePinnedMsgsToggle();
+                    await fetchPinnedMsgs();
+                  }}
+                />
+              }
+              placement="bottom"
             />
-            <CgProfile className="me-1 fs-5" />
+            <Popover
+              content={
+                <div className="fw-bold popover-content">
+                  {showOffset ? "Hide" : "Show"} User Profile
+                </div>
+              }
+              trigger={
+                <CgProfile
+                  className={`me-1 fs-5 ${
+                    showOffset && stylesPanelTop["active"]
+                  } ${stylesPanelTop["dm-panel-top-icon"]}`}
+                  onClick={handleOffsetToggle}
+                />
+              }
+              placement="bottom"
+            />
             <div className="position-relative">
               <Form.Control
                 type="search"
@@ -76,8 +143,16 @@ const DmPanelTop = ({ user }) => {
             </div>
           </div>
         </div>
+        <PinnedMsgsModal
+          ref={pinnedMsgsModalRef}
+          pinnedMsgsProp={pinnedMsgs}
+          showPinnedMsgs={showPinnedMsgs}
+          isPending={isPending}
+          setShowPinnedMsgsDeleteModal={setShowPinnedMsgsDeleteModal}
+          showPinnedMsgsDeleteModal={showPinnedMsgsDeleteModal}
+          handlePinnedMsgsToggle={handlePinnedMsgsToggle}
+        />
       </div>
-      <PinnedMsgsModal ref={ref} show={show} />
     </>
   );
 };

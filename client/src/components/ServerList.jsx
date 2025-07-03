@@ -28,18 +28,18 @@ const ServerList = () => {
   const popOverContent = (content) => {
     return (
       <div className="d-flex flex-column">
-        <div style={{ fontSize: 13, color: "#bdbbbb" }} className="fw-bold">
+        <div className="fw-bold popover-content">
           {typeof content == "number" ? "Jack daniels" : content}
         </div>
         {content && content?.is_muted && (
-          <span className="text-pale" style={{ fontSize: "10px" }}>
+          <span className="text-muted" style={{ fontSize: "10px" }}>
             {content.is_muted}
           </span>
         )}
       </div>
     );
   };
-  const popOverTrigger = (link, server = null, icon = null, content) => {
+  const popOverTrigger = (link, server = null, icon = null) => {
     return (
       <Button
         variant={"dark"}
@@ -82,7 +82,11 @@ const ServerList = () => {
       <div id="serverList" className="d-flex flex-column gap-2 px-2">
         <Popover
           content={popOverContent("Direct Messages")}
-          trigger={popOverTrigger("/@me", undefined, <TbActivity />, "Friends")}
+          trigger={popOverTrigger("/@me", undefined, <TbActivity />)}
+        />
+        <Popover
+          content={popOverContent("Direct Messages")}
+          trigger={popOverTrigger("/logout", undefined, <TbActivity />)}
         />
         {Array.from({ length: 5 }, (_, server) => (
           <Popover

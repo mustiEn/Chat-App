@@ -1,0 +1,37 @@
+#pinnedMsgsModal {
+  width: 420px;
+  height: 380px;
+  background-color: rgb(27 26 26);
+  border-color: rgb(27 26 26);
+  right: 215px;
+}
+
+.message-content {
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.timestamp {
+  font-size: 11px;
+}
+
+.pinned-msg {
+  background-color: rgb(37 37 37);
+}
+
+.modal-icons {
+  display: none;
+}
+
+.modal-icon {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pinned-msg:hover .modal-icons {
+  display: flex;
+}
+
+.modal-icon:hover {
+  color: white;
+  cursor: pointer;
+}

@@ -47,7 +47,7 @@ function App() {
             {
               path: ":userId",
               element: <DmPanel />,
-              // loader:Loader.loadUserDm
+              loader: Loader.loadDmData,
             },
             {
               path: "shop",

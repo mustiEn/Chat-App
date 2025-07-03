@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 #root {
   height: 100vh;
 }
@@ -23,8 +27,8 @@ a {
   color: #000;
 }
 
-.popover-arrow::after {
-  border-right-color: #343a40 !important;
+.text-muted {
+  color: #888888 !important;
 }
 
 .popover {
@@ -39,12 +43,19 @@ a {
   opacity: 1;
 }
 
+.popover-content {
+  font-size: 13px;
+  color: #bdbbbb;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(64, 229, 194, 0.862) transparent;
   border-radius: 10px;

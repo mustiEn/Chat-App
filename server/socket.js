@@ -1,13 +1,17 @@
-import { Op } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import { DirectMessage } from "./models/DirectMessage.js";
+import dayjs from "dayjs";
+import { logger } from "./utils/index.js";
+import { sequelize } from "./models/db.js";
 
+let time;
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
-    console.log("a user connected");
-
     const userId = socket.request.session.passport.user;
 
-    socket.emit("inital", userId);
+    console.log("a user connected", userId);
+
+    socket.emit("initial", userId);
 
     socket.on("join room", (receiverId, done) => {
       receiverId = Number(receiverId);
@@ -34,14 +38,41 @@ export const setUpSocket = (io) => {
       console.log("left room", room);
     });
 
-    socket.on("dm", async (msg, clientOffset, done) => {
+    socket.on("Edited msg", async (msg, done) => {
+      let result;
+      try {
+        if (result) {
+          if (result.message == msg.message && result.id == msg.id)
+            console.log("⚠️ Duplicate message, already updated");
+          return done({ status: "duplicate" });
+        }
+        result = await DirectMessage.update(
+          {
+            message: msg.message,
+            updatedAt: msg.updatedAt,
+            is_edited: true,
+          },
+          {
+            where: {
+              id: msg.id,
+            },
+          }
+        );
+        result = (await DirectMessage.findByPk(msg.id)).toJSON();
+      } catch (error) {
+        console.log("❌ Unexpected error updating message:", error);
+      }
+
+      io.emit("Edited msg", { msg: result, wasDisconnected: true });
+      console.log("message edited");
+      done({
+        status: "ok",
+      });
+    });
+
+    socket.on("dm", async (msg, clientOffset, wasDisconnected, done) => {
       let result;
       console.log("message: " + msg.message);
-      console.log(
-        "serveroffset new message :",
-        socket.handshake.auth.serverOffset
-      );
-      console.log("clientoffset new message : ", clientOffset);
 
       try {
         result = (
@@ -54,6 +85,17 @@ export const setUpSocket = (io) => {
             clientOffset: clientOffset,
           })
         ).toJSON();
+
+        const resutlSql = `
+          SELECT dm.*,u.display_name
+            FROM direct_messages dm
+            INNER JOIN users u ON dm.from_id = u.id
+            WHERE dm.id = ${result.id}
+        `;
+
+        [result] = await sequelize.query(resutlSql, {
+          type: QueryTypes.SELECT,
+        });
       } catch (error) {
         if (
           error.name === "SequelizeUniqueConstraintError" &&
@@ -65,38 +107,53 @@ export const setUpSocket = (io) => {
 
         console.error("❌ Unexpected error inserting message:", error);
       }
-      io.emit("dm", { msg: result, state: true });
-      console.log("message sent");
 
+      io.emit("dm", { msg: result, wasDisconnected: wasDisconnected });
+      console.log("message sent");
       done({
         status: "ok",
       });
     });
 
     if (!socket.recovered) {
-      // if the connection state recovery was not successful
+      logger.log("back", time);
       console.log(
         "serveroffset recovery :",
         socket.handshake.auth.serverOffset
       );
       try {
-        const msgs = await DirectMessage.findAll({
+        const msgsSql = `
+          SELECT *
+            FROM direct_messages 
+            WHERE 
+              from_id = ${socket.handshake.auth.receiverId} AND
+              to_id = ${userId} AND
+              id > ${socket.handshake.auth.serverOffset}
+            ORDER BY createdAt ASC
+        `;
+        const msgs = await sequelize.query(msgsSql, {
+          type: QueryTypes.SELECT,
+        });
+        const editedMsgs = await DirectMessage.findAll({
           where: {
-            from_id: socket.handshake.auth.receiverId,
-            to_id: userId,
-            id: {
-              [Op.gt]: socket.handshake.auth.serverOffset,
+            from_id: userId,
+            to_id: socket.handshake.auth.receiverId,
+            updatedAt: {
+              [Op.gte]: time,
             },
+            is_edited: true,
           },
-          order: [["createdAt", "ASC"]],
-
+          order: [["updatedAt", "ASC"]],
           raw: true,
         });
-        msgs;
 
         for (const msg of msgs) {
-          socket.emit("dm", { msg: msg, state: false });
+          socket.emit("dm", { msg: msg, wasDisconnected: false });
         }
+        socket.emit("Edited msgs", {
+          editedMsgs: editedMsgs,
+          wasDisconnected: false,
+        });
         console.log("recovery done");
       } catch (e) {
         console.log("recovery error", e);
@@ -104,7 +161,8 @@ export const setUpSocket = (io) => {
     }
 
     socket.on("disconnect", () => {
-      console.log("user disconnected");
+      time = dayjs().format("YYYY-MM-DD HH:mm:ss");
+      console.log("user disconnected", time);
     });
   });
 };

@@ -13,9 +13,7 @@ const DmHistory = () => {
   const popOverContent = (content) => {
     return (
       <div className="d-flex flex-column">
-        <div style={{ fontSize: 13, color: "#bdbbbb" }} className="fw-bold">
-          {content}
-        </div>
+        <div className="fw-bold popover-content">{content}</div>
       </div>
     );
   };
