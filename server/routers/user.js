@@ -6,15 +6,24 @@ import { isAuthenticated } from "../middlewares/check_auth_user.js";
 const router = express.Router();
 
 router.post(
+  "/dm/pinned-message-view",
+  [
+    isAuthenticated,
+    body("receiverId").notEmpty().isNumeric(),
+    body("pinnedMsgId").optional().notEmpty().isNumeric(),
+    body("edgeMsgId").optional().isNumeric(),
+    body("direction").isString(),
+    body("msgsLength").notEmpty().isNumeric(),
+  ],
+  userController.getPinnedMessageView
+);
+
+router.post(
   "/dm/:offset",
   [
     isAuthenticated,
     body("receiverId").notEmpty().isNumeric(),
     param("offset").notEmpty().isNumeric(),
-    body("pinnedMsgId").optional(),
-    body("createdAt").optional().isString(),
-    body("msgsLength").optional().isNumeric(),
-    body("firstMsgId").optional().isNumeric(),
   ],
   userController.getDmData
 );

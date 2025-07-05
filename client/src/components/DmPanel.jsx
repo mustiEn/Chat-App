@@ -20,6 +20,13 @@ const DmPanel = () => {
     authenticatedUserId: socket.auth.userId,
     pendingMessages: [],
     pendingEditedMessages: [],
+    pinnedMessagesView: [],
+    direction: "",
+    isPinnedMsgViewOpen: false,
+    jumpToMsgId: null,
+    hasMoreUp: true,
+    hasMoreDown: false,
+    div: useRef(null),
   });
   const { userId: receiverId } = useParams();
   const [prevReceiverId, setPrevReceiverId] = useState(receiverId);
@@ -27,7 +34,13 @@ const DmPanel = () => {
   const [showOffset, setShowOffset] = useState(false);
 
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
-  const value = useMemo(() => ({ chatData, setChatData }), [chatData]);
+  const value = useMemo(
+    () => ({
+      chatData,
+      setChatData,
+    }),
+    [chatData]
+  );
   if (!mounted.current) {
     mounted.current = true;
   } else {
@@ -57,10 +70,17 @@ const DmPanel = () => {
             dms: dms,
             pinnedMessages: pinnedMessages,
           });
-          setChatData((prev) => ({
-            ...prev,
+          setChatData({
+            pendingMessages: [],
+            pendingEditedMessages: [],
+            pinnedMessagesView: [],
+            isPinnedMsgViewOpen: false,
+            jumpToMsgId: null,
+            direction: "",
+            hasMoreUp: true,
+            hasMoreDown: false,
             messages: dms,
-          }));
+          });
           socket.auth.serverOffset = dms[dms.length - 1]?.id;
         } catch (error) {
           console.error("Error fetching chat history:", error);

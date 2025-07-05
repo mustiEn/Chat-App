@@ -25,60 +25,25 @@ const PinnedMsgsModal = ({
   const { userId: receiverId } = useParams();
   const [pinnedMsg, setPinnedMsg] = useState({});
   const [pinnedMsgs, setPinnedMsgs] = useState(pinnedMsgsProp);
-  const { chatData, setChatData } = useContext(DmContext);
+  const [direction, setDirection] = useState("");
+  const {
+    chatData: { hasMoreUp, hasMoreDown, isPinnedMsgViewOpen },
+    setChatData,
+  } = useContext(DmContext);
   const handlePinnedMsgsDeleteModal = (val) =>
     setShowPinnedMsgsDeleteModal(val);
-  const fetchMore = async (pinnedMsgId) => {
-    try {
-      const res = await fetch(`/api/dm/0`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          receiverId,
-          msgsLength: chatData.messages.length,
-          firstMsgId: chatData.messages[chatData.messages.length - 1].id,
-          pinnedMsgId,
-        }),
-      });
-      const data = await res.json();
 
-      if (!res.ok) {
-        toast.error(data.message);
-      }
-
-      setChatData((prev) => ({
-        ...prev,
-        messages: [...prev.messages, ...data.dms],
-      }));
-      const timer = setInterval(() => {
-        const div = document.getElementById(`message-${pinnedMsgId}`);
-
-        if (div) {
-          div.scrollIntoView({
-            behavior: "instant",
-            block: "center",
-          });
-          setTimeout(() => {
-            div.classList.add(panelStyles.active);
-            setTimeout(() => {
-              div.classList.remove(panelStyles.active);
-            }, 1000);
-          }, 300);
-          clearInterval(timer);
-        }
-      }, 300);
-      setTimeout(() => {
-        clearInterval(timer);
-      }, 10000);
-    } catch (error) {
-      console.log(error.message);
-      toast.error(error.message);
-    }
-  };
   const jumpToMsg = async (msg) => {
     const div = document.getElementById(`message-${msg.id}`);
+
+    setChatData((prev) => ({
+      ...prev,
+      isPinnedMsgViewOpen: div ? false : true,
+      jumpToMsgId: div ? null : msg.id,
+      hasMoreUp: true,
+      hasMoreDown: div ? false : true,
+      pinnedMessagesView: [],
+    }));
 
     if (div) {
       div.scrollIntoView({
@@ -91,10 +56,9 @@ const PinnedMsgsModal = ({
           div.classList.remove(panelStyles.active);
         }, 3000);
       }, 500);
-    } else {
-      await fetchMore(msg.id);
     }
   };
+
   useEffect(() => {
     setPinnedMsgs(pinnedMsgsProp);
   }, [pinnedMsgsProp]);

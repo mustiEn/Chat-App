@@ -3,7 +3,6 @@ import { createContext } from "react";
 
 const DmContext = createContext({
   chatData: null,
-  pendingMessages: [],
   setChatData: () => {},
 });
 

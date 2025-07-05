@@ -19,19 +19,20 @@ import utc from "dayjs/plugin/utc";
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const DmItem = memo(function DmItem({ msg, styles, msgListRef }) {
+const DmItem = memo(function DmItem({ msg, styles }) {
   const editInpRef = useRef(null);
   const { chatData, setChatData } = useContext(DmContext);
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
 
   const makeMsgEditable = (msg) => {
-    const ref = msgListRef.current;
     setEditedMessage({
       id: msg.id,
       message: msg.message,
     });
     setTimeout(() => {
-      ref.querySelector(`#message-${msg.id} textarea`).focus();
+      console.log(msg, document.querySelector(`#message-${msg.id}`));
+
+      document.querySelector(`#message-${msg.id} textarea`).focus();
       console.log("focus");
     }, 100);
   };
