@@ -25,24 +25,21 @@ const PinnedMsgsModal = ({
   const { userId: receiverId } = useParams();
   const [pinnedMsg, setPinnedMsg] = useState({});
   const [pinnedMsgs, setPinnedMsgs] = useState(pinnedMsgsProp);
-  const [direction, setDirection] = useState("");
-  const {
-    chatData: { hasMoreUp, hasMoreDown, isPinnedMsgViewOpen },
-    setChatData,
-  } = useContext(DmContext);
+  const { chatData, setChatData } = useContext(DmContext);
   const handlePinnedMsgsDeleteModal = (val) =>
     setShowPinnedMsgsDeleteModal(val);
 
   const jumpToMsg = async (msg) => {
     const div = document.getElementById(`message-${msg.id}`);
+    // console.log("div msg exists", div);
 
     setChatData((prev) => ({
       ...prev,
-      isPinnedMsgViewOpen: div ? false : true,
       jumpToMsgId: div ? null : msg.id,
-      hasMoreUp: true,
-      hasMoreDown: div ? false : true,
-      pinnedMessagesView: [],
+      //& nonimp hasMoreDown: div ? false : true,
+      //& nonimp reachedBottom: div ? false : true,
+      //& nonimp pinnedMessagesView: div ? [] : prev.pinnedMessagesView,
+      //& nonimp isPinnedMsgViewOpen: div ? false : true,
     }));
 
     if (div) {

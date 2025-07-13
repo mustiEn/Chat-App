@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import DmItem from "./DmItem.jsx";
 import { memo } from "react";
 import DmContext from "../contexts/DmContext.jsx";
 import { useContext } from "react";
 import panelStyles from "../css/dm_panel.module.css";
-import InfiniteScroll from "react-infinite-scroll-component";
 import { PulseLoader } from "react-spinners";
 import { useParams } from "react-router-dom";
 import MyLoader from "./InfiniteLoader.jsx";
@@ -19,15 +18,21 @@ const DmList = memo(function DmList({ styles, messagesEndRef }) {
       jumpToMsgId,
       pendingMessages,
       direction,
+      isPinnedMsgViewOpen,
+      reachedTop,
       hasMoreUp,
       hasMoreDown,
     },
     setChatData,
+    div,
   } = useContext(DmContext);
+  const isJumpClicked = useRef(null);
+
   const fetchMoreData = async () => {
-    console.log("fetching more data");
+    const offset = pinnedMessagesView.length
+      ? pinnedMessagesView.length
+      : messages.length;
     try {
-      const offset = messages.length;
       const res = await fetch(`/api/dm/${offset}`, {
         method: "POST",
         headers: {
@@ -48,34 +53,49 @@ const DmList = memo(function DmList({ styles, messagesEndRef }) {
       if (!dms.length) {
         setChatData((prev) => ({
           ...prev,
+          reachedTop: false,
           hasMoreUp: false,
         }));
         return;
       }
       setChatData((prev) => ({
         ...prev,
+        reachedTop: false,
         messages: [...prev.messages, ...dms],
       }));
-    } catch (err) {
-      console.log(err);
-    }
+    } catch (err) {}
   };
-  const fetchMoreDataInPinnedMsgView = async (
-    ignore,
-    pinnedMsgId = undefined
-  ) => {
+  const fetchMoreDataInPinnedMsgView = async (pinnedMsgId = undefined) => {
     try {
-      const scrollDirection = direction;
-      let edgeMsgId;
+      const reff = div?.current;
+      const scrollDirection = isJumpClicked.current != null ? "" : direction;
+      const returnEdgeMsgId = (val) => {
+        const arr = val ? pinnedMessagesView : messages;
+        let edgeMsgId;
 
-      if (scrollDirection === "up") {
-        edgeMsgId = messages[messages.length - 1].id;
-      } else if (scrollDirection == "down") {
-        edgeMsgId = messages[0].id;
-      } else {
-        edgeMsgId = messages[messages.length - 1].id;
-      }
-
+        if (scrollDirection === "up") {
+          edgeMsgId = val ? arr[arr.length - 1].id : arr[arr.length - 1].id;
+        } else if (scrollDirection == "down") {
+          edgeMsgId = val ? arr[0].id : arr[0].id;
+        } else {
+          edgeMsgId = val
+            ? messages[messages.length - 1].id
+            : messages[messages.length - 1].id;
+        }
+        return edgeMsgId;
+      };
+      const adjustScrollBar = (prevClientH, prevScrollH) => {
+        const timer = setInterval(() => {
+          if (prevScrollH != reff.scrollHeight) {
+            clearInterval(timer);
+            reff.scrollTop = prevClientH - prevScrollH;
+          }
+        }, 300);
+        setTimeout(() => {
+          clearInterval(timer);
+        }, 5000);
+      };
+      const edgeMsgId = returnEdgeMsgId(isPinnedMsgViewOpen);
       let reqBody = {
         direction: scrollDirection,
         receiverId,
@@ -84,7 +104,6 @@ const DmList = memo(function DmList({ styles, messagesEndRef }) {
       };
 
       reqBody = pinnedMsgId ? { ...reqBody, pinnedMsgId } : reqBody;
-      // reqBody = edgeMsgId ? { ...reqBody, edgeMsgId } : reqBody;
 
       const res = await fetch(`/api/dm/pinned-message-view`, {
         method: "POST",
@@ -93,6 +112,7 @@ const DmList = memo(function DmList({ styles, messagesEndRef }) {
         },
         body: JSON.stringify(reqBody),
       });
+
       const data = await res.json();
 
       if (!res.ok) {
@@ -101,69 +121,108 @@ const DmList = memo(function DmList({ styles, messagesEndRef }) {
 
       const { dms } = data;
 
-      if (ignore) return;
+      console.log("scr", scrollDirection);
 
-      if (scrollDirection != "up") {
+      if (jumpToMsgId && isJumpClicked.current) {
+        setChatData((prev) => ({
+          ...prev,
+          //& not important jumpToMsgId: null,
+          hasMoreDown: true,
+          hasMoreUp: true,
+          isPinnedMsgViewOpen: true,
+          pinnedMessagesView: dms,
+        }));
+        isJumpClicked.current = null;
+      } else if (scrollDirection == "down") {
+        const clientHeight = reff.clientHeight;
+        const scrollHeight = reff.scrollHeight;
         const lastMsgExists = dms.findIndex(
           (m) => m.id == messages[messages.length - 1].id
         );
+
         if (lastMsgExists == -1) {
+          console.log("not lastMsgExists");
           setChatData((prev) => ({
             ...prev,
+            isPinnedMsgViewOpen: true,
+            hasMoreDown: true,
+            reachedBottom: false,
+
             pinnedMessagesView: [...dms, ...prev.pinnedMessagesView],
           }));
+          adjustScrollBar(clientHeight, scrollHeight);
         } else {
-          hasMoreDown(false);
+          console.log("lastMsgExists");
           setChatData((prev) => {
-            const newMessages = dms.slice(lastMsgExists);
+            const newMessages = dms.slice(lastMsgExists + 1);
 
             return {
               ...prev,
               pinnedMessagesView: [],
-              messages: [...newMessages, ...prev.messages],
+              isPinnedMsgViewOpen: false,
+              reachedBottom: false,
+              hasMoreDown: false,
+              messages: [
+                ...prev.messages,
+                ...newMessages,
+                ...prev.pinnedMessagesView,
+              ],
             };
           });
+          // adjustScrollBar(clientHeight, scrollHeight);
         }
       } else if (scrollDirection == "up") {
-        if (dms == []) hasMoreUp(false);
-        setChatData((prev) => ({
-          ...prev,
-          pinnedMessagesView: [...prev.pinnedMessagesView, ...dms],
-        }));
+        console.log(isPinnedMsgViewOpen);
+        console.log(!hasMoreDown && !dms.length);
+        setChatData((prev) => {
+          const isAllFetched = !prev.hasMoreDown && !dms.length;
+
+          return {
+            ...prev,
+            // hasMoreDown:true,
+            hasMoreUp: !dms.length ? false : true,
+            reachedTop: false,
+            // isPinnedMsgViewOpen: true,
+            pinnedMessagesView: [...prev.pinnedMessagesView, ...dms],
+          };
+        });
       }
 
       const timer = setInterval(() => {
-        const div = document.getElementById(`message-${pinnedMsgId}`);
+        const msg = document.getElementById(`message-${pinnedMsgId}`);
 
-        if (div) {
-          div.scrollIntoView({
+        if (msg) {
+          msg.scrollIntoView({
             behavior: "smooth",
             block: "center",
           });
           setTimeout(() => {
-            div.classList.add(panelStyles.active);
+            msg.classList.add(panelStyles.active);
             setTimeout(() => {
-              div.classList.remove(panelStyles.active);
+              msg.classList.remove(panelStyles.active);
             }, 1000);
           }, 300);
           clearInterval(timer);
+          setChatData((prev) => ({
+            ...prev,
+            isPending: false,
+          }));
         }
       }, 300);
       setTimeout(() => {
         clearInterval(timer);
       }, 10000);
     } catch (error) {
-      console.log(error.message);
       toast.error(error.message);
     }
   };
 
   useEffect(() => {
-    let ignore = false;
+    if (!jumpToMsgId) return;
+    isJumpClicked.current = jumpToMsgId;
+    console.log("jumpToMsgId", jumpToMsgId);
 
-    if (jumpToMsgId) fetchMoreDataInPinnedMsgView(ignore, jumpToMsgId);
-
-    return () => (ignore = true);
+    fetchMoreDataInPinnedMsgView(jumpToMsgId);
   }, [jumpToMsgId]);
 
   return (
@@ -176,12 +235,11 @@ const DmList = memo(function DmList({ styles, messagesEndRef }) {
         <MyLoader
           next={fetchMoreData}
           nextInPinnedMsgView={fetchMoreDataInPinnedMsgView}
-          hasMoreUp={hasMoreUp}
-          hasMoreDown={hasMoreDown}
           loader={<PulseLoader color={"white"} />}
+          key={receiverId}
         >
           <ul className="d-flex flex-column-reverse gap-3 m-2">
-            {pinnedMessagesView.length > 0
+            {isPinnedMsgViewOpen
               ? pinnedMessagesView.map((msg) => (
                   <DmItem
                     key={msg.id ?? msg.clientOffset}

@@ -1,34 +1,46 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { useRef, useContext, useEffect, useState } from "react";
 import DmContext from "../contexts/DmContext";
+import { useParams } from "react-router-dom";
 
-const InfiniteLoader = ({
-  hasMoreUp,
-  hasMoreDown,
-  next,
-  nextInPinnedMsgView,
-  loader,
-  children,
-}) => {
-  // const [reachedTop, setReachedTop] = useState(false);
+const InfiniteLoader = ({ next, nextInPinnedMsgView, loader, children }) => {
   const {
-    chatData: { isPinnedMsgViewOpen, reachedTop, div: myref },
-    setChatData,
+    chatData: {
+      isPinnedMsgViewOpen,
+      reachedTop,
+      reachedBottom,
+      hasMoreUp,
+      hasMoreDown,
+    },
   } = useContext(DmContext);
 
   useEffect(() => {
+    console.log("infinite loader useffect");
+    if (!hasMoreDown && !hasMoreUp) return;
+    console.log("infinite loader useffect after return");
+
     const timer = setTimeout(() => {
       if (reachedTop) {
-        // setReachedTop(false);
+        console.log("reached top ran");
         if (isPinnedMsgViewOpen) {
+          console.log("reached top, ran nextInPinnedMsgView");
           nextInPinnedMsgView();
         } else {
+          // console.log("reached top, ran next");
           next();
         }
+      } else if (reachedBottom) {
+        console.log("reached bottom ran nextInPinnedMsgView");
+        nextInPinnedMsgView();
       }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [reachedTop]);
+  }, [reachedTop, reachedBottom]);
+
+  // useEffect(() => {
+  //   console.log("infinite loader useffect div", div);
+  // }, [div, div?.currentcurrent]);
+
   return (
     <>
       {hasMoreDown && loader}

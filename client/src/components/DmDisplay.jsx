@@ -19,22 +19,26 @@ import { useContext } from "react";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const DmDisplay = ({ dmData, styles }) => {
+const DmDisplay = ({ dmData, styles, receiverId }) => {
   const { receiver } = dmData;
-  const { userId: receiverId } = useParams();
   const [message, setMessage] = useState("");
   //* const value = useMemo(() => ({ chatData, setChatData }), [chatData]);
   const {
-    chatData: { hasMoreUp, direction },
+    chatData,
+    chatData: { hasMoreUp, hasMoreDown, messages, reachedBottom },
     setChatData,
+    div,
   } = useContext(DmContext);
   const [isConnected, setIsConnected] = useState(socket.connected);
   const fileInpRef = useRef(null);
   const textInpRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const div = useRef();
+  const scrollY = useRef(0);
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const curr = messagesEndRef.current;
+    // curr.scrollIntoView({
+    //   behavior: "smooth",
+    // });
   };
   const handleNewMessage = ({ msg, wasDisconnected }) => {
     if (wasDisconnected) {
@@ -47,6 +51,7 @@ const DmDisplay = ({ dmData, styles }) => {
             : [];
 
         return {
+          ...prev,
           authenticatedUserId: prev.authenticatedUserId,
           pendingMessages: pendingMessages,
           messages: [{ ...msg, isPending: false }, ...prev.messages],
@@ -58,7 +63,7 @@ const DmDisplay = ({ dmData, styles }) => {
         messages: [msg, ...prev.messages],
       }));
     }
-    console.log("new msg", msg);
+    // console.log("new msg", msg);
 
     socket.auth.serverOffset = msg.id;
   };
@@ -137,6 +142,48 @@ const DmDisplay = ({ dmData, styles }) => {
       }
     );
   };
+  const handleScroll = useCallback(
+    (e) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.target;
+      const top = scrollHeight + scrollTop;
+      const direction = scrollY.current < scrollTop ? "down" : "up";
+
+      scrollY.current = scrollTop;
+      setChatData((prev) => ({
+        ...prev,
+        direction: direction,
+      }));
+
+      // console.log("direciton", direction);
+      // console.log(scrollY.current < scrollTop, direction);
+      console.log("Current scroll position:", scrollTop);
+      // console.log("Previous scroll position2:", scrollY.current);
+      // console.log("top:", top);
+      // console.log("ScrollHeight:", scrollHeight);
+      // console.log("ClientHeight:", clientHeight);
+      if (top == clientHeight && hasMoreUp) {
+        console.log("set reached top true");
+        setChatData((prev) => ({
+          ...prev,
+          reachedTop: true,
+        }));
+      } else if (scrollTop == 0 && hasMoreDown) {
+        console.log("set reached bottom true");
+        setChatData((prev) => ({
+          ...prev,
+          reachedBottom: true,
+        }));
+      }
+      // console.log("hasMoreUp:", hasMoreUp);
+      // console.log("hasMoreDown:", hasMoreDown);
+    },
+    [hasMoreDown, hasMoreUp]
+  );
+
+  useEffect(() => {
+    console.log("reach bottom changed", reachedBottom);
+  }, [reachedBottom]);
+
   useEffect(() => {
     onConnect();
     socket.on("dm", handleNewMessage);
@@ -146,6 +193,13 @@ const DmDisplay = ({ dmData, styles }) => {
     if (textInpRef.current) {
       textInpRef.current.focus();
     }
+
+    if (messages.length) {
+      scrollToBottom();
+    }
+
+    const el = div?.current;
+    // console.log("ref in receiverId", el);
 
     return () => {
       socket.off("dm", handleNewMessage);
@@ -161,57 +215,44 @@ const DmDisplay = ({ dmData, styles }) => {
   }, [receiverId]);
 
   // useEffect(() => {
-  //   scrollToBottom();
-  // }, [chatData.messages.length, chatData.pendingMessages.length]);
+  //   const el = ref;
+  //   console.log("ref changed", el);
 
-  const [scrollDirection, setScrollDirection] = useState({
-    scrollY: 0,
-    scrollDirection: "",
-  });
-  const handleScroll = (el) => {
-    const top = el.scrollHeight + el.scrollTop;
-    const sctop = el.scrollTop;
-    console.log(scrollDirection.scrollY < el.scrollTop);
+  //   if (el?.current) {
+  //     setChatData((prev) => ({
+  //       ...prev,
+  //       ref: { ref: el, current: el.current, num: prev.ref.num + 1 },
+  //     }));
+  //   }
 
-    setScrollDirection((prev) => ({
-      scrollDirection: prev.scrollY < el.scrollTop ? "down" : "up",
-      scrollY: sctop,
-    }));
-    setChatData((prev) => ({
-      ...prev,
-      direction: scrollDirection.scrollDirection,
-    }));
-    console.log("Current scroll position:", sctop);
-    console.log("Previous scroll position:", scrollDirection.scrollY);
-    console.log("Scroll direction:", scrollDirection.scrollDirection);
-    // console.log("top:", top);
-    // console.log("ScrollTop:", el.scrollTop);
-    // console.log("ScrollHeight:", el.scrollHeight);
-    // console.log("ClientHeight:", el.clientHeight);
-    if (top == el.clientHeight && hasMoreUp) {
-      setChatData((prev) => ({
-        ...prev,
-        reachedTop: true,
-      }));
-    }
-  };
+  //   return () => console.log("ref changed unmount", el);
+  // }, [ref, ref?.current]);
+
   useEffect(() => {
-    const el = div.current;
-    if (!el) return;
+    const el = div?.current;
 
-    const scrollHandler = () => handleScroll(el);
-    el.addEventListener("scroll", scrollHandler);
+    if (!el) return;
+    el.addEventListener("scroll", handleScroll);
+    // console.log(chatData.ref);
+
+    // console.log("evetn added");
 
     return () => {
-      el.removeEventListener("scroll", scrollHandler);
+      el.removeEventListener("scroll", handleScroll);
     };
-  }, [div.current, handleScroll]);
+  }, [div?.current, div?.current, receiverId, handleScroll]);
+
+  // useEffect(() => {
+  //   if (!div?.current) return;
+
+  //   console.log("DOM node is now available:", div?.current);
+  // }, [div?.current]);
 
   return (
     <>
       <div
         className={`d-flex flex-column-reverse text-white flex-shrink-1 overflow-y-auto custom-scrollbar position-relative w-100`}
-        id={"scrollableDiv"}
+        id={"scrollableref"}
         ref={div}
       >
         <DmList

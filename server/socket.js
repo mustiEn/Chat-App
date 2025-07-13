@@ -128,7 +128,7 @@ export const setUpSocket = (io) => {
             WHERE 
               from_id = ${socket.handshake.auth.receiverId} AND
               to_id = ${userId} AND
-              id > ${socket.handshake.auth.serverOffset}
+              id > ${socket.handshake.auth.serverOffset ?? 0}
             ORDER BY createdAt ASC
         `;
         const msgs = await sequelize.query(msgsSql, {

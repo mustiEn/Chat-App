@@ -15,6 +15,7 @@ const DmPanel = () => {
     dms: dms,
     pinnedMessages: pinnedMessages,
   });
+  const div = useRef(null);
   const [chatData, setChatData] = useState({
     messages: dms,
     authenticatedUserId: socket.auth.userId,
@@ -22,11 +23,12 @@ const DmPanel = () => {
     pendingEditedMessages: [],
     pinnedMessagesView: [],
     direction: "",
+    reachedTop: false,
+    reachedBottom: false,
     isPinnedMsgViewOpen: false,
     jumpToMsgId: null,
     hasMoreUp: true,
     hasMoreDown: false,
-    div: useRef(null),
   });
   const { userId: receiverId } = useParams();
   const [prevReceiverId, setPrevReceiverId] = useState(receiverId);
@@ -38,9 +40,11 @@ const DmPanel = () => {
     () => ({
       chatData,
       setChatData,
+      div,
     }),
-    [chatData]
+    [chatData, receiverId, div]
   );
+
   if (!mounted.current) {
     mounted.current = true;
   } else {
@@ -70,7 +74,8 @@ const DmPanel = () => {
             dms: dms,
             pinnedMessages: pinnedMessages,
           });
-          setChatData({
+          setChatData((prev) => ({
+            ...prev,
             pendingMessages: [],
             pendingEditedMessages: [],
             pinnedMessagesView: [],
@@ -80,7 +85,7 @@ const DmPanel = () => {
             hasMoreUp: true,
             hasMoreDown: false,
             messages: dms,
-          });
+          }));
           socket.auth.serverOffset = dms[dms.length - 1]?.id;
         } catch (error) {
           console.error("Error fetching chat history:", error);
@@ -88,6 +93,10 @@ const DmPanel = () => {
       })();
     }
   }
+
+  // useEffect(() => {
+  //   console.log("PANEL", chatData.div);
+  // }, [chatData.div]);
 
   return (
     <>
@@ -113,6 +122,8 @@ const DmPanel = () => {
               dmData={props}
               prevReceiverId={prevReceiverId}
               styles={styles}
+              receiverId={receiverId}
+              // key={receiverId}
             />
           </div>
           <FriendProfile
