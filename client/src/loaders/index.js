@@ -17,6 +17,8 @@ export const loadDmData = async ({ params }) => {
       throw new Error(data.msg);
     }
 
+    console.log("data loaded indexjs");
+
     return data;
   } catch (error) {
     console.log(error);

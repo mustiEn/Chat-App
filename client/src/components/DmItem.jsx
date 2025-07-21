@@ -15,6 +15,7 @@ import { formatDate } from "../utils/index.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
+import toast from "react-hot-toast";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -36,6 +37,44 @@ const DmItem = memo(function DmItem({ msg, styles }) {
       console.log("focus");
     }, 100);
   };
+  const aa = (ms) => new Promise((r) => setTimeout(() => r, 200));
+
+  const debounce = (fn) => {
+    let timer;
+    return (msg) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => await fn(msg), 300);
+    };
+  };
+  const pinMessage = async (msg) => {
+    try {
+      console.log("pinning", msg);
+      const res = await fetch("/api/pin-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pinnedMsgId: msg.id,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.msg);
+        throw new Error(data.msg);
+      }
+
+      setChatData((prev) => ({
+        ...prev,
+        pinnedMsgs: [...prev.pinnedMsgs, msg],
+      }));
+    } catch (error) {
+      toast.error(error.message);
+      console.log(error);
+    }
+  };
+  const debouncePinMessage = debounce(pinMessage);
   const handleEdit = () => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
@@ -75,7 +114,7 @@ const DmItem = memo(function DmItem({ msg, styles }) {
     }
 
     socket.emit(
-      "Edited msg",
+      "edited msg",
       {
         id: editedMessage.id,
         message: editedMessage.message,
@@ -104,7 +143,7 @@ const DmItem = memo(function DmItem({ msg, styles }) {
         func: () => console.log("hey"),
       },
       { name: "Delete", icon: <ImBin />, func: () => console.log("hey") },
-      { name: "Pin", icon: <RxDrawingPin />, func: () => console.log("hey") },
+      { name: "Pin", icon: <RxDrawingPin />, func: debouncePinMessage },
     ],
     []
   );

@@ -1,51 +1,28 @@
 import React, { useRef, useContext, useEffect, useState } from "react";
 import DmContext from "../contexts/DmContext";
-import { useParams } from "react-router-dom";
+import ChatSkeleton from "./ChatSkeleton";
 
-const InfiniteLoader = ({ next, nextInPinnedMsgView, loader, children }) => {
+const InfiniteLoader = ({ next, loader, children }) => {
   const {
-    chatData: {
-      isPinnedMsgViewOpen,
-      reachedTop,
-      reachedBottom,
-      hasMoreUp,
-      hasMoreDown,
-    },
+    chatData: { reachedTop, hasMoreUp },
   } = useContext(DmContext);
 
   useEffect(() => {
-    console.log("infinite loader useffect");
-    if (!hasMoreDown && !hasMoreUp) return;
-    console.log("infinite loader useffect after return");
+    if (!hasMoreUp) return;
 
     const timer = setTimeout(() => {
       if (reachedTop) {
-        console.log("reached top ran");
-        if (isPinnedMsgViewOpen) {
-          console.log("reached top, ran nextInPinnedMsgView");
-          nextInPinnedMsgView();
-        } else {
-          // console.log("reached top, ran next");
-          next();
-        }
-      } else if (reachedBottom) {
-        console.log("reached bottom ran nextInPinnedMsgView");
-        nextInPinnedMsgView();
+        next();
       }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [reachedTop, reachedBottom]);
-
-  // useEffect(() => {
-  //   console.log("infinite loader useffect div", div);
-  // }, [div, div?.currentcurrent]);
+  }, [reachedTop]);
 
   return (
     <>
-      {hasMoreDown && loader}
       {children}
-      {hasMoreUp && loader}
+      {hasMoreUp && <div className="mb-4">{loader}</div>}
     </>
   );
 };

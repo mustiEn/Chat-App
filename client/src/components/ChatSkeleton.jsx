@@ -10,7 +10,7 @@ const ChatSkeleton = () => {
         borderRadius={20}
       >
         <div className="d-flex flex-column gap-4">
-          {Array.from({ length: 4 }, (_, i) => (
+          {Array.from({ length: 13 }, (_, i) => (
             <>
               <div className="d-flex gap-2 ms-2 z-1" key={i}>
                 <Skeleton circle width={40} height={40} />

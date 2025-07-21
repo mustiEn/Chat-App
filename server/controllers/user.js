@@ -23,7 +23,6 @@ export const getDmData = async (req, res, next) => {
     };
     let dms;
     let receiver = {};
-    let pinnedMessages = [];
 
     if (!result.isEmpty()) {
       console.log(result.array());
@@ -33,7 +32,10 @@ export const getDmData = async (req, res, next) => {
     const { receiverId, offset } = matchedData(req);
     const limit = 10;
     logger.log("offset", offset);
-    if (!receiverId) throw new Error("ReceiverId not found");
+
+    receiver = await User.findByPk(receiverId);
+
+    if (!receiver) throw new Error("Receiver not found");
 
     const dmsSql = `
       SELECT 
@@ -92,260 +94,9 @@ export const getDmData = async (req, res, next) => {
         ],
         where: { id: receiverId },
       });
-
-      if (!receiver) throw new Error("User not found");
-
-      pinnedMessages = dms.filter((m) => m.is_pinned);
     }
 
-    res.status(200).json({ dms, receiver, pinnedMessages });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getPinnedMessageView = async (req, res, next) => {
-  try {
-    const result = validationResult(req);
-    const userId = req.session.passport.user;
-    const getDmsSql = (orderBy = "DESC") => `
-      SELECT 
-        dm.id,
-        dm.from_id from_id, 
-        sender.display_name, 
-        sender.username, 
-        sender.profile,
-        dm.clientOffset, 
-        dm.message,
-        dm.is_edited,
-        dm.is_pinned, 
-        dm.createdAt created_at, 
-        dms.message reply_to_msg 
-      FROM 
-        direct_messages dm 
-        INNER JOIN users sender ON sender.id = dm.from_id 
-        INNER JOIN users receiver ON receiver.id = dm.to_id 
-        LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
-      WHERE 
-        (
-          dm.to_id = :userId 
-          AND dm.from_id = :receiverId
-        ) 
-        OR
-        (
-          dm.to_id = :receiverId
-          AND dm.from_id = :userId 
-        ) 
-      ORDER BY 
-        dm.createdAt ${orderBy}
-      LIMIT 
-        :limit
-      OFFSET 
-        :offset
-    `;
-    let dms = [];
-
-    if (!result.isEmpty()) {
-      logger.log("Validation failed: ", result.array());
-    }
-
-    const { receiverId, edgeMsgId, direction, pinnedMsgId, msgsLength } =
-      matchedData(req);
-    const [receiver, edgeMsg, pinnedMsg] = await Promise.all([
-      User.findByPk(receiverId),
-      DirectMessage.findByPk(edgeMsgId),
-      DirectMessage.findByPk(pinnedMsgId),
-    ]);
-
-    if (!receiver) throw new Error("User not found");
-    // if (!edgeMsg) throw new Error("Message not found");
-    // if (!pinnedMsg) throw new Error("Pinned message not found");
-
-    logger.log(
-      "edgemsgid",
-      edgeMsgId,
-      "\npinnedmsgid",
-      pinnedMsgId,
-      "\n msgsLength",
-      msgsLength
-    );
-
-    if (direction == "") {
-      const rowNumSql = `
-        SELECT 
-          COUNT(*) AS row_num 
-          FROM 
-            (
-              SELECT 
-                * 
-              FROM 
-                direct_messages dm 
-              WHERE 
-                (
-                  dm.to_id = :userId 
-                  AND dm.from_id = :receiverId
-                ) 
-                OR
-                (
-                  dm.to_id = :receiverId 
-                  AND dm.from_id = :userId
-                ) 
-              ORDER BY 
-                dm.createdAt
-            ) t 
-          WHERE 
-            t.id > :pinnedMsgId 
-            AND 
-            t.id < :edgeMsgId
-      `;
-      const [{ row_num: rowNum }] = await sequelize.query(rowNumSql, {
-        type: QueryTypes.SELECT,
-        replacements: {
-          userId,
-          receiverId,
-          pinnedMsgId: pinnedMsgId,
-          edgeMsgId: edgeMsgId,
-        },
-      });
-      const offset = rowNum ? rowNum + msgsLength - 10 : msgsLength - 1;
-      const limit = 20;
-      dms = await sequelize.query(getDmsSql(), {
-        type: QueryTypes.SELECT,
-        replacements: {
-          userId,
-          receiverId,
-          limit,
-          offset,
-        },
-      });
-      logger.log(
-        "direction:",
-        direction,
-        "\n rowNum:",
-        rowNum,
-        "\n offset:",
-        offset
-      );
-    } else if (direction == "up") {
-      const rowNumSql = `
-        SELECT 
-          COUNT(*) AS row_num 
-          FROM 
-            (
-              SELECT 
-                * 
-              FROM 
-                direct_messages dm 
-              WHERE 
-                (
-                  dm.to_id = :userId 
-                  AND dm.from_id = :receiverId
-                ) 
-                OR
-                (
-                  dm.to_id = :receiverId 
-                  AND dm.from_id = :userId
-                ) 
-              ORDER BY 
-                dm.createdAt
-            ) t 
-          WHERE 
-            t.id > :edgeMsgId
-      `;
-      const [{ row_num: rowNum }] = await sequelize.query(rowNumSql, {
-        type: QueryTypes.SELECT,
-        replacements: {
-          userId,
-          receiverId,
-          edgeMsgId,
-        },
-      });
-      const offset = rowNum + 1;
-      const limit = 20;
-
-      dms =
-        rowNum == 0
-          ? []
-          : await sequelize.query(getDmsSql(), {
-              type: QueryTypes.SELECT,
-              replacements: {
-                userId,
-                receiverId,
-                limit,
-                offset,
-              },
-            });
-
-      logger.log(
-        "direction:",
-        direction,
-        "\n rowNum:",
-        rowNum,
-        "\n offset:",
-        offset
-      );
-    } else {
-      const rowNumSql = `
-        SELECT
-          COUNT(*) AS row_num
-          FROM
-            (
-              SELECT
-                *
-              FROM
-                direct_messages dm
-              WHERE
-                (
-                  dm.to_id = :userId
-                  AND dm.from_id = :receiverId
-                )
-                OR
-                (
-                  dm.to_id = :receiverId
-                  AND dm.from_id = :userId
-                )
-              ORDER BY
-                dm.createdAt ASC
-            ) t
-          WHERE
-            t.id < :edgeMsgId
-      `;
-      const [{ row_num: rowNum }] = await sequelize.query(rowNumSql, {
-        type: QueryTypes.SELECT,
-        replacements: {
-          userId,
-          receiverId,
-          edgeMsgId,
-        },
-      });
-      const offset = rowNum + 1;
-      const limit = 10;
-      dms = await sequelize.query(getDmsSql("ASC"), {
-        type: QueryTypes.SELECT,
-        replacements: {
-          userId,
-          receiverId,
-          limit,
-          offset,
-        },
-      });
-      dms = dms.reverse();
-
-      logger.log(
-        "direction:",
-        direction,
-        "\n rowNum:",
-        rowNum,
-        "\n offset:",
-        offset
-      );
-    }
-
-    logger.log("dms", dms.length);
-
-    res.status(200).json({
-      dms,
-    });
+    res.status(200).json({ dms, receiver });
   } catch (error) {
     next(error);
   }
@@ -399,8 +150,13 @@ export const getPinnedMessages = async (req, res, next) => {
     const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
       type: QueryTypes.SELECT,
     });
+    const sortedPinnedMessages = pinnedMessages.sort((a, b) => {
+      const dateA = new Date(a.pinned_at);
+      const dateB = new Date(b.pinned_at);
+      return dateB - dateA;
+    });
 
-    res.status(200).json(pinnedMessages);
+    res.status(200).json(sortedPinnedMessages);
   } catch (error) {
     next(error);
   }
@@ -417,7 +173,7 @@ export const unpinMessage = async (req, res, next) => {
 
     const { pinnedMsgId } = matchedData(req);
     await DirectMessage.update(
-      { is_pinned: false },
+      { is_pinned: false, pinned_at: null },
       {
         where: {
           id: pinnedMsgId,
@@ -425,6 +181,34 @@ export const unpinMessage = async (req, res, next) => {
       }
     );
     res.status(200).json({ status: "Message unpinned" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const pinMessage = async (req, res, next) => {
+  try {
+    const result = validationResult(req);
+
+    if (!result.isEmpty()) {
+      console.log(result.array());
+      throw new Error("Validation failed");
+    }
+
+    const { pinnedMsgId } = matchedData(req);
+    const pinnedMessage = await DirectMessage.findByPk(pinnedMsgId);
+
+    if (!pinnedMessage) throw new Error("Pinned message not found");
+
+    await DirectMessage.update(
+      { is_pinned: true },
+      {
+        where: {
+          id: pinnedMsgId,
+        },
+      }
+    );
+    res.status(200).json({ status: "Message pinned" });
   } catch (error) {
     next(error);
   }

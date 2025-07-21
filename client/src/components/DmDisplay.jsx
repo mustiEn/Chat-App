@@ -19,13 +19,13 @@ import { useContext } from "react";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const DmDisplay = ({ dmData, styles, receiverId }) => {
-  const { receiver } = dmData;
+const DmDisplay = ({ receiver, styles }) => {
+  const { userId: receiverId } = useParams();
   const [message, setMessage] = useState("");
   //* const value = useMemo(() => ({ chatData, setChatData }), [chatData]);
   const {
     chatData,
-    chatData: { hasMoreUp, hasMoreDown, messages, reachedBottom },
+    chatData: { hasMoreUp, hasMoreDown, messages, isPinnedMsgsViewOpen },
     setChatData,
     div,
   } = useContext(DmContext);
@@ -33,7 +33,6 @@ const DmDisplay = ({ dmData, styles, receiverId }) => {
   const fileInpRef = useRef(null);
   const textInpRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const scrollY = useRef(0);
   const scrollToBottom = () => {
     const curr = messagesEndRef.current;
     // curr.scrollIntoView({
@@ -146,48 +145,22 @@ const DmDisplay = ({ dmData, styles, receiverId }) => {
     (e) => {
       const { scrollTop, scrollHeight, clientHeight } = e.target;
       const top = scrollHeight + scrollTop;
-      const direction = scrollY.current < scrollTop ? "down" : "up";
 
-      scrollY.current = scrollTop;
-      setChatData((prev) => ({
-        ...prev,
-        direction: direction,
-      }));
-
-      // console.log("direciton", direction);
-      // console.log(scrollY.current < scrollTop, direction);
-      console.log("Current scroll position:", scrollTop);
-      // console.log("Previous scroll position2:", scrollY.current);
-      // console.log("top:", top);
-      // console.log("ScrollHeight:", scrollHeight);
-      // console.log("ClientHeight:", clientHeight);
       if (top == clientHeight && hasMoreUp) {
         console.log("set reached top true");
         setChatData((prev) => ({
           ...prev,
           reachedTop: true,
         }));
-      } else if (scrollTop == 0 && hasMoreDown) {
-        console.log("set reached bottom true");
-        setChatData((prev) => ({
-          ...prev,
-          reachedBottom: true,
-        }));
       }
-      // console.log("hasMoreUp:", hasMoreUp);
-      // console.log("hasMoreDown:", hasMoreDown);
     },
     [hasMoreDown, hasMoreUp]
   );
 
   useEffect(() => {
-    console.log("reach bottom changed", reachedBottom);
-  }, [reachedBottom]);
-
-  useEffect(() => {
     onConnect();
     socket.on("dm", handleNewMessage);
-    socket.on("Edited msg", handleEditedMessage);
+    socket.on("edited msg", handleEditedMessage);
     socket.auth.receiverId = receiverId;
 
     if (textInpRef.current) {
@@ -203,7 +176,7 @@ const DmDisplay = ({ dmData, styles, receiverId }) => {
 
     return () => {
       socket.off("dm", handleNewMessage);
-      socket.off("Edited msg", handleEditedMessage);
+      socket.off("edited msg", handleEditedMessage);
       socket.emit("leave room", receiverId, (err, res) => {
         if (err) {
           console.log(err);
@@ -213,20 +186,6 @@ const DmDisplay = ({ dmData, styles, receiverId }) => {
       });
     };
   }, [receiverId]);
-
-  // useEffect(() => {
-  //   const el = ref;
-  //   console.log("ref changed", el);
-
-  //   if (el?.current) {
-  //     setChatData((prev) => ({
-  //       ...prev,
-  //       ref: { ref: el, current: el.current, num: prev.ref.num + 1 },
-  //     }));
-  //   }
-
-  //   return () => console.log("ref changed unmount", el);
-  // }, [ref, ref?.current]);
 
   useEffect(() => {
     const el = div?.current;
@@ -242,12 +201,6 @@ const DmDisplay = ({ dmData, styles, receiverId }) => {
     };
   }, [div?.current, div?.current, receiverId, handleScroll]);
 
-  // useEffect(() => {
-  //   if (!div?.current) return;
-
-  //   console.log("DOM node is now available:", div?.current);
-  // }, [div?.current]);
-
   return (
     <>
       <div
@@ -255,12 +208,12 @@ const DmDisplay = ({ dmData, styles, receiverId }) => {
         id={"scrollableref"}
         ref={div}
       >
-        <DmList
-          styles={styles}
-          messagesEndRef={messagesEndRef}
-          setChatData={setChatData}
-        />
-        <div className={`m-2 ${hasMoreUp ? "d-none" : ""}`}>
+        <DmList styles={styles} messagesEndRef={messagesEndRef} />
+        <div
+          className={`m-2 ${
+            hasMoreUp ? "d-none" : isPinnedMsgsViewOpen ? "d-none" : ""
+          }`}
+        >
           <img
             src={
               receiver.profile ? receiver.profile : "https://placehold.co/80"
@@ -268,8 +221,20 @@ const DmDisplay = ({ dmData, styles, receiverId }) => {
             className="rounded-circle"
             alt=""
           />
-          <div className="fs-3">{receiver.display_name}</div>
-          <div className="fs-5">{receiver.username}</div>
+          <div
+            style={{
+              fontSize: 24,
+            }}
+          >
+            {receiver.display_name}
+          </div>
+          <div
+            style={{
+              fontSize: 20,
+            }}
+          >
+            {receiver.username}
+          </div>
           <div className="d-flex align-items-center gap-2">
             <div>No Mutual Groups</div>
             <LuDot />

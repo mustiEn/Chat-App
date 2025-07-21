@@ -1,28 +1,30 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import Button from "react-bootstrap/esm/Button";
 import Form from "react-bootstrap/Form";
 import { RxCross2, RxDrawingPin } from "react-icons/rx";
 import { CgProfile } from "react-icons/cg";
 import stylesPanelTop from "../css/dm_panel_top.module.css";
-import PinnedMsgsModal from "./PinnedMsgsModal";
+import PinnedMsgsBox from "./PinnedMsgsBox";
 import Popover from "./Popover";
 import { useParams } from "react-router-dom";
+import DmContext from "../contexts/DmContext";
 import toast from "react-hot-toast";
 
 const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
-  const [search, setSearch] = useState("");
   const { userId: receiverId } = useParams();
-  const [isPinnedMsgsFetched, setIsPinnedMsgsFetched] = useState(false);
+  const [search, setSearch] = useState("");
+  const { chatData, setChatData } = useContext(DmContext);
   const [showPinnedMsgs, setShowPinnedMsgs] = useState(false);
-  const [pinnedMsgs, setPinnedMsgs] = useState([]);
-  const handlePinnedMsgsToggle = () => setShowPinnedMsgs((prev) => !prev);
-  const [showPinnedMsgsDeleteModal, setShowPinnedMsgsDeleteModal] =
-    useState(false);
-  const pinnedMsgsModalRef = useRef(null);
+
   const [isPending, setIsPending] = useState(false);
+
+  const pinnedMsgsBoxRef = useRef(null);
+  const isPinnedMsgsFetched = useRef(false);
+
+  const handlePinnedMsgsToggle = () => setShowPinnedMsgs((prev) => !prev);
   let isOpen = false;
-  const handleClosePinnedMsgs = (event) => {
+  const closePinnedMsgsBox = (event) => {
     const deleteModal = document.querySelector(".fade.modal.show");
     if (isOpen && !deleteModal) {
       isOpen = false;
@@ -31,43 +33,47 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
       isOpen = true;
       return;
     } else if (
-      pinnedMsgsModalRef.current &&
-      !pinnedMsgsModalRef.current.contains(event.target)
+      pinnedMsgsBoxRef.current &&
+      !pinnedMsgsBoxRef.current.contains(event.target)
     ) {
       setShowPinnedMsgs(false);
     }
   };
   const fetchPinnedMsgs = async () => {
-    if (isPinnedMsgsFetched) return;
+    if (isPinnedMsgsFetched.current) return;
     setIsPending(true);
     try {
       const res = await fetch(`/api/dm/pinned-messages/${receiverId}`);
       const data = await res.json();
 
       if (!res.ok) {
+        setIsPending(false);
         throw new Error(data.message);
       }
 
-      setPinnedMsgs(data);
+      setChatData((prev) => ({
+        ...prev,
+        pinnedMsgs: data,
+      }));
+      setIsPending(false);
+      isPinnedMsgsFetched.current = true;
     } catch (error) {
+      setIsPending(false);
       console.log(error.message);
       toast.error(error.message);
     }
-    setIsPending(false);
-    setIsPinnedMsgsFetched(true);
   };
-  const clearSearch = () => setSearch("");
 
   useEffect(() => {
-    document.addEventListener("click", handleClosePinnedMsgs);
+    document.addEventListener("click", closePinnedMsgsBox);
     return () => {
-      document.removeEventListener("click", handleClosePinnedMsgs);
+      document.removeEventListener("click", closePinnedMsgsBox);
     };
   }, []);
 
-  useEffect(() => {
-    setIsPinnedMsgsFetched(false);
-  }, [receiverId]);
+  // useEffect(() => {
+  //   setIsPinnedMsgsFetched(false);
+  // }, [receiverId]);
 
   return (
     <>
@@ -138,18 +144,17 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
                     ? "d-none"
                     : "position-absolute top-50 end-0 translate-middle-y me-3"
                 }
-                onClick={clearSearch}
+                onClick={() => setSearch("")}
               />
             </div>
           </div>
         </div>
-        <PinnedMsgsModal
-          ref={pinnedMsgsModalRef}
-          pinnedMsgsProp={pinnedMsgs}
+        <PinnedMsgsBox
+          key={receiverId}
+          ref={pinnedMsgsBoxRef}
           showPinnedMsgs={showPinnedMsgs}
           isPending={isPending}
-          setShowPinnedMsgsDeleteModal={setShowPinnedMsgsDeleteModal}
-          showPinnedMsgsDeleteModal={showPinnedMsgsDeleteModal}
+          setShowDeletePinnedMsgsModal={setShowDeletePinnedMsgsModal}
           handlePinnedMsgsToggle={handlePinnedMsgsToggle}
         />
       </div>

@@ -1,20 +1,19 @@
-import React from "react";
+import React, { useContext } from "react";
 import Button from "react-bootstrap/esm/Button";
 import Modal from "react-bootstrap/Modal";
 import { formatDate } from "../utils";
 import toast from "react-hot-toast";
+import DmContext from "../contexts/DmContext";
 
-const PinnedMsgsDeleteModal = ({
+const DeletePinnedMsgsModal = ({
   show,
-  handlePinnedMsgsDeleteModal,
+  handleDeletePinnedMsgsModal,
   pinnedMsg,
-  setPinnedMsgs,
   styles,
 }) => {
+  const { setChatData } = useContext(DmContext);
   const deletePinnedMessage = async () => {
     try {
-      console.log(pinnedMsg);
-
       const res = await fetch(`/api/delete-pinned-message`, {
         method: "POST",
         headers: {
@@ -27,8 +26,11 @@ const PinnedMsgsDeleteModal = ({
 
       if (!res.ok) throw new Error("Something went wrong");
 
-      setPinnedMsgs((prev) => prev.filter((msg) => msg.id !== pinnedMsg.id));
-      handlePinnedMsgsDeleteModal(false);
+      setChatData((prev) => ({
+        ...prev,
+        pinnedMsgs: prev.pinnedMsgs.filter((msg) => msg.id !== pinnedMsg.id),
+      }));
+      handleDeletePinnedMsgsModal(false);
       toast.success("Message unpinned");
     } catch (error) {
       console.log(error);
@@ -40,7 +42,7 @@ const PinnedMsgsDeleteModal = ({
     <>
       <Modal
         show={show}
-        onHide={() => handlePinnedMsgsDeleteModal(false)}
+        onHide={() => handleDeletePinnedMsgsModal(false)}
         centered
         data-bs-theme="dark"
       >
@@ -77,7 +79,7 @@ const PinnedMsgsDeleteModal = ({
         <Modal.Footer>
           <Button
             variant="secondary"
-            onClick={() => handlePinnedMsgsDeleteModal(false)}
+            onClick={() => handleDeletePinnedMsgsModal(false)}
           >
             Close
           </Button>
@@ -90,4 +92,4 @@ const PinnedMsgsDeleteModal = ({
   );
 };
 
-export default PinnedMsgsDeleteModal;
+export default DeletePinnedMsgsModal;

@@ -9,30 +9,19 @@ import DmContext from "../contexts/DmContext";
 import { useMemo } from "react";
 
 const DmPanel = () => {
-  const { receiver, dms, pinnedMessages } = useLoaderData();
-  const [props, setProps] = useState({
-    receiver: receiver,
-    dms: dms,
-    pinnedMessages: pinnedMessages,
-  });
+  const { receiver, dms } = useLoaderData();
   const div = useRef(null);
   const [chatData, setChatData] = useState({
     messages: dms,
     authenticatedUserId: socket.auth.userId,
     pendingMessages: [],
     pendingEditedMessages: [],
-    pinnedMessagesView: [],
-    direction: "",
+    pinnedMsgs: [],
     reachedTop: false,
-    reachedBottom: false,
-    isPinnedMsgViewOpen: false,
-    jumpToMsgId: null,
     hasMoreUp: true,
-    hasMoreDown: false,
   });
   const { userId: receiverId } = useParams();
   const [prevReceiverId, setPrevReceiverId] = useState(receiverId);
-  const mounted = useRef(false);
   const [showOffset, setShowOffset] = useState(false);
 
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
@@ -45,65 +34,25 @@ const DmPanel = () => {
     [chatData, receiverId, div]
   );
 
-  if (!mounted.current) {
-    mounted.current = true;
-  } else {
-    if (prevReceiverId !== receiverId) {
-      setPrevReceiverId(receiverId);
-      (async () => {
-        try {
-          const res = await fetch(`/api/dm/0`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              receiverId,
-            }),
-          });
-          const data = await res.json();
-
-          if (!res.ok) {
-            throw new Error(data.msg);
-          }
-
-          const { dms, receiver, pinnedMessages } = data;
-
-          setProps({
-            receiver: receiver,
-            dms: dms,
-            pinnedMessages: pinnedMessages,
-          });
-          setChatData((prev) => ({
-            ...prev,
-            pendingMessages: [],
-            pendingEditedMessages: [],
-            pinnedMessagesView: [],
-            isPinnedMsgViewOpen: false,
-            jumpToMsgId: null,
-            direction: "",
-            hasMoreUp: true,
-            hasMoreDown: false,
-            messages: dms,
-          }));
-          socket.auth.serverOffset = dms[dms.length - 1]?.id;
-        } catch (error) {
-          console.error("Error fetching chat history:", error);
-        }
-      })();
-    }
+  if (prevReceiverId != receiverId) {
+    setPrevReceiverId(receiverId);
+    setChatData({
+      authenticatedUserId: socket.auth.userId,
+      pendingMessages: [],
+      pendingEditedMessages: [],
+      pinnedMsgs: [],
+      reachedTop: false,
+      hasMoreUp: true,
+      messages: dms,
+    });
+    socket.auth.serverOffset = dms[dms.length - 1]?.id;
   }
-
-  // useEffect(() => {
-  //   console.log("PANEL", chatData.div);
-  // }, [chatData.div]);
 
   return (
     <>
-      <DmContext.Provider value={value}>
+      <DmContext value={value}>
         <DmPanelTop
           receiver={receiver}
-          pinnedMessages={props.pinnedMessages}
           styles={styles}
           handleOffsetToggle={handleOffsetToggle}
           showOffset={showOffset}
@@ -118,13 +67,7 @@ const DmPanel = () => {
             id={styles["dmPanelContent"]}
             className={`w-100 d-flex flex-column position-relative gap-2`}
           >
-            <DmDisplay
-              dmData={props}
-              prevReceiverId={prevReceiverId}
-              styles={styles}
-              receiverId={receiverId}
-              // key={receiverId}
-            />
+            <DmDisplay receiver={receiver} styles={styles} key={receiverId} />
           </div>
           <FriendProfile
             friend={receiver}
@@ -132,7 +75,7 @@ const DmPanel = () => {
             styles={styles}
           />
         </div>
-      </DmContext.Provider>
+      </DmContext>
     </>
   );
 };

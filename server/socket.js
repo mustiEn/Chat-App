@@ -1,4 +1,4 @@
-import { Op, QueryTypes } from "sequelize";
+import { Op, QueryTypes, fn } from "sequelize";
 import { DirectMessage } from "./models/DirectMessage.js";
 import dayjs from "dayjs";
 import { logger } from "./utils/index.js";
@@ -7,7 +7,7 @@ import { sequelize } from "./models/db.js";
 let time;
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
-    const userId = socket.request.session.passport.user;
+    const userId = socket.request.session?.passport?.user;
 
     console.log("a user connected", userId);
 
@@ -38,7 +38,7 @@ export const setUpSocket = (io) => {
       console.log("left room", room);
     });
 
-    socket.on("Edited msg", async (msg, done) => {
+    socket.on("edited msg", async (msg, done) => {
       let result;
       try {
         if (result) {
@@ -63,7 +63,7 @@ export const setUpSocket = (io) => {
         console.log("❌ Unexpected error updating message:", error);
       }
 
-      io.emit("Edited msg", { msg: result, wasDisconnected: true });
+      io.emit("edited msg", { msg: result, wasDisconnected: true });
       console.log("message edited");
       done({
         status: "ok",
@@ -115,6 +115,45 @@ export const setUpSocket = (io) => {
       });
     });
 
+    socket.on("pin message", async (msg, done) => {
+      const pinnedMessage = await DirectMessage.findByPk(msg.id);
+
+      if (!pinnedMessage) {
+        return done({ status: "not found" });
+      }
+      await DirectMessage.update(
+        { is_pinned: true, pinned_at: fn("NOW") },
+        {
+          where: {
+            id: pinnedMsgId,
+          },
+        }
+      );
+      return done({
+        status: "ok",
+      });
+    });
+
+    socket.on("unpin message", async (msg, done) => {
+      const pinnedMessage = await DirectMessage.findByPk(msg.id);
+
+      if (!pinnedMessage) {
+        return done({ status: "not found" });
+      }
+
+      await DirectMessage.update(
+        { is_pinned: false, pinned_at: null },
+        {
+          where: {
+            id: pinnedMsgId,
+          },
+        }
+      );
+      return done({
+        status: "ok",
+      });
+    });
+
     if (!socket.recovered) {
       logger.log("back", time);
       console.log(
@@ -150,7 +189,7 @@ export const setUpSocket = (io) => {
         for (const msg of msgs) {
           socket.emit("dm", { msg: msg, wasDisconnected: false });
         }
-        socket.emit("Edited msgs", {
+        socket.emit("edited msgs", {
           editedMsgs: editedMsgs,
           wasDisconnected: false,
         });

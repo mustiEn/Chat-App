@@ -4,7 +4,7 @@ import styles from "../css/pinned_msgs_modal.module.css";
 import panelStyles from "../css/dm_panel.module.css";
 import Button from "react-bootstrap/esm/Button";
 import { useState } from "react";
-import PinnedMsgsDeleteModal from "./PinnedMsgsDeleteModal";
+import DeletePinnedMsgsModal from "./DeletePinnedMsgsModal";
 import { formatDate } from "../utils";
 import { HiOutlineFaceFrown } from "react-icons/hi2";
 import { Link, useParams } from "react-router-dom";
@@ -13,57 +13,20 @@ import DmContext from "../contexts/DmContext";
 import toast from "react-hot-toast";
 import { PulseLoader } from "react-spinners";
 
-const PinnedMsgsModal = ({
-  ref,
-  showPinnedMsgs,
-  pinnedMsgsProp,
-  isPending,
-  setShowPinnedMsgsDeleteModal,
-  showPinnedMsgsDeleteModal,
-  handlePinnedMsgsToggle,
-}) => {
-  const { userId: receiverId } = useParams();
+const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
   const [pinnedMsg, setPinnedMsg] = useState({});
-  const [pinnedMsgs, setPinnedMsgs] = useState(pinnedMsgsProp);
-  const { chatData, setChatData } = useContext(DmContext);
-  const handlePinnedMsgsDeleteModal = (val) =>
-    setShowPinnedMsgsDeleteModal(val);
-
-  const jumpToMsg = async (msg) => {
-    const div = document.getElementById(`message-${msg.id}`);
-    // console.log("div msg exists", div);
-
-    setChatData((prev) => ({
-      ...prev,
-      jumpToMsgId: div ? null : msg.id,
-      //& nonimp hasMoreDown: div ? false : true,
-      //& nonimp reachedBottom: div ? false : true,
-      //& nonimp pinnedMessagesView: div ? [] : prev.pinnedMessagesView,
-      //& nonimp isPinnedMsgViewOpen: div ? false : true,
-    }));
-
-    if (div) {
-      div.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-      setTimeout(() => {
-        div.classList.add(panelStyles.active);
-        setTimeout(() => {
-          div.classList.remove(panelStyles.active);
-        }, 3000);
-      }, 500);
-    }
-  };
-
-  useEffect(() => {
-    setPinnedMsgs(pinnedMsgsProp);
-  }, [pinnedMsgsProp]);
+  const {
+    chatData: { pinnedMsgs },
+  } = useContext(DmContext);
+  const [showDeletePinnedMsgsModal, setShowDeletePinnedMsgsModal] =
+    useState(false);
+  const handleDeletePinnedMsgsModal = (val) =>
+    setShowDeletePinnedMsgsModal(val);
 
   return (
     <>
       <div
-        id={styles["pinnedMsgsModal"]}
+        id={styles["pinnedMsgsBox"]}
         ref={ref}
         className={
           showPinnedMsgs
@@ -124,22 +87,10 @@ const PinnedMsgsModal = ({
                 <div
                   className={`gap-1 ${styles["modal-icons"]} position-absolute translate-middle end-0`}
                 >
-                  <Button
-                    size="sm"
-                    className="jump py-0 px-2"
-                    variant="outline-info"
-                    style={{ fontSize: 10 }}
-                    onClick={() => {
-                      handlePinnedMsgsToggle(false);
-                      jumpToMsg(msg);
-                    }}
-                  >
-                    Jump
-                  </Button>
                   <RxCross2
                     className={`${styles["modal-icon"]}`}
                     onClick={() => {
-                      handlePinnedMsgsDeleteModal(true);
+                      handleDeletePinnedMsgsModal(true);
                       setPinnedMsg(msg);
                     }}
                   />
@@ -149,15 +100,14 @@ const PinnedMsgsModal = ({
           </ul>
         )}
       </div>
-      <PinnedMsgsDeleteModal
-        show={showPinnedMsgsDeleteModal}
-        handlePinnedMsgsDeleteModal={handlePinnedMsgsDeleteModal}
+      <DeletePinnedMsgsModal
+        show={showDeletePinnedMsgsModal}
+        handleDeletePinnedMsgsModal={handleDeletePinnedMsgsModal}
         pinnedMsg={pinnedMsg}
-        setPinnedMsgs={setPinnedMsgs}
         styles={styles}
       />
     </>
   );
 };
 
-export default PinnedMsgsModal;
+export default PinnedMsgsBox;
