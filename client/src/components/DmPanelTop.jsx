@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import Button from "react-bootstrap/esm/Button";
 import Form from "react-bootstrap/Form";
@@ -10,16 +16,14 @@ import Popover from "./Popover";
 import { useParams } from "react-router-dom";
 import DmContext from "../contexts/DmContext";
 import toast from "react-hot-toast";
+import styles from "../css/dm_panel.module.css";
 import { socket } from "../socket";
 
-const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
+const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
   let isOpen = false;
   const { userId: receiverId } = useParams();
   const [search, setSearch] = useState("");
-  const {
-    chatData: { pinnedMsgs },
-    setChatData,
-  } = useContext(DmContext);
+  const { chatData, setChatData } = useContext(DmContext);
   const [showPinnedMsgs, setShowPinnedMsgs] = useState(false);
   const [newPinnedMsgExists, setNewPinnedMsgExists] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -64,22 +68,14 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
       toast.error(error.message);
     }
   };
-
-  useEffect(() => {
-    console.log(newPinnedMsgExists);
-  }, [newPinnedMsgExists]);
-
-  // useEffect(() => {
-  //   console.log("pinned msg changed", pinnedMsgs);
-  // }, [pinnedMsgs]);
-
-  useEffect(() => {
-    const handlePinnedMsgs = ({ result: newPinnedMsgs, isPinned }) => {
+  const handlePinnedMsgs = useCallback(
+    ({ result: newPinnedMsgs, isPinned }) => {
       if (isPinned == null) {
         let isPinnedMsgAdded = false;
 
         setChatData((prev) => {
           let pinnedMsgsMap = new Map(prev.pinnedMsgs.map((m) => [m.id, m]));
+
           newPinnedMsgs.forEach((m) => {
             const exists = pinnedMsgsMap.has(m.id);
             if (exists) {
@@ -118,8 +114,7 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
           ...prev,
           pinnedMsgs: [newPinnedMsgs, ...prev.pinnedMsgs],
         }));
-        console.log(newPinnedMsgs);
-        console.log(isPinnedMsgFromReceiver);
+
         if (!showPinnedMsgs && isPinnedMsgFromReceiver) {
           setNewPinnedMsgExists(true);
         }
@@ -135,7 +130,11 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
           };
         });
       }
-    };
+    },
+    [showPinnedMsgs]
+  );
+
+  useEffect(() => {
     socket.on("pinned msgs", handlePinnedMsgs);
     document.addEventListener("click", closePinnedMsgsBox);
 
@@ -143,7 +142,7 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset, styles }) => {
       socket.off("pinned msgs", handlePinnedMsgs);
       document.removeEventListener("click", closePinnedMsgsBox);
     };
-  }, []);
+  }, [handlePinnedMsgs]);
 
   return (
     <>

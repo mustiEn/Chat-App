@@ -5,11 +5,12 @@ import Button from "react-bootstrap/Button";
 import DmContext from "../contexts/DmContext";
 import { formatDate } from "../utils";
 import { socket } from "../socket";
+import toast from "react-hot-toast";
 
 const PinMsgModal = ({ show, handlePinMsgModal, activeMsg }) => {
   const pinMessage = () => {
     if (!socket.connected) {
-      toast.error("We couldn't unpin the message");
+      toast.error("We couldn't pin the message");
       return;
     }
     socket.emit(

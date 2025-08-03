@@ -3,8 +3,9 @@ import Badge from "react-bootstrap/esm/Badge";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import Dropdown from "react-bootstrap/Dropdown";
 import { Link } from "react-router-dom";
+import styles from "../css/dm_panel.module.css";
 
-const FriendProfile = ({ styles, showOffset }) => {
+const FriendProfile = ({ showOffset }) => {
   return (
     <>
       <div

@@ -18,6 +18,7 @@ const DmPanel = () => {
     pendingEditedMessages: [],
     pinnedMsgs: [],
     newPinnedMsgs: false,
+    msgToReply: null,
     reachedTop: false,
     hasMoreUp: true,
   });
@@ -43,6 +44,7 @@ const DmPanel = () => {
       pendingEditedMessages: [],
       pinnedMsgs: [],
       newPinnedMsgs: false,
+      msgToReply: null,
       reachedTop: false,
       hasMoreUp: true,
       messages: dms,
@@ -56,7 +58,6 @@ const DmPanel = () => {
         <DmPanelTop
           key={receiverId}
           receiver={receiver}
-          styles={styles}
           handleOffsetToggle={handleOffsetToggle}
           showOffset={showOffset}
         />
@@ -70,13 +71,9 @@ const DmPanel = () => {
             id={styles["dmPanelContent"]}
             className={`w-100 d-flex flex-column position-relative gap-2`}
           >
-            <DmDisplay receiver={receiver} styles={styles} key={receiverId} />
+            <DmDisplay receiver={receiver} key={receiverId} />
           </div>
-          <FriendProfile
-            friend={receiver}
-            showOffset={showOffset}
-            styles={styles}
-          />
+          <FriendProfile friend={receiver} showOffset={showOffset} />
         </div>
       </DmContext>
     </>

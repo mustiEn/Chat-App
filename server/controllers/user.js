@@ -54,7 +54,7 @@ export const getDmData = async (req, res, next) => {
         direct_messages dm 
         INNER JOIN users sender ON sender.id = dm.from_id 
         INNER JOIN users receiver ON receiver.id = dm.to_id 
-        LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
+        LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
       WHERE 
         (
           dm.to_id = :userId 
@@ -133,7 +133,7 @@ export const getPinnedMessages = async (req, res, next) => {
         direct_messages dm 
         INNER JOIN users sender ON sender.id = dm.from_id 
         INNER JOIN users receiver ON receiver.id = dm.to_id 
-        LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
+        LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
       WHERE 
         ((
           dm.to_id = ${userId} 

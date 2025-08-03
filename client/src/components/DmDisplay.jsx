@@ -13,18 +13,25 @@ import Button from "react-bootstrap/esm/Button";
 import { useMemo } from "react";
 import DmList from "./DmList.jsx";
 import DmContext from "../contexts/DmContext.jsx";
+import styles from "../css/dm_panel.module.css";
 import MessageInput from "./MessageInput.jsx";
 import { useContext } from "react";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const DmDisplay = ({ receiver, styles }) => {
+const DmDisplay = ({ receiver }) => {
   const { userId: receiverId } = useParams();
   const [message, setMessage] = useState("");
   //* const value = useMemo(() => ({ chatData, setChatData }), [chatData]);
   const {
-    chatData: { hasMoreUp, hasMoreDown, messages, isPinnedMsgsViewOpen },
+    chatData: {
+      hasMoreUp,
+      hasMoreDown,
+      messages,
+      isPinnedMsgsViewOpen,
+      msgToReply,
+    },
     setChatData,
     div,
   } = useContext(DmContext);
@@ -39,7 +46,6 @@ const DmDisplay = ({ receiver, styles }) => {
     // });
   };
   const handleNewMessage = ({ msg, wasDisconnected }) => {
-    console.log("handle new message func ==>", msg);
     if (wasDisconnected) {
       setChatData((prev) => {
         const pendingMessages =
@@ -57,17 +63,13 @@ const DmDisplay = ({ receiver, styles }) => {
         };
       });
     } else {
-      console.log("outside else");
       setChatData((prev) => {
-        console.log("inside usestate");
         return { ...prev, messages: [msg, ...prev.messages] };
       });
     }
-    // console.log("new msg", msg);
-
     socket.auth.serverOffset = msg.id;
   };
-  const handleEditedMessage = ({ editedMsgs }) => {
+  const handleEditedMessage = ({ result: editedMsgs }) => {
     setChatData((prev) => {
       const updatedMessagesMap = new Map(prev.messages.map((m) => [m.id, m]));
 
@@ -92,7 +94,6 @@ const DmDisplay = ({ receiver, styles }) => {
       };
     });
   };
-  const handlePinnedMessage = ({ result, isPinned }) => {};
   const onConnect = () => {
     setIsConnected(true);
     socket.emit("join room", receiverId, (err, res) => {
@@ -131,6 +132,7 @@ const DmDisplay = ({ receiver, styles }) => {
             to_id: receiverId,
             clientOffset: clientOffset,
             isPending: true,
+            reply_to_msg: msgToReply,
           },
         ],
       }));
@@ -142,6 +144,7 @@ const DmDisplay = ({ receiver, styles }) => {
       {
         message: message.message,
         receiverId: receiverId,
+        reply_to_msg: msgToReply,
         createdAt: time,
       },
       clientOffset,
@@ -170,74 +173,11 @@ const DmDisplay = ({ receiver, styles }) => {
     },
     [hasMoreDown, hasMoreUp]
   );
-  const handlePinnedMsgs = ({ result: newPinnedMsgs, isPinned }) => {
-    console.log("handlePinnedMsgs func");
-    setChatData((prev) => {
-      if (isPinned == null) {
-        console.log("pinned msg null");
-        console.log(1111);
-        return {
-          ...prev,
-        };
-        // console.log("prev.pinnedMsgs", prev.pinnedMsgs);
-        // let pinnedMsgsMap = new Map(prev.pinnedMsgs.map((m) => [m.id, m]));
-        // console.log("pinnedmsgsmap", pinnedMsgsMap);
-        // console.log("new pinend msgs", newPinnedMsgs);
-        // newPinnedMsgs.forEach((m) => {
-        //   const exists = pinnedMsgsMap.has(m.id);
-        //   if (exists) {
-        //     if (!m.isPinned) {
-        //       pinnedMsgsMap.delete(m.id);
-        //     } else {
-        //       pinnedMsgsMap.delete(m.id);
-        //       pinnedMsgsMap.set(m.id, m);
-        //     }
-        //   } else {
-        //     pinnedMsgsMap.set(m.id, m);
-        //   }
-        // });
-
-        // console.log("[...pinnedMsgsMap.values()] ===>", [
-        //   ...pinnedMsgsMap.values(),
-        // ]);
-        // const sorted = [...pinnedMsgsMap.values()].sort((a, b) => {
-        //   const dateA = new Date(a.pin_updated_at);
-        //   const dateB = new Date(b.pin_updated_at);
-        //   return dateB - dateA;
-        // });
-        // console.log("sorted", sorted);
-
-        // return {
-        //   ...prev,
-        //   pinnedMsgs: sorted,
-        // };
-        // });
-      } else if (isPinned) {
-        console.log("ISPINNED TRUE");
-        return {
-          ...prev,
-          pinnedMsgs: [...newPinnedMsgs, ...prev.pinnedMsgs],
-        };
-      } else {
-        console.log("ISPINNED FALSE");
-
-        const newPinnedMsgsSet = new Set(newPinnedMsgs.map((m) => m.id));
-        const filteredPinnedMsgs = prev.pinnedMsgs.filter(
-          (m) => !newPinnedMsgsSet.has(m.id)
-        );
-        return {
-          ...prev,
-          pinnedMsgs: filteredPinnedMsgs,
-        };
-      }
-    });
-  };
 
   useEffect(() => {
     onConnect();
     socket.on("dms", handleNewMessage);
     socket.on("edited msgs", handleEditedMessage);
-    // socket.on("pinned msgs", handlePinnedMsgs);
     socket.auth.receiverId = receiverId;
 
     if (textInpRef.current) {
@@ -251,7 +191,6 @@ const DmDisplay = ({ receiver, styles }) => {
     return () => {
       socket.off("dms", handleNewMessage);
       socket.off("edited msgs", handleEditedMessage);
-      // socket.off("pinned msgs", handlePinnedMsgs);
       socket.emit("leave room", receiverId, (err, res) => {
         if (err) {
           console.log(err);
@@ -267,9 +206,6 @@ const DmDisplay = ({ receiver, styles }) => {
 
     if (!el) return;
     el.addEventListener("scroll", handleScroll);
-    // console.log(chatData.ref);
-
-    // console.log("evetn added");
 
     return () => {
       el.removeEventListener("scroll", handleScroll);
@@ -283,7 +219,7 @@ const DmDisplay = ({ receiver, styles }) => {
         id={"scrollableref"}
         ref={div}
       >
-        <DmList styles={styles} messagesEndRef={messagesEndRef} />
+        <DmList messagesEndRef={messagesEndRef} />
         <div
           className={`m-2 ${
             hasMoreUp ? "d-none" : isPinnedMsgsViewOpen ? "d-none" : ""
@@ -324,7 +260,6 @@ const DmDisplay = ({ receiver, styles }) => {
       </div>
 
       <MessageInput
-        styles={styles}
         fileInpRef={fileInpRef}
         textInpRef={textInpRef}
         scrollToBottom={scrollToBottom}

@@ -11,7 +11,7 @@ export const DirectMessage = sequelize.define(
       type: DataTypes.UUID,
       allowNull: true,
     },
-    reply_to_msg_id: {
+    reply_to_msg: {
       type: DataTypes.STRING,
       allowNull: true,
     },

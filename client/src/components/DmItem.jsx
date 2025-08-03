@@ -24,7 +24,7 @@ const DmItem = memo(function DmItem({ msg, styles, handlePinMsgModal }) {
   const { chatData, setChatData } = useContext(DmContext);
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
 
-  const makeMsgEditable = (msg) => {
+  const handleEditableMsg = (msg) => {
     setEditedMessage({
       id: msg.id,
       message: msg.message,
@@ -36,27 +36,6 @@ const DmItem = memo(function DmItem({ msg, styles, handlePinMsgModal }) {
       console.log("focus");
     }, 100);
   };
-
-  // const pinMessage = (msg) => {
-  //   if (!socket.connected) {
-  //     toast.error(
-  //       "We couldn't pin your message at the moment. Please try again later."
-  //     );
-  //     return;
-  //   }
-  //   socket.emit("pinned msgs", { message: msg, isPinned: true }, (err, res) => {
-  //     if (err) {
-  //       console.log("error", err);
-  //     } else {
-  //       console.log("acknowledged", res);
-  //     }
-  //   });
-  //   setChatData((prev) => ({
-  //     ...prev,
-  //     pinnedMsgs: [...prev.pinnedMsgs, msg],
-  //   }));
-  // };
-
   const handleEdit = () => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
@@ -111,17 +90,22 @@ const DmItem = memo(function DmItem({ msg, styles, handlePinMsgModal }) {
       }
     );
   };
+  const passMsgToReply = () => {};
   const options = useCallback(
     () => [
       {
         name: "Edit",
         icon: <PiPencilSimple />,
-        func: makeMsgEditable,
+        func: handleEditableMsg,
       },
       {
         name: "Reply",
         icon: <PiArrowBendUpLeft />,
-        func: () => console.log("hey"),
+        func: (msg) =>
+          setChatData((prev) => ({
+            ...prev,
+            msgToReply: msg,
+          })),
       },
       { name: "Delete", icon: <ImBin />, func: () => console.log("hey") },
       { name: "Pin", icon: <RxDrawingPin />, func: handlePinMsgModal },
