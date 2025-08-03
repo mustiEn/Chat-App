@@ -127,7 +127,8 @@ export const getPinnedMessages = async (req, res, next) => {
         sender.profile,
         dm.clientOffset, 
         dm.message,
-        dm.createdAt created_at
+        dm.createdAt created_at,
+        dm.pin_updated_at
       FROM 
         direct_messages dm 
         INNER JOIN users sender ON sender.id = dm.from_id 
@@ -145,70 +146,18 @@ export const getPinnedMessages = async (req, res, next) => {
         )) 
         AND dm.is_pinned = 1
       ORDER BY 
-        dm.createdAt DESC
+        dm.pin_updated_at DESC
     `;
     const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
       type: QueryTypes.SELECT,
     });
     const sortedPinnedMessages = pinnedMessages.sort((a, b) => {
-      const dateA = new Date(a.pinned_at);
-      const dateB = new Date(b.pinned_at);
+      const dateA = new Date(a.pin_updated_at);
+      const dateB = new Date(b.pin_updated_at);
       return dateB - dateA;
     });
 
     res.status(200).json(sortedPinnedMessages);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const unpinMessage = async (req, res, next) => {
-  try {
-    const result = validationResult(req);
-
-    if (!result.isEmpty()) {
-      console.log(result.array());
-      throw new Error("Validation failed");
-    }
-
-    const { pinnedMsgId } = matchedData(req);
-    await DirectMessage.update(
-      { is_pinned: false, pinned_at: null },
-      {
-        where: {
-          id: pinnedMsgId,
-        },
-      }
-    );
-    res.status(200).json({ status: "Message unpinned" });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const pinMessage = async (req, res, next) => {
-  try {
-    const result = validationResult(req);
-
-    if (!result.isEmpty()) {
-      console.log(result.array());
-      throw new Error("Validation failed");
-    }
-
-    const { pinnedMsgId } = matchedData(req);
-    const pinnedMessage = await DirectMessage.findByPk(pinnedMsgId);
-
-    if (!pinnedMessage) throw new Error("Pinned message not found");
-
-    await DirectMessage.update(
-      { is_pinned: true },
-      {
-        where: {
-          id: pinnedMsgId,
-        },
-      }
-    );
-    res.status(200).json({ status: "Message pinned" });
   } catch (error) {
     next(error);
   }

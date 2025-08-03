@@ -9,7 +9,7 @@ export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
     const userId = socket.request.session?.passport?.user;
 
-    console.log("a user connected", userId);
+    logger.log("a user connected", userId);
 
     socket.emit("initial", userId);
 
@@ -19,7 +19,7 @@ export const setUpSocket = (io) => {
       const sorted = key.sort((a, b) => a - b);
       const room = sorted.join("_");
       socket.join(room);
-      console.log("joined room", room);
+      logger.log("joined room", room);
 
       done({
         status: "ok",
@@ -35,15 +35,15 @@ export const setUpSocket = (io) => {
       done({
         status: "ok",
       });
-      console.log("left room", room);
+      logger.log("left room", room);
     });
 
-    socket.on("edited msg", async (msg, done) => {
+    socket.on("edited msgs", async (msg, done) => {
       let result;
       try {
         if (result) {
           if (result.message == msg.message && result.id == msg.id)
-            console.log("⚠️ Duplicate message, already updated");
+            logger.log("⚠️ Duplicate message, already updated");
           return done({ status: "duplicate" });
         }
         result = await DirectMessage.update(
@@ -59,20 +59,20 @@ export const setUpSocket = (io) => {
           }
         );
         result = (await DirectMessage.findByPk(msg.id)).toJSON();
-      } catch (error) {
-        console.log("❌ Unexpected error updating message:", error);
-      }
 
-      io.emit("edited msg", { msg: result, wasDisconnected: true });
-      console.log("message edited");
-      done({
-        status: "ok",
-      });
+        io.emit("edited msgs", { result: [result] });
+        logger.log("message edited");
+        done({
+          status: "ok",
+        });
+      } catch (error) {
+        logger.log("❌ Unexpected error updating message:", error);
+      }
     });
 
-    socket.on("dm", async (msg, clientOffset, wasDisconnected, done) => {
+    socket.on("dms", async (msg, clientOffset, wasDisconnected, done) => {
       let result;
-      console.log("message: " + msg.message);
+      logger.log("message: " + msg.message);
 
       try {
         result = (
@@ -96,71 +96,88 @@ export const setUpSocket = (io) => {
         [result] = await sequelize.query(resutlSql, {
           type: QueryTypes.SELECT,
         });
+        io.emit("dms", { msg: result, wasDisconnected: wasDisconnected });
+        logger.log("message sent");
+        done({
+          status: "ok",
+        });
       } catch (error) {
         if (
           error.name === "SequelizeUniqueConstraintError" &&
           error.original.code === "ER_DUP_ENTRY"
         ) {
-          console.log("⚠️ Duplicate message, already inserted");
+          logger.log("⚠️ Duplicate message, already inserted");
           return done({ status: "duplicate" });
         }
 
         console.error("❌ Unexpected error inserting message:", error);
       }
-
-      io.emit("dm", { msg: result, wasDisconnected: wasDisconnected });
-      console.log("message sent");
-      done({
-        status: "ok",
-      });
     });
 
-    socket.on("pin message", async (msg, done) => {
-      const pinnedMessage = await DirectMessage.findByPk(msg.id);
+    socket.on("pinned msgs", async (msg, done) => {
+      try {
+        let pinnedMessage = (await DirectMessage.findByPk(msg.id)).toJSON();
 
-      if (!pinnedMessage) {
-        return done({ status: "not found" });
-      }
-      await DirectMessage.update(
-        { is_pinned: true, pinned_at: fn("NOW") },
-        {
-          where: {
-            id: pinnedMsgId,
-          },
+        if (!pinnedMessage) {
+          return done({ status: "not found" });
         }
-      );
-      return done({
-        status: "ok",
-      });
-    });
 
-    socket.on("unpin message", async (msg, done) => {
-      const pinnedMessage = await DirectMessage.findByPk(msg.id);
-
-      if (!pinnedMessage) {
-        return done({ status: "not found" });
-      }
-
-      await DirectMessage.update(
-        { is_pinned: false, pinned_at: null },
-        {
-          where: {
-            id: pinnedMsgId,
+        await DirectMessage.update(
+          {
+            is_pinned: msg.isPinned,
+            pin_updated_at: fn("NOW"),
+            pinned_by: msg.isPinned ? userId : null,
           },
+          {
+            where: {
+              id: msg.id,
+            },
+          }
+        );
+
+        if (msg.isPinned) {
+          const pinnedMessagesSql = `
+            SELECT 
+              dm.id,
+              sender.display_name, 
+              sender.username, 
+              sender.profile,
+              dm.clientOffset,
+              dm.message,
+              dm.createdAt created_at,
+              dm.pin_updated_at,
+              dm.pinned_by
+            FROM 
+              direct_messages dm 
+              INNER JOIN users sender ON sender.id = dm.from_id 
+              INNER JOIN users receiver ON receiver.id = dm.to_id 
+              LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
+            WHERE 
+              dm.id = ${msg.id}
+          `;
+          [pinnedMessage] = await sequelize.query(pinnedMessagesSql, {
+            type: QueryTypes.SELECT,
+          });
         }
-      );
-      return done({
-        status: "ok",
-      });
+
+        io.emit("pinned msgs", {
+          result: pinnedMessage,
+          isPinned: msg.isPinned,
+        });
+        return done({
+          status: "ok",
+        });
+      } catch (error) {
+        logger.log(error);
+      }
     });
 
     if (!socket.recovered) {
+      logger.log("socket recovered");
       logger.log("back", time);
-      console.log(
-        "serveroffset recovery :",
-        socket.handshake.auth.serverOffset
-      );
+      logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
       try {
+        const wasDisconnected = false;
         const msgsSql = `
           SELECT *
             FROM direct_messages 
@@ -174,9 +191,10 @@ export const setUpSocket = (io) => {
           type: QueryTypes.SELECT,
         });
         const editedMsgs = await DirectMessage.findAll({
+          attributes: ["id", "message"],
           where: {
-            from_id: userId,
-            to_id: socket.handshake.auth.receiverId,
+            from_id: socket.handshake.auth.receiverId,
+            to_id: userId,
             updatedAt: {
               [Op.gte]: time,
             },
@@ -185,23 +203,58 @@ export const setUpSocket = (io) => {
           order: [["updatedAt", "ASC"]],
           raw: true,
         });
+        const pinnedMessagesSql = `
+          SELECT 
+            dm.id,
+            sender.display_name, 
+            sender.username, 
+            sender.profile,
+            dm.clientOffset,
+            dm.message,
+            dm.createdAt created_at,
+            dm.pin_updated_at
+          FROM 
+            direct_messages dm 
+            INNER JOIN users sender ON sender.id = dm.from_id 
+            INNER JOIN users receiver ON receiver.id = dm.to_id 
+            LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
+          WHERE 
+            ((
+              dm.to_id = ${userId} 
+              AND dm.from_id = ${socket.handshake.auth.receiverId}
+            ) 
+            OR
+            (
+              dm.to_id = ${socket.handshake.auth.receiverId}
+              AND dm.from_id = ${userId} 
+            )) 
+            AND dm.is_pinned = 1
+            ${time ? `AND dm.pin_updated_at >= "${time}"` : ""}
+          ORDER BY 
+            dm.pin_updated_at DESC
+        `;
+        const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
+          type: QueryTypes.SELECT,
+        });
 
         for (const msg of msgs) {
-          socket.emit("dm", { msg: msg, wasDisconnected: false });
+          socket.emit("dms", { msg: msg, wasDisconnected });
         }
-        socket.emit("edited msgs", {
-          editedMsgs: editedMsgs,
-          wasDisconnected: false,
+
+        socket.emit("edited msgs", { editedMsgs });
+        socket.emit("pinned msgs", {
+          result: pinnedMessages,
+          isPinned: null,
         });
-        console.log("recovery done");
+        logger.log("recovery done");
       } catch (e) {
-        console.log("recovery error", e);
+        logger.log("recovery error", e);
       }
     }
 
     socket.on("disconnect", () => {
       time = dayjs().format("YYYY-MM-DD HH:mm:ss");
-      console.log("user disconnected", time);
+      logger.log("user disconnected", time);
     });
   });
 };

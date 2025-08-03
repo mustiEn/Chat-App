@@ -1,27 +1,23 @@
-import React, { useEffect, useRef } from "react";
+import React, { useContext, useState } from "react";
 import { RxDrawingPin, RxCross2 } from "react-icons/rx";
-import styles from "../css/pinned_msgs_modal.module.css";
-import panelStyles from "../css/dm_panel.module.css";
-import Button from "react-bootstrap/esm/Button";
-import { useState } from "react";
-import DeletePinnedMsgsModal from "./DeletePinnedMsgsModal";
+import styles from "../css/pinned_msgs_box.module.css";
+import DeletePinnedMsgModal from "./DeletePinnedMsgModal";
 import { formatDate } from "../utils";
 import { HiOutlineFaceFrown } from "react-icons/hi2";
-import { Link, useParams } from "react-router-dom";
-import { useContext } from "react";
 import DmContext from "../contexts/DmContext";
-import toast from "react-hot-toast";
 import { PulseLoader } from "react-spinners";
+import { useEffect } from "react";
 
 const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
-  const [pinnedMsg, setPinnedMsg] = useState({});
+  const [activePinnedMsg, setActivePinnedMsg] = useState({});
   const {
     chatData: { pinnedMsgs },
   } = useContext(DmContext);
-  const [showDeletePinnedMsgsModal, setShowDeletePinnedMsgsModal] =
+  const [showDeletePinnedMsgModal, setShowDeletePinnedMsgModal] =
     useState(false);
-  const handleDeletePinnedMsgsModal = (val) =>
-    setShowDeletePinnedMsgsModal(val);
+  const handleDeletePinnedMsgModal = (val) => {
+    setShowDeletePinnedMsgModal(val);
+  };
 
   return (
     <>
@@ -90,8 +86,8 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
                   <RxCross2
                     className={`${styles["modal-icon"]}`}
                     onClick={() => {
-                      handleDeletePinnedMsgsModal(true);
-                      setPinnedMsg(msg);
+                      handleDeletePinnedMsgModal(true);
+                      setActivePinnedMsg(msg);
                     }}
                   />
                 </div>
@@ -100,11 +96,10 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
           </ul>
         )}
       </div>
-      <DeletePinnedMsgsModal
-        show={showDeletePinnedMsgsModal}
-        handleDeletePinnedMsgsModal={handleDeletePinnedMsgsModal}
-        pinnedMsg={pinnedMsg}
-        styles={styles}
+      <DeletePinnedMsgModal
+        show={showDeletePinnedMsgModal}
+        handleDeletePinnedMsgModal={handleDeletePinnedMsgModal}
+        activePinnedMsg={activePinnedMsg}
       />
     </>
   );

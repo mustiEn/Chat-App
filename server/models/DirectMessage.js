@@ -25,6 +25,10 @@ export const DirectMessage = sequelize.define(
       defaultValue: false,
       allowNull: false,
     },
+    pin_updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: null,
+    },
   },
   {
     indexes: [

@@ -21,16 +21,4 @@ router.get(
   userController.getPinnedMessages
 );
 
-router.post(
-  "/pin-message",
-  [isAuthenticated, body("pinnedMsgId").notEmpty().isInt()],
-  userController.pinMessage
-);
-
-router.post(
-  "/delete-pinned-message",
-  [isAuthenticated, check("pinnedMsgId").notEmpty()],
-  userController.unpinMessage
-);
-
 export default router;

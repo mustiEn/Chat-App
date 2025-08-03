@@ -17,6 +17,7 @@ const DmPanel = () => {
     pendingMessages: [],
     pendingEditedMessages: [],
     pinnedMsgs: [],
+    newPinnedMsgs: false,
     reachedTop: false,
     hasMoreUp: true,
   });
@@ -41,6 +42,7 @@ const DmPanel = () => {
       pendingMessages: [],
       pendingEditedMessages: [],
       pinnedMsgs: [],
+      newPinnedMsgs: false,
       reachedTop: false,
       hasMoreUp: true,
       messages: dms,
@@ -52,6 +54,7 @@ const DmPanel = () => {
     <>
       <DmContext value={value}>
         <DmPanelTop
+          key={receiverId}
           receiver={receiver}
           styles={styles}
           handleOffsetToggle={handleOffsetToggle}

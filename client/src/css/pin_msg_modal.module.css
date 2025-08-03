@@ -1,0 +1,12 @@
+.message-content {
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.timestamp {
+  font-size: 11px;
+}
+
+.pinned-msg {
+  background-color: rgb(37 37 37);
+}

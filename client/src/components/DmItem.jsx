@@ -1,16 +1,15 @@
-import React from "react";
-import { PiPencilSimple, PiArrowBendUpLeft } from "react-icons/pi";
+import React, { useCallback, useState, useRef, memo, useContext } from "react";
+import {
+  PiPencilSimple,
+  PiArrowBendUpLeft,
+  PiTornadoThin,
+} from "react-icons/pi";
 import { ImBin } from "react-icons/im";
 import { RxDrawingPin } from "react-icons/rx";
-import { useCallback } from "react";
 import Options from "./Options.jsx";
 import EditDm from "./EditDm.jsx";
-import { useState } from "react";
-import { useRef } from "react";
 import { socket } from "../socket.js";
 import DmContext from "../contexts/DmContext.jsx";
-import { useContext } from "react";
-import { memo } from "react";
 import { formatDate } from "../utils/index.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -20,7 +19,7 @@ import toast from "react-hot-toast";
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const DmItem = memo(function DmItem({ msg, styles }) {
+const DmItem = memo(function DmItem({ msg, styles, handlePinMsgModal }) {
   const editInpRef = useRef(null);
   const { chatData, setChatData } = useContext(DmContext);
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
@@ -37,44 +36,27 @@ const DmItem = memo(function DmItem({ msg, styles }) {
       console.log("focus");
     }, 100);
   };
-  const aa = (ms) => new Promise((r) => setTimeout(() => r, 200));
 
-  const debounce = (fn) => {
-    let timer;
-    return (msg) => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(async () => await fn(msg), 300);
-    };
-  };
-  const pinMessage = async (msg) => {
-    try {
-      console.log("pinning", msg);
-      const res = await fetch("/api/pin-message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pinnedMsgId: msg.id,
-        }),
-      });
-      const data = await res.json();
+  // const pinMessage = (msg) => {
+  //   if (!socket.connected) {
+  //     toast.error(
+  //       "We couldn't pin your message at the moment. Please try again later."
+  //     );
+  //     return;
+  //   }
+  //   socket.emit("pinned msgs", { message: msg, isPinned: true }, (err, res) => {
+  //     if (err) {
+  //       console.log("error", err);
+  //     } else {
+  //       console.log("acknowledged", res);
+  //     }
+  //   });
+  //   setChatData((prev) => ({
+  //     ...prev,
+  //     pinnedMsgs: [...prev.pinnedMsgs, msg],
+  //   }));
+  // };
 
-      if (!res.ok) {
-        toast.error(data.msg);
-        throw new Error(data.msg);
-      }
-
-      setChatData((prev) => ({
-        ...prev,
-        pinnedMsgs: [...prev.pinnedMsgs, msg],
-      }));
-    } catch (error) {
-      toast.error(error.message);
-      console.log(error);
-    }
-  };
-  const debouncePinMessage = debounce(pinMessage);
   const handleEdit = () => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
@@ -114,7 +96,7 @@ const DmItem = memo(function DmItem({ msg, styles }) {
     }
 
     socket.emit(
-      "edited msg",
+      "edited msgs",
       {
         id: editedMessage.id,
         message: editedMessage.message,
@@ -126,7 +108,6 @@ const DmItem = memo(function DmItem({ msg, styles }) {
           return;
         }
         console.log(res);
-        console.log(chatData);
       }
     );
   };
@@ -143,7 +124,7 @@ const DmItem = memo(function DmItem({ msg, styles }) {
         func: () => console.log("hey"),
       },
       { name: "Delete", icon: <ImBin />, func: () => console.log("hey") },
-      { name: "Pin", icon: <RxDrawingPin />, func: debouncePinMessage },
+      { name: "Pin", icon: <RxDrawingPin />, func: handlePinMsgModal },
     ],
     []
   );

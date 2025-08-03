@@ -24,7 +24,6 @@ const DmDisplay = ({ receiver, styles }) => {
   const [message, setMessage] = useState("");
   //* const value = useMemo(() => ({ chatData, setChatData }), [chatData]);
   const {
-    chatData,
     chatData: { hasMoreUp, hasMoreDown, messages, isPinnedMsgsViewOpen },
     setChatData,
     div,
@@ -40,6 +39,7 @@ const DmDisplay = ({ receiver, styles }) => {
     // });
   };
   const handleNewMessage = ({ msg, wasDisconnected }) => {
+    console.log("handle new message func ==>", msg);
     if (wasDisconnected) {
       setChatData((prev) => {
         const pendingMessages =
@@ -57,28 +57,42 @@ const DmDisplay = ({ receiver, styles }) => {
         };
       });
     } else {
-      setChatData((prev) => ({
-        ...prev,
-        messages: [msg, ...prev.messages],
-      }));
+      console.log("outside else");
+      setChatData((prev) => {
+        console.log("inside usestate");
+        return { ...prev, messages: [msg, ...prev.messages] };
+      });
     }
     // console.log("new msg", msg);
 
     socket.auth.serverOffset = msg.id;
   };
-  const handleEditedMessage = ({ msg }) => {
+  const handleEditedMessage = ({ editedMsgs }) => {
     setChatData((prev) => {
-      const messages = prev.messages.map((m) => {
-        return m.id == msg.id
-          ? { ...m, message: msg.message, is_edited: true, isPending: false }
-          : m;
+      const updatedMessagesMap = new Map(prev.messages.map((m) => [m.id, m]));
+
+      editedMsgs.forEach(({ id, message }) => {
+        const exists = updatedMessagesMap.has(id);
+
+        if (exists) {
+          let existingMsg = updatedMessagesMap.get(id);
+
+          existingMsg = {
+            ...existingMsg,
+            message: message,
+            isPending: false,
+          };
+          updatedMessagesMap.set(id, existingMsg);
+        }
       });
+
       return {
         ...prev,
-        messages: messages,
+        messages: Array.from(updatedMessagesMap.values()),
       };
     });
   };
+  const handlePinnedMessage = ({ result, isPinned }) => {};
   const onConnect = () => {
     setIsConnected(true);
     socket.emit("join room", receiverId, (err, res) => {
@@ -124,7 +138,7 @@ const DmDisplay = ({ receiver, styles }) => {
     }
 
     socket.emit(
-      "dm",
+      "dms",
       {
         message: message.message,
         receiverId: receiverId,
@@ -156,11 +170,74 @@ const DmDisplay = ({ receiver, styles }) => {
     },
     [hasMoreDown, hasMoreUp]
   );
+  const handlePinnedMsgs = ({ result: newPinnedMsgs, isPinned }) => {
+    console.log("handlePinnedMsgs func");
+    setChatData((prev) => {
+      if (isPinned == null) {
+        console.log("pinned msg null");
+        console.log(1111);
+        return {
+          ...prev,
+        };
+        // console.log("prev.pinnedMsgs", prev.pinnedMsgs);
+        // let pinnedMsgsMap = new Map(prev.pinnedMsgs.map((m) => [m.id, m]));
+        // console.log("pinnedmsgsmap", pinnedMsgsMap);
+        // console.log("new pinend msgs", newPinnedMsgs);
+        // newPinnedMsgs.forEach((m) => {
+        //   const exists = pinnedMsgsMap.has(m.id);
+        //   if (exists) {
+        //     if (!m.isPinned) {
+        //       pinnedMsgsMap.delete(m.id);
+        //     } else {
+        //       pinnedMsgsMap.delete(m.id);
+        //       pinnedMsgsMap.set(m.id, m);
+        //     }
+        //   } else {
+        //     pinnedMsgsMap.set(m.id, m);
+        //   }
+        // });
+
+        // console.log("[...pinnedMsgsMap.values()] ===>", [
+        //   ...pinnedMsgsMap.values(),
+        // ]);
+        // const sorted = [...pinnedMsgsMap.values()].sort((a, b) => {
+        //   const dateA = new Date(a.pin_updated_at);
+        //   const dateB = new Date(b.pin_updated_at);
+        //   return dateB - dateA;
+        // });
+        // console.log("sorted", sorted);
+
+        // return {
+        //   ...prev,
+        //   pinnedMsgs: sorted,
+        // };
+        // });
+      } else if (isPinned) {
+        console.log("ISPINNED TRUE");
+        return {
+          ...prev,
+          pinnedMsgs: [...newPinnedMsgs, ...prev.pinnedMsgs],
+        };
+      } else {
+        console.log("ISPINNED FALSE");
+
+        const newPinnedMsgsSet = new Set(newPinnedMsgs.map((m) => m.id));
+        const filteredPinnedMsgs = prev.pinnedMsgs.filter(
+          (m) => !newPinnedMsgsSet.has(m.id)
+        );
+        return {
+          ...prev,
+          pinnedMsgs: filteredPinnedMsgs,
+        };
+      }
+    });
+  };
 
   useEffect(() => {
     onConnect();
-    socket.on("dm", handleNewMessage);
-    socket.on("edited msg", handleEditedMessage);
+    socket.on("dms", handleNewMessage);
+    socket.on("edited msgs", handleEditedMessage);
+    // socket.on("pinned msgs", handlePinnedMsgs);
     socket.auth.receiverId = receiverId;
 
     if (textInpRef.current) {
@@ -171,12 +248,10 @@ const DmDisplay = ({ receiver, styles }) => {
       scrollToBottom();
     }
 
-    const el = div?.current;
-    // console.log("ref in receiverId", el);
-
     return () => {
-      socket.off("dm", handleNewMessage);
-      socket.off("edited msg", handleEditedMessage);
+      socket.off("dms", handleNewMessage);
+      socket.off("edited msgs", handleEditedMessage);
+      // socket.off("pinned msgs", handlePinnedMsgs);
       socket.emit("leave room", receiverId, (err, res) => {
         if (err) {
           console.log(err);
@@ -185,7 +260,7 @@ const DmDisplay = ({ receiver, styles }) => {
         }
       });
     };
-  }, [receiverId]);
+  }, []);
 
   useEffect(() => {
     const el = div?.current;

@@ -4,45 +4,41 @@ import Modal from "react-bootstrap/Modal";
 import { formatDate } from "../utils";
 import toast from "react-hot-toast";
 import DmContext from "../contexts/DmContext";
+import { socket } from "../socket";
+import styles from "../css/delete_pinned_msg_modal.module.css";
 
-const DeletePinnedMsgsModal = ({
+const DeletePinnedMsgModal = ({
   show,
-  handleDeletePinnedMsgsModal,
-  pinnedMsg,
-  styles,
+  handleDeletePinnedMsgModal,
+  activePinnedMsg,
 }) => {
-  const { setChatData } = useContext(DmContext);
-  const deletePinnedMessage = async () => {
-    try {
-      const res = await fetch(`/api/delete-pinned-message`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pinnedMsgId: pinnedMsg.id,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Something went wrong");
-
-      setChatData((prev) => ({
-        ...prev,
-        pinnedMsgs: prev.pinnedMsgs.filter((msg) => msg.id !== pinnedMsg.id),
-      }));
-      handleDeletePinnedMsgsModal(false);
-      toast.success("Message unpinned");
-    } catch (error) {
-      console.log(error);
-      toast.error(error.error);
+  const unPinMessage = async () => {
+    if (!socket.connected) {
+      toast.error("We couldn't unpin the message");
+      return;
     }
+    socket.emit(
+      "pinned msgs",
+      {
+        id: activePinnedMsg.id,
+        isPinned: false,
+      },
+      (err, res) => {
+        if (err) {
+          console.log("err", err);
+        } else {
+          console.log("res", res);
+        }
+      }
+    );
+    handleDeletePinnedMsgModal(false);
   };
 
   return (
     <>
       <Modal
         show={show}
-        onHide={() => handleDeletePinnedMsgsModal(false)}
+        onHide={() => handleDeletePinnedMsgModal(false)}
         centered
         data-bs-theme="dark"
       >
@@ -65,13 +61,13 @@ const DeletePinnedMsgsModal = ({
             />
             <div className="d-flex flex-column">
               <div className="d-flex align-items-center gap-2">
-                <div className="fw-bold">{pinnedMsg.display_name}</div>
+                <div className="fw-bold">{activePinnedMsg.display_name}</div>
                 <span className={`${styles["timestamp"]} text-muted`}>
-                  {formatDate(pinnedMsg.created_at)}
+                  {formatDate(activePinnedMsg.created_at)}
                 </span>
               </div>
               <div className={`${styles["message-content"]}`}>
-                {pinnedMsg.message}
+                {activePinnedMsg.message}
               </div>
             </div>
           </div>
@@ -79,11 +75,11 @@ const DeletePinnedMsgsModal = ({
         <Modal.Footer>
           <Button
             variant="secondary"
-            onClick={() => handleDeletePinnedMsgsModal(false)}
+            onClick={() => handleDeletePinnedMsgModal(false)}
           >
             Close
           </Button>
-          <Button variant="danger" onClick={deletePinnedMessage}>
+          <Button variant="danger" onClick={unPinMessage}>
             Delete
           </Button>
         </Modal.Footer>
@@ -92,4 +88,4 @@ const DeletePinnedMsgsModal = ({
   );
 };
 
-export default DeletePinnedMsgsModal;
+export default DeletePinnedMsgModal;
