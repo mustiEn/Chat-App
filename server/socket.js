@@ -70,9 +70,8 @@ export const setUpSocket = (io) => {
       }
     });
 
-    socket.on("dms", async (msg, clientOffset, wasDisconnected, done) => {
+    socket.on("dms", async (msg, clientOffset, isDisconnected, done) => {
       let result;
-      logger.log("message: " + msg.message);
 
       try {
         result = (
@@ -80,23 +79,42 @@ export const setUpSocket = (io) => {
             from_id: userId,
             to_id: msg.receiverId,
             message: msg.message,
+            clientOffset: clientOffset,
+            reply_to_msg: msg.msgToReply,
             createdAt: msg.createdAt,
             updatedAt: msg.createdAt,
-            clientOffset: clientOffset,
           })
         ).toJSON();
 
-        const resutlSql = `
-          SELECT dm.*,u.display_name
-            FROM direct_messages dm
-            INNER JOIN users u ON dm.from_id = u.id
-            WHERE dm.id = ${result.id}
+        const resultSql = `
+          SELECT 
+            dm.id,
+            dm.from_id, 
+            u.display_name, 
+            u.username, 
+            u.profile,
+            dm.clientOffset, 
+            dm.message,
+            dm.is_edited,
+            dm.is_pinned, 
+            dm.createdAt created_at, 
+            replied_msg.message reply_to_msg_message, 
+            replied_msg_sender.display_name reply_to_msg_sender, 
+            replied_msg_sender.profile reply_to_msg_profile 
+          FROM 
+            direct_messages dm 
+            INNER JOIN users u ON dm.from_id = u.id 
+            LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg = replied_msg.id 
+            LEFT JOIN users replied_msg_sender ON replied_msg.from_id = replied_msg_sender.id 
+          WHERE 
+            dm.id = ${result.id}
         `;
 
-        [result] = await sequelize.query(resutlSql, {
+        result = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
         });
-        io.emit("dms", { msg: result, wasDisconnected: wasDisconnected });
+        logger.log(result);
+        io.emit("dms", { result, wasDisconnected: isDisconnected });
         logger.log("message sent");
         done({
           status: "ok",
@@ -185,7 +203,7 @@ export const setUpSocket = (io) => {
               from_id = ${socket.handshake.auth.receiverId} AND
               to_id = ${userId} AND
               id > ${socket.handshake.auth.serverOffset ?? 0}
-            ORDER BY createdAt ASC
+            ORDER BY createdAt DESC
         `;
         const msgs = await sequelize.query(msgsSql, {
           type: QueryTypes.SELECT,
@@ -237,10 +255,11 @@ export const setUpSocket = (io) => {
           type: QueryTypes.SELECT,
         });
 
-        for (const msg of msgs) {
-          socket.emit("dms", { msg: msg, wasDisconnected });
-        }
+        // for (const msg of msgs) {
+        //   socket.emit("dms", { msg: msg, wasDisconnected });
+        // }
 
+        socket.emit("dms", { result: msgs, wasDisconnected });
         socket.emit("edited msgs", { result: editedMsgs });
         socket.emit("pinned msgs", {
           result: pinnedMessages,

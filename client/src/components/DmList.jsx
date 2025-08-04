@@ -6,7 +6,6 @@ import { useParams } from "react-router-dom";
 import MyLoader from "./InfiniteLoader.jsx";
 import toast from "react-hot-toast";
 import PinMsgModal from "./PinMsgModal.jsx";
-import styles from "../css/dm_panel.module.css";
 
 const DmList = memo(function DmList({ messagesEndRef }) {
   const { userId: receiverId } = useParams();
@@ -72,7 +71,6 @@ const DmList = memo(function DmList({ messagesEndRef }) {
               <DmItem
                 key={msg.id ?? msg.clientOffset}
                 msg={msg}
-                styles={styles}
                 handlePinMsgModal={handlePinMsgModal}
               />
             ))}

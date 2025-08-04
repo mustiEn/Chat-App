@@ -45,29 +45,29 @@ const DmDisplay = ({ receiver }) => {
     //   behavior: "smooth",
     // });
   };
-  const handleNewMessage = ({ msg, wasDisconnected }) => {
+  const handleNewMessage = ({ result, wasDisconnected }) => {
     if (wasDisconnected) {
+      const [msg] = result;
       setChatData((prev) => {
-        const pendingMessages =
-          prev.pendingMessages.length > 0
-            ? prev.pendingMessages.filter(
-                (m) => m.clientOffset !== msg.clientOffset
-              )
-            : [];
+        const pendingMessages = prev.pendingMessages.length
+          ? prev.pendingMessages.filter(
+              (m) => m.clientOffset !== msg.clientOffset
+            )
+          : [];
 
         return {
           ...prev,
-          authenticatedUserId: prev.authenticatedUserId,
           pendingMessages: pendingMessages,
           messages: [{ ...msg, isPending: false }, ...prev.messages],
         };
       });
     } else {
-      setChatData((prev) => {
-        return { ...prev, messages: [msg, ...prev.messages] };
-      });
+      setChatData((prev) => ({
+        ...prev,
+        messages: [...result, ...prev.messages],
+      }));
     }
-    socket.auth.serverOffset = msg.id;
+    socket.auth.serverOffset = result.length && result[0].id;
   };
   const handleEditedMessage = ({ result: editedMsgs }) => {
     setChatData((prev) => {
@@ -107,7 +107,7 @@ const DmDisplay = ({ receiver }) => {
   const handleSubmit = () => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
     const clientOffset = uuidv4();
-    let wasDisconnected = false;
+    let isDisconnected = false;
 
     if (textInpRef.current != document.activeElement) {
       return;
@@ -126,17 +126,18 @@ const DmDisplay = ({ receiver }) => {
         pendingMessages: [
           ...prev.pendingMessages,
           {
+            display_name: receiverId == 2 ? "ali" : "veli", //^ initial datadan kim auth user bak
             message: message.message,
-            createdAt: time,
             from_id: prev.authenticatedUserId,
             to_id: receiverId,
             clientOffset: clientOffset,
+            createdAt: time,
             isPending: true,
             reply_to_msg: msgToReply,
           },
         ],
       }));
-      wasDisconnected = true;
+      isDisconnected = true;
     }
 
     socket.emit(
@@ -148,7 +149,7 @@ const DmDisplay = ({ receiver }) => {
         createdAt: time,
       },
       clientOffset,
-      wasDisconnected,
+      isDisconnected,
       (err, res) => {
         if (err) {
           console.log("Message failed:", err);

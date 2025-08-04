@@ -1,0 +1,15 @@
+.msg-replied {
+  height: 37px;
+  width: 90px;
+  transform: translate(20px, -7px);
+  margin-bottom: -1rem;
+}
+
+.line {
+  width: 30px;
+  height: 25px;
+}
+
+.msg-replied-content {
+  margin-bottom: 7px;
+}

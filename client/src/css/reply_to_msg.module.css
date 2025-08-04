@@ -1,11 +1,10 @@
 .icon {
   color: rgba(255, 255, 255, 0.6);
-  width: 15px;
-  height: 15px;
 }
 
 .icon:hover {
   color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
 }
 
 #replyToMsg {

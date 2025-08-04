@@ -26,9 +26,11 @@ const MessageInput = ({
     chatData: { msgToReply },
   } = useContext(DmContext);
 
+  useEffect(() => console.log(msgToReply), [msgToReply]);
+
   return (
     <div className="w-100 px-2 mt-auto mb-4">
-      {msgToReply && <ReplyToMsg />}
+      {msgToReply && <ReplyToMsg toWho={msgToReply?.display_name} />}
       <Form
         className={`${styles["message-form"]} ${
           msgToReply && "rounded-top-0"

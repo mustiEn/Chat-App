@@ -16,11 +16,6 @@ export const getDmData = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
-    const formatDate = (date) => {
-      const input = dayjs.utc(date).local();
-      const format = input.format("YYYY-MM-DD HH:mm:ss");
-      return format;
-    };
     let dms;
     let receiver = {};
 
@@ -49,12 +44,17 @@ export const getDmData = async (req, res, next) => {
         dm.is_edited,
         dm.is_pinned, 
         dm.createdAt created_at, 
-        dms.message reply_to_msg 
+        replied_msg.message reply_to_msg_message, 
+        replied_msg_sender.display_name reply_to_msg_sender,
+				replied_msg_sender.profile reply_to_msg_profile
       FROM 
         direct_messages dm 
-        INNER JOIN users sender ON sender.id = dm.from_id 
-        INNER JOIN users receiver ON receiver.id = dm.to_id 
-        LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
+        INNER JOIN users sender 
+          ON sender.id = dm.from_id          
+        LEFT JOIN direct_messages replied_msg 
+          ON dm.reply_to_msg = replied_msg.id 
+        LEFT JOIN users replied_msg_sender 
+          ON replied_msg.from_id = replied_msg_sender.id 
       WHERE 
         (
           dm.to_id = :userId 

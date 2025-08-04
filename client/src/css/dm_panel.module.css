@@ -45,12 +45,21 @@
 }
 
 .message {
+  /* background-color: #171718; */
   transition: 0.3s;
 }
+
+/* .aa {
+  background-color: #171718;
+} */
 
 .message:hover {
   background-color: #3f3a3acf;
 }
+
+/* .message:hover .aa {
+  background-color: #3f3a3acf;
+} */
 
 .active {
   background-color: #3f3a3acf;

@@ -14,12 +14,13 @@ import { formatDate } from "../utils/index.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
-import toast from "react-hot-toast";
+import styles from "../css/dm_panel.module.css";
+import MsgRepliedDiv from "./MsgRepliedDiv.jsx";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const DmItem = memo(function DmItem({ msg, styles, handlePinMsgModal }) {
+const DmItem = memo(function DmItem({ msg, handlePinMsgModal }) {
   const editInpRef = useRef(null);
   const { chatData, setChatData } = useContext(DmContext);
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
@@ -90,7 +91,6 @@ const DmItem = memo(function DmItem({ msg, styles, handlePinMsgModal }) {
       }
     );
   };
-  const passMsgToReply = () => {};
   const options = useCallback(
     () => [
       {
@@ -114,51 +114,53 @@ const DmItem = memo(function DmItem({ msg, styles, handlePinMsgModal }) {
   );
   return (
     <>
-      <li
-        id={`message-${msg.id}`}
-        className={`${styles["message"]} position-relative d-flex align-items-center p-1 gap-2 w-100`}
-      >
-        <img
-          src={msg.profile ?? "https://placehold.co/40"}
-          className="align-self-baseline rounded-circle"
-          width={40}
-          height={40}
-          alt=""
-        />
-        <div className="d-flex flex-column w-100">
-          <div className="d-flex align-items-center gap-2">
-            <div className="fw-bold text-white">{msg.display_name}</div>
-            <span className={`${styles["timestamp"]} text-muted`}>
-              {formatDate(msg.created_at)}
-              {msg?.is_edited
-                ? msg.isPending
-                  ? "editing now!"
-                  : "edited"
-                : msg?.isPending
-                ? "sending"
-                : "Sent!"}
-            </span>
-          </div>
-          <EditDm
-            msg={msg}
-            styles={styles}
-            editedMessage={editedMessage}
-            setEditedMessage={setEditedMessage}
-            handleEdit={handleEdit}
-            editInpRef={editInpRef}
-          />
-          <div
-            className={`${styles["message-content"]} ${
-              editedMessage.id ? "d-none" : ""
-            } text-white`}
-          >
-            {msg.message}
-          </div>
-        </div>
+      <li id={`message-${msg.id}`} className={`${styles["message"]} p-1 w-100`}>
+        {msg.reply_to_msg_sender && <MsgRepliedDiv msg={msg} />}
         <div
-          className={`${styles["options-tab"]} position-absolute align-items-center bg-dark border border-dark rounded-3 translate-middle-y end-0 top-0 me-3`}
+          className={`${styles["aa"]} d-flex align-items-center gap-2 w-100 position-relative`}
         >
-          <Options options={options} msg={msg} styles={styles} />
+          <img
+            src={msg.profile ?? "https://placehold.co/40"}
+            className="align-self-baseline rounded-circle"
+            width={40}
+            height={40}
+            alt=""
+          />
+          <div className="d-flex flex-column w-100">
+            <div className="d-flex align-items-center gap-2">
+              <div className="fw-bold text-white">{msg.display_name}</div>
+              <span className={`${styles["timestamp"]} text-muted`}>
+                {formatDate(msg.created_at)}
+                {msg?.is_edited
+                  ? msg.isPending
+                    ? "editing now!"
+                    : "edited"
+                  : msg?.isPending
+                  ? "sending"
+                  : "Sent!"}
+              </span>
+            </div>
+            <EditDm
+              msg={msg}
+              styles={styles}
+              editedMessage={editedMessage}
+              setEditedMessage={setEditedMessage}
+              handleEdit={handleEdit}
+              editInpRef={editInpRef}
+            />
+            <div
+              className={`${styles["message-content"]} ${
+                editedMessage.id ? "d-none" : ""
+              } text-white`}
+            >
+              {msg.message}
+            </div>
+          </div>
+          <div
+            className={`${styles["options-tab"]} position-absolute align-items-center bg-dark border border-dark rounded-3 translate-middle-y end-0 top-0 me-3`}
+          >
+            <Options options={options} msg={msg} styles={styles} />
+          </div>
         </div>
       </li>
     </>
