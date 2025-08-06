@@ -1,4 +1,4 @@
-import React, { useState, useContext, memo } from "react";
+import React, { useState, useContext, memo, useEffect, useRef } from "react";
 import DmItem from "./DmItem.jsx";
 import DmContext from "../contexts/DmContext.jsx";
 import { PulseLoader } from "react-spinners";
@@ -6,6 +6,8 @@ import { useParams } from "react-router-dom";
 import MyLoader from "./InfiniteLoader.jsx";
 import toast from "react-hot-toast";
 import PinMsgModal from "./PinMsgModal.jsx";
+import DmModalNotifier from "./DmModalNotifier.jsx";
+import { socket } from "../socket.js";
 
 const DmList = memo(function DmList({ messagesEndRef }) {
   const { userId: receiverId } = useParams();
@@ -13,6 +15,7 @@ const DmList = memo(function DmList({ messagesEndRef }) {
     chatData: { messages, pendingMessages },
     setChatData,
   } = useContext(DmContext);
+  const typeRef = useRef(null);
   const fetchMoreData = async () => {
     const offset = messages.length;
     try {
@@ -51,12 +54,59 @@ const DmList = memo(function DmList({ messagesEndRef }) {
       console.log(err);
     }
   };
-  const [activeMsg, setActiveMsg] = useState(false);
-  const [showPinMsgModal, setShowPinMsgModal] = useState(false);
-  const handlePinMsgModal = (msg = null) => {
-    setShowPinMsgModal(msg ? true : false);
-    if (msg != null) setActiveMsg(msg);
+  const [modal, setModal] = useState({
+    activeMsg: null,
+    show: false,
+  });
+  const handleDmModalNotifier = (msg, type) => {
+    setModal({ activeMsg: msg, show: true });
+    typeRef.current = type;
   };
+  const pinMessage = () => {
+    if (!socket.connected) {
+      toast.error("We couldn't pin the message");
+      return;
+    }
+    socket.emit(
+      "pinned msgs",
+      {
+        id: modal.activeMsg.id,
+        isPinned: true,
+      },
+      (err, res) => {
+        if (err) {
+          console.log("err", err);
+        } else {
+          console.log("res", res);
+        }
+      }
+    );
+    setModal({
+      activeMsg: null,
+      show: false,
+    });
+  };
+  const deleteMessage = () => {
+    if (!socket.connected) {
+      toast.error("We couldn't delete the message");
+      return;
+    }
+    socket.emit(
+      "deleted msgs",
+      {
+        id: modal.activeMsg.id,
+      },
+      (err, res) => {
+        if (err) {
+          console.log("err", err);
+        } else {
+          console.log("res", res);
+        }
+      }
+    );
+  };
+
+  useEffect(() => console.log("type", typeRef), [typeRef.current]);
 
   return (
     <>
@@ -71,17 +121,19 @@ const DmList = memo(function DmList({ messagesEndRef }) {
               <DmItem
                 key={msg.id ?? msg.clientOffset}
                 msg={msg}
-                handlePinMsgModal={handlePinMsgModal}
+                handleDmModalNotifier={handleDmModalNotifier}
               />
             ))}
             <div ref={messagesEndRef} />
           </ul>
         </MyLoader>
       )}
-      <PinMsgModal
-        show={showPinMsgModal}
-        handlePinMsgModal={handlePinMsgModal}
-        activeMsg={activeMsg}
+      <DmModalNotifier
+        type={typeRef.current}
+        activeMsg={modal.activeMsg}
+        func={typeRef.current == "Pin" ? pinMessage : deleteMessage}
+        show={modal.show}
+        setModal={setModal}
       />
     </>
   );

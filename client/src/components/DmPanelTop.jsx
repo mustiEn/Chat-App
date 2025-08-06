@@ -22,9 +22,9 @@ import { socket } from "../socket";
 const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
   let isOpen = false;
   const { userId: receiverId } = useParams();
-  const [search, setSearch] = useState("");
   const { chatData, setChatData } = useContext(DmContext);
   const [showPinnedMsgs, setShowPinnedMsgs] = useState(false);
+  const [search, setSearch] = useState("");
   const [newPinnedMsgExists, setNewPinnedMsgExists] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const pinnedMsgsBoxRef = useRef(null);

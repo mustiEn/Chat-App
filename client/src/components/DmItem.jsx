@@ -20,7 +20,7 @@ import MsgRepliedDiv from "./MsgRepliedDiv.jsx";
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const DmItem = memo(function DmItem({ msg, handlePinMsgModal }) {
+const DmItem = memo(function DmItem({ msg, handleDmModalNotifier }) {
   const editInpRef = useRef(null);
   const { chatData, setChatData } = useContext(DmContext);
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
@@ -37,6 +37,7 @@ const DmItem = memo(function DmItem({ msg, handlePinMsgModal }) {
       console.log("focus");
     }, 100);
   };
+  //* document.querySelector iyi mi
   const handleEdit = () => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
@@ -107,17 +108,28 @@ const DmItem = memo(function DmItem({ msg, handlePinMsgModal }) {
             msgToReply: msg,
           })),
       },
-      { name: "Delete", icon: <ImBin />, func: () => console.log("hey") },
-      { name: "Pin", icon: <RxDrawingPin />, func: handlePinMsgModal },
+      {
+        name: "Delete",
+        icon: <ImBin />,
+        func: (msg) => handleDmModalNotifier(msg, "Delete"),
+      },
+      {
+        name: "Pin",
+        icon: <RxDrawingPin />,
+        func: (msg) => handleDmModalNotifier(msg, "Pin"),
+      },
     ],
     []
   );
   return (
     <>
-      <li id={`message-${msg.id}`} className={`${styles["message"]} p-1 w-100`}>
+      <li
+        id={`message-${msg.id}`}
+        className={`${styles["message"]} rounded-2 p-1 w-100 position-relative`}
+      >
         {msg.reply_to_msg_sender && <MsgRepliedDiv msg={msg} />}
         <div
-          className={`${styles["aa"]} d-flex align-items-center gap-2 w-100 position-relative`}
+          className={`${styles["aa"]} d-flex align-items-center gap-2 w-100 `}
         >
           <img
             src={msg.profile ?? "https://placehold.co/40"}
@@ -156,11 +168,11 @@ const DmItem = memo(function DmItem({ msg, handlePinMsgModal }) {
               {msg.message}
             </div>
           </div>
-          <div
-            className={`${styles["options-tab"]} position-absolute align-items-center bg-dark border border-dark rounded-3 translate-middle-y end-0 top-0 me-3`}
-          >
-            <Options options={options} msg={msg} styles={styles} />
-          </div>
+        </div>
+        <div
+          className={`${styles["options-tab"]} position-absolute align-items-center bg-dark border border-dark rounded-3 end-0 bottom-100 me-3`}
+        >
+          <Options options={options} msg={msg} />
         </div>
       </li>
     </>

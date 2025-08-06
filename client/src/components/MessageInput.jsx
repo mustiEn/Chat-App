@@ -24,6 +24,7 @@ const MessageInput = ({
 }) => {
   const {
     chatData: { msgToReply },
+    setChatData,
   } = useContext(DmContext);
 
   useEffect(() => console.log(msgToReply), [msgToReply]);

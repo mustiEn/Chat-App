@@ -1,5 +1,5 @@
 import express from "express";
-import { logger } from "../utils/index.js";
+import { logger, lastDisconnect } from "../utils/index.js";
 import { validationResult, matchedData } from "express-validator";
 import { User } from "../models/User.js";
 import { Op, QueryTypes } from "sequelize";
@@ -16,6 +16,7 @@ export const getDmData = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
+    const userLastDisconnect = lastDisconnect.get(userId);
     let dms;
     let receiver = {};
 
@@ -31,6 +32,10 @@ export const getDmData = async (req, res, next) => {
     receiver = await User.findByPk(receiverId);
 
     if (!receiver) throw new Error("Receiver not found");
+    logger.log(userLastDisconnect);
+    const since = userLastDisconnect
+      ? `AND dm.createdAt <= "${userLastDisconnect}"`
+      : "";
 
     const dmsSql = `
       SELECT 
@@ -57,14 +62,17 @@ export const getDmData = async (req, res, next) => {
           ON replied_msg.from_id = replied_msg_sender.id 
       WHERE 
         (
-          dm.to_id = :userId 
-          AND dm.from_id = :receiverId
-        ) 
-        OR
-        (
-          dm.to_id = :receiverId
-          AND dm.from_id = :userId 
-        ) 
+          (
+            dm.to_id = :userId 
+            AND dm.from_id = :receiverId
+          ) 
+          OR
+          (
+            dm.to_id = :receiverId
+            AND dm.from_id = :userId 
+          )
+        )
+        ${since} 
       ORDER BY 
         dm.createdAt DESC
       LIMIT 

@@ -28,6 +28,7 @@
 }
 
 .options-tab {
+  transform: translateY(10px);
   display: none;
 }
 

@@ -94,6 +94,7 @@ const DmDisplay = ({ receiver }) => {
       };
     });
   };
+  const handleDeletedMessage = ({ result: deletedMsgs }) => {};
   const onConnect = () => {
     setIsConnected(true);
     socket.emit("join room", receiverId, (err, res) => {
@@ -133,7 +134,9 @@ const DmDisplay = ({ receiver }) => {
             clientOffset: clientOffset,
             createdAt: time,
             isPending: true,
-            reply_to_msg: msgToReply,
+            reply_to_msg_message: msgToReply ? msgToReply.message : null,
+            reply_to_msg_sender: msgToReply ? msgToReply.display_name : null,
+            reply_to_msg_profile: msgToReply ? msgToReply.profile : null,
           },
         ],
       }));
@@ -145,7 +148,7 @@ const DmDisplay = ({ receiver }) => {
       {
         message: message.message,
         receiverId: receiverId,
-        reply_to_msg: msgToReply,
+        reply_to_msg: msgToReply ? msgToReply.id : null,
         createdAt: time,
       },
       clientOffset,
@@ -158,6 +161,10 @@ const DmDisplay = ({ receiver }) => {
         console.log(res);
       }
     );
+    setChatData((prev) => ({
+      ...prev,
+      msgToReply: null,
+    }));
   };
   const handleScroll = useCallback(
     (e) => {

@@ -2,16 +2,20 @@ import React from "react";
 import { socket } from "../socket";
 import Popover from "./Popover";
 import { memo } from "react";
+import styles from "../css/dm_panel.module.css";
 
-const Options = memo(function Options({ styles, options, msg }) {
+const Options = memo(function Options({ options, msg }) {
+  const isUserIdIsEqualToFromId = (optionName) => {
+    if (optionName == "Delete" && socket.auth.userId !== msg.from_id) {
+      return true;
+    } else if (optionName == "Edit" && socket.auth.userId !== msg.from_id) {
+      return true;
+    }
+  };
   return (
     <>
       {options().map((option, i) => {
-        if (option.name == "Delete" || option.name == "Edit") {
-          if (socket.auth.userId !== msg.from_id) {
-            return;
-          }
-        }
+        if (isUserIdIsEqualToFromId(option.name)) return;
         return (
           <Popover
             key={i}

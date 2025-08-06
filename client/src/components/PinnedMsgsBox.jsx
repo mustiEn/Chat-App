@@ -1,22 +1,45 @@
 import React, { useContext, useState } from "react";
 import { RxDrawingPin, RxCross2 } from "react-icons/rx";
 import styles from "../css/pinned_msgs_box.module.css";
-import DeletePinnedMsgModal from "./DeletePinnedMsgModal";
 import { formatDate } from "../utils";
 import { HiOutlineFaceFrown } from "react-icons/hi2";
 import DmContext from "../contexts/DmContext";
 import { PulseLoader } from "react-spinners";
-import { useEffect } from "react";
+import DmModalNotifier from "./DmModalNotifier";
+import { socket } from "../socket";
 
 const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
-  const [activePinnedMsg, setActivePinnedMsg] = useState({});
   const {
     chatData: { pinnedMsgs },
   } = useContext(DmContext);
-  const [showDeletePinnedMsgModal, setShowDeletePinnedMsgModal] =
-    useState(false);
-  const handleDeletePinnedMsgModal = (val) => {
-    setShowDeletePinnedMsgModal(val);
+  const [modal, setModal] = useState({
+    activeMsg: null,
+    show: false,
+  });
+
+  const unPinMessage = async () => {
+    if (!socket.connected) {
+      toast.error("We couldn't unpin the message");
+      return;
+    }
+    socket.emit(
+      "pinned msgs",
+      {
+        id: modal.activeMsg.id,
+        isPinned: false,
+      },
+      (err, res) => {
+        if (err) {
+          console.log("err", err);
+        } else {
+          console.log("res", res);
+        }
+      }
+    );
+    setModal({
+      activeMsg: null,
+      show: false,
+    });
   };
 
   return (
@@ -85,10 +108,12 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
                 >
                   <RxCross2
                     className={`${styles["modal-icon"]}`}
-                    onClick={() => {
-                      handleDeletePinnedMsgModal(true);
-                      setActivePinnedMsg(msg);
-                    }}
+                    onClick={() =>
+                      setModal({
+                        activeMsg: msg,
+                        show: true,
+                      })
+                    }
                   />
                 </div>
               </li>
@@ -96,10 +121,12 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
           </ul>
         )}
       </div>
-      <DeletePinnedMsgModal
-        show={showDeletePinnedMsgModal}
-        handleDeletePinnedMsgModal={handleDeletePinnedMsgModal}
-        activePinnedMsg={activePinnedMsg}
+      <DmModalNotifier
+        type={"Delete"}
+        func={unPinMessage}
+        activeMsg={modal.activeMsg}
+        show={modal.show}
+        setModal={setModal}
       />
     </>
   );

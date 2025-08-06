@@ -1,6 +1,6 @@
 .msg-replied {
   height: 37px;
-  width: 90px;
+  width: calc(100% - 10px);
   transform: translate(20px, -7px);
   margin-bottom: -1rem;
 }
@@ -11,5 +11,14 @@
 }
 
 .msg-replied-content {
+  height: 35px;
   margin-bottom: 7px;
+}
+
+.msg-replied-message {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  display: -webkit-box;
 }

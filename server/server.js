@@ -43,7 +43,7 @@ export const io = new Server(server, {
 try {
   await sequelize.authenticate();
   setUpAssociation();
-  await sequelize.sync({ alter: true });
+  await sequelize.sync();
   logger.log("Connection has been established successfully.");
 } catch (error) {
   logger.error("Unable to connect to the database:", error);

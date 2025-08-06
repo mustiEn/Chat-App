@@ -1,13 +1,15 @@
 import { Op, QueryTypes, fn } from "sequelize";
 import { DirectMessage } from "./models/DirectMessage.js";
 import dayjs from "dayjs";
-import { logger } from "./utils/index.js";
+import { logger, lastDisconnect } from "./utils/index.js";
 import { sequelize } from "./models/db.js";
 
-let time;
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
     const userId = socket.request.session?.passport?.user;
+    const userLastDisconnect = lastDisconnect.get(userId);
+
+    if (userLastDisconnect) lastDisconnect.delete(userId);
 
     logger.log("a user connected", userId);
 
@@ -80,7 +82,7 @@ export const setUpSocket = (io) => {
             to_id: msg.receiverId,
             message: msg.message,
             clientOffset: clientOffset,
-            reply_to_msg: msg.msgToReply,
+            reply_to_msg: msg.reply_to_msg,
             createdAt: msg.createdAt,
             updatedAt: msg.createdAt,
           })
@@ -187,22 +189,53 @@ export const setUpSocket = (io) => {
         });
       } catch (error) {
         logger.log(error);
+        return done({
+          status: "error",
+        });
+      }
+    });
+
+    socket.on("deleted msgs", async (id, done) => {
+      try {
+        let message = (await DirectMessage.findByPk(msg.id)).toJSON();
+
+        if (!message) {
+          return done({ status: "not found" });
+        }
+
+        await DirectMessage.destroy({
+          where: {
+            id: msg.id,
+          },
+        });
+
+        io.emit("deleted msgs", { result: [msg.id] });
+        return done({
+          status: "ok",
+        });
+      } catch (error) {
+        logger.log(error);
+        return done({
+          status: "error",
+        });
       }
     });
 
     if (!socket.recovered) {
       logger.log("socket recovered");
-      logger.log("back", time);
       logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
+
       try {
+        const userLastDisconnect = lastDisconnect.get(userId);
         const wasDisconnected = false;
         const msgsSql = `
-          SELECT *
-            FROM direct_messages 
+          SELECT dm.*, u.display_name
+            FROM direct_messages dm
+            INNER JOIN users u ON dm.from_id = u.id 
             WHERE 
               from_id = ${socket.handshake.auth.receiverId} AND
               to_id = ${userId} AND
-              id > ${socket.handshake.auth.serverOffset ?? 0}
+              dm.id > ${socket.handshake.auth.serverOffset ?? 0}
             ORDER BY createdAt DESC
         `;
         const msgs = await sequelize.query(msgsSql, {
@@ -214,7 +247,7 @@ export const setUpSocket = (io) => {
             from_id: socket.handshake.auth.receiverId,
             to_id: userId,
             updatedAt: {
-              [Op.gte]: time,
+              [Op.gte]: userLastDisconnect,
             },
             is_edited: true,
           },
@@ -247,17 +280,17 @@ export const setUpSocket = (io) => {
               AND dm.from_id = ${userId} 
             )) 
             AND dm.is_pinned = 1
-            ${time ? `AND dm.pin_updated_at >= "${time}"` : ""}
+            ${
+              userLastDisconnect
+                ? `AND dm.pin_updated_at >= "${userLastDisconnect}"`
+                : ""
+            }
           ORDER BY 
             dm.pin_updated_at DESC
         `;
         const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
           type: QueryTypes.SELECT,
         });
-
-        // for (const msg of msgs) {
-        //   socket.emit("dms", { msg: msg, wasDisconnected });
-        // }
 
         socket.emit("dms", { result: msgs, wasDisconnected });
         socket.emit("edited msgs", { result: editedMsgs });
@@ -272,7 +305,8 @@ export const setUpSocket = (io) => {
     }
 
     socket.on("disconnect", () => {
-      time = dayjs().format("YYYY-MM-DD HH:mm:ss");
+      const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
+      lastDisconnect.set(userId, time);
       logger.log("user disconnected", time);
     });
   });
