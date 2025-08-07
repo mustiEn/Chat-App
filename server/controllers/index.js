@@ -33,13 +33,11 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    const userId = req.session.passport.user;
     req.logout((err) => {
       if (err) {
         return next(err);
       }
-      const userLastDisconnect = lastDisconnect.get(userId);
-      if (userLastDisconnect) lastDisconnect.delete(userId);
+
       res.status(200).json({
         message: "Logout",
       });

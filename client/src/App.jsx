@@ -12,6 +12,8 @@ import Shop from "./components/Shop";
 import Login from "./views/Login";
 import * as Loader from "./loaders/index.js";
 import Logout from "./views/Logout.jsx";
+import { CachedContext } from "./contexts/CacheContext.jsx";
+import { useContext } from "react";
 // import { socket } from "./socket.js";
 // import { SocketProvider } from "./context_providers/SocketContext.jsx";
 
@@ -48,6 +50,11 @@ function App() {
               path: ":userId",
               element: <DmPanel />,
               loader: Loader.loadDmData,
+              // shouldRevalidate: ({ currentParams }) => {
+              //   const { cachedReceiver } = useContext(CachedContext);
+              //   const exists = cachedReceiver.get(currentParams["userId"]);
+              //   return !exists;
+              // },
             },
             {
               path: "shop",

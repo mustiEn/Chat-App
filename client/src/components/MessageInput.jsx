@@ -27,8 +27,6 @@ const MessageInput = ({
     setChatData,
   } = useContext(DmContext);
 
-  useEffect(() => console.log(msgToReply), [msgToReply]);
-
   return (
     <div className="w-100 px-2 mt-auto mb-4">
       {msgToReply && <ReplyToMsg toWho={msgToReply?.display_name} />}

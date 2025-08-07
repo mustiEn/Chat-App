@@ -32,7 +32,7 @@ export const getDmData = async (req, res, next) => {
     receiver = await User.findByPk(receiverId);
 
     if (!receiver) throw new Error("Receiver not found");
-    logger.log(userLastDisconnect);
+
     const since = userLastDisconnect
       ? `AND dm.createdAt <= "${userLastDisconnect}"`
       : "";

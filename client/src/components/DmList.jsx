@@ -8,9 +8,11 @@ import toast from "react-hot-toast";
 import PinMsgModal from "./PinMsgModal.jsx";
 import DmModalNotifier from "./DmModalNotifier.jsx";
 import { socket } from "../socket.js";
+import { CachedContext } from "../contexts/CacheContext.jsx";
 
 const DmList = memo(function DmList({ messagesEndRef }) {
   const { userId: receiverId } = useParams();
+  const { cachedChat, setCachedChat } = useContext(CachedContext);
   const {
     chatData: { messages, pendingMessages },
     setChatData,
@@ -35,7 +37,13 @@ const DmList = memo(function DmList({ messagesEndRef }) {
       }
 
       const { dms } = data;
-
+      setCachedChat((prev) => {
+        let existing = prev.get(receiverId);
+        const newMap = new Map(prev);
+        existing = [...existing, ...dms];
+        newMap.set(receiverId, existing);
+        return newMap;
+      });
       if (!dms.length) {
         setChatData((prev) => ({
           ...prev,
@@ -106,7 +114,10 @@ const DmList = memo(function DmList({ messagesEndRef }) {
     );
   };
 
-  useEffect(() => console.log("type", typeRef), [typeRef.current]);
+  useEffect(
+    () => console.log("cachedChat changed 2", cachedChat),
+    [cachedChat]
+  );
 
   return (
     <>
