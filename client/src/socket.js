@@ -6,8 +6,8 @@ export const socket = io("http://localhost:8081", {
     receiverId: null,
     userId: null,
   },
-  ackTimeout: 500,
-  retries: 3,
+  ackTimeout: 5000,
+  retries: 5,
   autoConnect: false,
   withCredentials: true,
 });

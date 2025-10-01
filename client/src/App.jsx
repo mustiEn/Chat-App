@@ -12,10 +12,6 @@ import Shop from "./components/Shop";
 import Login from "./views/Login";
 import * as Loader from "./loaders/index.js";
 import Logout from "./views/Logout.jsx";
-import { CachedContext } from "./contexts/CacheContext.jsx";
-import { useContext } from "react";
-// import { socket } from "./socket.js";
-// import { SocketProvider } from "./context_providers/SocketContext.jsx";
 
 function App() {
   const router = createBrowserRouter([
@@ -28,73 +24,24 @@ function App() {
           element: <MainPanel />,
           children: [
             {
-              // path: "friends",
               index: true,
               element: <FriendsPanel />,
-              // children: [
-              //   {
-              //     index: true,
-              //     element: <OnlineFriends />,
-              //   },
-              //   {
-              //     path: "all",
-              //     element: <AllFriends />,
-              //   },
-              //   {
-              //     path: "add-friend",
-              //     element: <AddFriend />,
-              //   },
-              // ],
             },
             {
               path: ":userId",
               element: <DmPanel />,
-              loader: Loader.loadDmData,
-              // shouldRevalidate: ({ currentParams }) => {
-              //   const { cachedReceiver } = useContext(CachedContext);
-              //   const exists = cachedReceiver.get(currentParams["userId"]);
-              //   return !exists;
-              // },
+              // loader: Loader.loadDmData,
             },
             {
               path: "shop",
               element: <Shop />,
             },
-          ],
-        },
-        {
-          path: "/group-chat",
-          element: <MainPanel />,
-          children: [
             {
+              path: "group-chat",
               element: <GroupChatPanel />,
             },
           ],
         },
-
-        // {
-        //   element: <MainPanel />,
-        //   children: [
-        //     {
-        //       index: true,
-        //       element: (
-        //         <>
-        //           <Sidebar />
-        //           <DmPanel />
-        //         </>
-        //       ),
-        //     },
-        //     {
-        //       path: "/groupchat",
-        //       element: (
-        //         <>
-        //           <Sidebar />
-        //           <GroupChatPanel/>
-        //         </>
-        //       ),
-        //     },
-        //   ],
-        // },
       ],
     },
     {
@@ -109,65 +56,6 @@ function App() {
         return res;
       },
     },
-
-    // ^ --------------
-
-    // {
-    //   element: <MainPanel />,
-    //   children: [
-    //     {
-    //       element: <Sidebar />,
-    //       children: [
-    //         {
-    //           index: true,
-    //           element: <DmSidebarNav />,
-    //         },
-    //       ],
-    //     },
-    //   ],
-    // },
-
-    //^ ------------
-
-    // { path: "/friends", element: <Sidebar /> },
-    // {
-    //   path: "/login",
-    //   element: <Login />,
-    // },
-    // {
-    //   path: "/signup",
-    //   element: <Signup />,
-    // },
-    // {
-    //   path: "/logout",
-    // },
-    // {
-    //   // path: "/",
-    //   element: (
-    //     <SocketProvider>
-    //       <Layout />
-    //     </SocketProvider>
-    //   ),
-    //   errorElement: <ErrorPage />,
-    //   children: [
-    //     {
-    //       path: "/",
-    //       element: <Home />,
-    //     },
-    //     {
-    //       path: "/explore",
-    //       element: <Explore />,
-    //     },
-    //     {
-    //       path: "/explore/chat-view/:userId",
-    //       element: <DmPanel />,
-    //     },
-    //     {
-    //       path: "/explore/groups/:id",
-    //       element: <Group />,
-    //     },
-    //   ],
-    // },
   ]);
 
   return <RouterProvider router={router} />;

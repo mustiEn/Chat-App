@@ -13,134 +13,164 @@ import { CgProfile } from "react-icons/cg";
 import stylesPanelTop from "../css/dm_panel_top.module.css";
 import PinnedMsgsBox from "./PinnedMsgsBox";
 import Popover from "./Popover";
-import { useParams } from "react-router-dom";
-import DmContext from "../contexts/DmContext";
-import toast from "react-hot-toast";
+import { useOutletContext, useParams } from "react-router-dom";
 import styles from "../css/dm_panel.module.css";
 import { socket } from "../socket";
+import { useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
-  let isOpen = false;
   const { userId: receiverId } = useParams();
-  const { chatData, setChatData } = useContext(DmContext);
-  const [showPinnedMsgs, setShowPinnedMsgs] = useState(false);
+  const { setDmChat } = useOutletContext();
+  const [pinnedMsgsState, setPinnedMsgsState] = useState({
+    newPinnedMsgExists: false,
+    showPinnedMsgs: false,
+  });
   const [search, setSearch] = useState("");
-  const [newPinnedMsgExists, setNewPinnedMsgExists] = useState(false);
-  const [isPending, setIsPending] = useState(false);
   const pinnedMsgsBoxRef = useRef(null);
-  const isPinnedMsgsFetched = useRef(false);
-  const closePinnedMsgsBox = (event) => {
-    const deleteModal = document.querySelector(".fade.modal.show");
-    if (isOpen && !deleteModal) {
-      isOpen = false;
-      return;
-    } else if (deleteModal) {
-      isOpen = true;
-      return;
-    } else if (
-      pinnedMsgsBoxRef.current &&
-      !pinnedMsgsBoxRef.current.contains(event.target)
-    ) {
-      setShowPinnedMsgs(false);
-    }
-  };
-  const fetchPinnedMsgs = async () => {
-    if (isPinnedMsgsFetched.current) return;
-    setIsPending(true);
-    try {
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    isSuccess,
+    isFetched,
+    refetch,
+    dataUpdatedAt,
+  } = useQuery({
+    queryKey: ["pinnedMsgs", receiverId],
+    queryFn: async () => {
       const res = await fetch(`/api/dm/pinned-messages/${receiverId}`);
       const data = await res.json();
 
-      if (!res.ok) {
-        setIsPending(false);
-        throw new Error(data.message);
-      }
+      if (!res.ok) throw new Error(data.message);
 
-      setChatData((prev) => ({
-        ...prev,
-        pinnedMsgs: data,
-      }));
-      setIsPending(false);
-      isPinnedMsgsFetched.current = true;
-    } catch (error) {
-      setIsPending(false);
-      console.log(error.message);
-      toast.error(error.message);
-    }
-  };
+      return data;
+    },
+    enabled: false,
+  });
+  const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
   const handlePinnedMsgs = useCallback(
     ({ result: newPinnedMsgs, isPinned }) => {
-      if (isPinned == null) {
+      console.log("func running");
+
+      if (isPinned == "recovery") {
         let isPinnedMsgAdded = false;
 
-        setChatData((prev) => {
-          let pinnedMsgsMap = new Map(prev.pinnedMsgs.map((m) => [m.id, m]));
-
-          newPinnedMsgs.forEach((m) => {
-            const exists = pinnedMsgsMap.has(m.id);
-            if (exists) {
-              if (!m.isPinned) {
-                pinnedMsgsMap.delete(m.id);
-              } else {
-                pinnedMsgsMap.delete(m.id);
-                pinnedMsgsMap.set(m.id, m);
-                isPinnedMsgAdded = true;
-              }
-            } else {
-              pinnedMsgsMap.set(m.id, m);
-              isPinnedMsgAdded = true;
-            }
-          });
-
-          const sorted = [...pinnedMsgsMap.values()].sort((a, b) => {
-            const dateA = new Date(a.pin_updated_at);
-            const dateB = new Date(b.pin_updated_at);
-            return dateB - dateA;
-          });
-
-          return {
-            ...prev,
-            pinnedMsgs: sorted,
+        setDmChat((prev) => {
+          const replaceState = () => {
+            isPinnedMsgAdded = true;
+            return {
+              ...prev,
+              pinnedMsgs: {
+                ...prev.pinnedMsgs,
+                [receiverId]: newPinnedMsgs,
+              },
+            };
           };
+
+          if (!prev.pinnedMsgs[receiverId]) {
+            return replaceState();
+          } else if (
+            prev.pinnedMsgs[receiverId].length != newPinnedMsgs.length
+          ) {
+            return replaceState();
+          } else {
+            const isIdInTheSameIndex = newPinnedMsgs.every(
+              (e, i) => e.id == prev.pinnedMsgs[receiverId][i].id
+            );
+
+            if (!isIdInTheSameIndex) return replaceState();
+          }
         });
 
-        if (isPinnedMsgAdded) {
-          setNewPinnedMsgExists(true);
+        if (isPinnedMsgAdded && !pinnedMsgsState.showPinnedMsgs) {
+          setPinnedMsgsState((prev) => ({ ...prev, newPinnedMsgExists: true }));
         }
       } else if (isPinned) {
         const isPinnedMsgFromReceiver = newPinnedMsgs.pinned_by == receiverId;
+        console.log("pinned");
 
-        setChatData((prev) => ({
+        setDmChat((prev) => ({
           ...prev,
-          pinnedMsgs: [newPinnedMsgs, ...prev.pinnedMsgs],
+          pinnedMsgs: {
+            ...prev.pinnedMsgs,
+            [receiverId]: [
+              newPinnedMsgs,
+              ...(prev.pinnedMsgs[receiverId] ?? []),
+            ],
+          },
         }));
 
-        if (!showPinnedMsgs && isPinnedMsgFromReceiver) {
-          setNewPinnedMsgExists(true);
+        if (!pinnedMsgsState.showPinnedMsgs && isPinnedMsgFromReceiver) {
+          setPinnedMsgsState((prev) => ({ ...prev, newPinnedMsgExists: true }));
         }
       } else {
-        setChatData((prev) => {
-          const filteredPinnedMsgs = prev.pinnedMsgs.filter(
+        console.log("not pinned");
+
+        setDmChat((prev) => {
+          const filteredPinnedMsgs = prev.pinnedMsgs[receiverId].filter(
             (m) => m.id != newPinnedMsgs.id
           );
-
           return {
             ...prev,
-            pinnedMsgs: filteredPinnedMsgs,
+            pinnedMsgs: {
+              ...prev.pinnedMsgs,
+              [receiverId]: filteredPinnedMsgs,
+            },
           };
         });
       }
     },
-    [showPinnedMsgs]
+    [pinnedMsgsState.showPinnedMsgs, receiverId]
   );
 
+  // if (isError) toast.error(error.message);
+
   useEffect(() => {
-    socket.on("pinned msgs", handlePinnedMsgs);
+    if (!isSuccess) return;
+
+    const isDataNew = prevDataUpdatedAtRef.current != dataUpdatedAt;
+    prevDataUpdatedAtRef.current = dataUpdatedAt;
+
+    if (!isDataNew) return;
+
+    setDmChat((prev) => ({
+      ...prev,
+      pinnedMsgs: {
+        ...prev.pinnedMsgs,
+        [receiverId]: data,
+      },
+    }));
+  }, [data]);
+
+  useEffect(() => {
+    const closePinnedMsgsBox = (event) => {
+      const anyModalExists = document.querySelector(".fade.modal.show");
+
+      if (!pinnedMsgsState.showPinnedMsgs) return;
+      if (anyModalExists) return;
+      if (
+        pinnedMsgsBoxRef.current &&
+        !pinnedMsgsBoxRef.current.contains(event.target)
+      ) {
+        setPinnedMsgsState((prev) => ({ ...prev, showPinnedMsgs: false }));
+      }
+    };
+
     document.addEventListener("click", closePinnedMsgsBox);
 
     return () => {
-      socket.off("pinned msgs", handlePinnedMsgs);
       document.removeEventListener("click", closePinnedMsgsBox);
+    };
+  }, [pinnedMsgsState.showPinnedMsgs]);
+
+  useEffect(() => {
+    socket.on("receive pinned msgs", handlePinnedMsgs);
+    console.log(111);
+
+    return () => {
+      socket.off("receive pinned msgs", handlePinnedMsgs);
     };
   }, [handlePinnedMsgs]);
 
@@ -161,19 +191,26 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
                 <div className="fw-bold popover-content">Pinned Messages</div>
               }
               trigger={
-                <div className="position-relative">
+                <div
+                  className="position-relative"
+                  onClick={(e) => {
+                    if (!pinnedMsgsState.showPinnedMsgs) e.stopPropagation();
+
+                    setPinnedMsgsState({
+                      showPinnedMsgs: true,
+                      newPinnedMsgExists: false,
+                    });
+
+                    if (!isFetched) refetch();
+                  }}
+                >
                   <RxDrawingPin
+                    id="drawingPin"
                     className={`ms-auto fs-5 ${
-                      showPinnedMsgs && stylesPanelTop["active"]
+                      pinnedMsgsState.showPinnedMsgs && stylesPanelTop["active"]
                     } ${stylesPanelTop["dm-panel-top-icon"]}`}
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      setShowPinnedMsgs((prev) => !prev);
-                      setNewPinnedMsgExists(false);
-                      await fetchPinnedMsgs();
-                    }}
                   />
-                  {newPinnedMsgExists && (
+                  {pinnedMsgsState.newPinnedMsgExists && (
                     <div
                       className="position-absolute rounded-circle"
                       style={{
@@ -235,8 +272,8 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
         </div>
         <PinnedMsgsBox
           ref={pinnedMsgsBoxRef}
-          showPinnedMsgs={showPinnedMsgs}
-          isPending={isPending}
+          showPinnedMsgs={pinnedMsgsState.showPinnedMsgs}
+          isPending={isLoading}
         />
       </div>
     </>

@@ -1,31 +1,105 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Form from "react-bootstrap/Form";
 import { GoPlusCircle } from "react-icons/go";
 import { useRef } from "react";
-import { socket } from "../socket.js";
-import { useContext } from "react";
-import DmContext from "../contexts/DmContext.jsx";
-import { useEffect } from "react";
-import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { useCallback } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import styles from "../css/dm_panel.module.css";
 import ReplyToMsg from "./ReplyToMsg.jsx";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import { v4 as uuidv4 } from "uuid";
+import { useOutletContext, useParams } from "react-router-dom";
+import { socket } from "../socket.js";
 
-const MessageInput = ({
-  fileInpRef,
-  textInpRef,
-  message,
-  setMessage,
-  scrollToBottom,
-  handleSubmit,
-  handleReplyToMsg,
-}) => {
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const MessageInput = () => {
+  const { userId: receiverId } = useParams();
   const {
-    chatData: { msgToReply },
-    setChatData,
-  } = useContext(DmContext);
+    dmChat: { msgToReply },
+    setDmChat,
+    scrollElementRef,
+  } = useOutletContext();
+  const [message, setMessage] = useState("");
+
+  const fileInpRef = useRef(null);
+  const textInpRef = useRef(null);
+
+  const handleSubmit = () => {
+    const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
+    const clientOffset = uuidv4();
+    let isDisconnected = false;
+
+    if (textInpRef.current != document.activeElement) {
+      return;
+    } else if (!message.message.trim()) {
+      return;
+    }
+    console.log("handle submit running");
+    console.log("ClientOffset", clientOffset);
+
+    if (!socket.connected) {
+      console.log("socket not connected and set dmchat pending msgs");
+      setDmChat((prev) => ({
+        ...prev,
+        pendingMessages: {
+          ...prev.pendingMessages,
+          [receiverId]: [
+            ...prev.pendingMessages[receiverId],
+            {
+              display_name: receiverId == 2 ? "ali" : "veli", //^ initial datadan kim auth user bak
+              message: message.message,
+              from_id: prev.authenticatedUserId,
+              to_id: receiverId,
+              clientOffset: clientOffset,
+              createdAt: time,
+              isPending: true,
+              reply_to_msg_message: msgToReply ? msgToReply.message : null,
+              reply_to_msg_sender: msgToReply ? msgToReply.display_name : null,
+              reply_to_msg_profile: msgToReply ? msgToReply.profile : null,
+            },
+          ],
+        },
+      }));
+      isDisconnected = true;
+    }
+
+    socket.emit(
+      "send dms",
+      {
+        message: message.message,
+        receiverId,
+        reply_to_msg: msgToReply ? msgToReply.id : null,
+        createdAt: time,
+      },
+      clientOffset,
+      isDisconnected,
+      (err, res) => {
+        if (err) {
+          console.log("Message failed:", err);
+          return;
+        }
+
+        console.log("Message successful:", res);
+      }
+    );
+    setMessage((prev) => ({
+      ...prev,
+      message: "",
+    }));
+    setDmChat((prev) => ({
+      ...prev,
+      msgToReply: null,
+    }));
+  };
+
+  useEffect(() => {
+    if (textInpRef.current) {
+      textInpRef.current.focus();
+    }
+  }, []);
 
   return (
     <div className="w-100 px-2 mt-auto mb-4">
@@ -66,7 +140,7 @@ const MessageInput = ({
             style={{
               whiteSpace: "pre-wrap",
             }}
-            onHeightChange={scrollToBottom}
+            // onHeightChange={scrollToBottom}
             onChange={(e) => {
               setMessage((prev) => ({
                 ...prev,
@@ -78,6 +152,7 @@ const MessageInput = ({
             }}
             onKeyUp={(e) => {
               if (e.key != "Enter") return;
+              e.preventDefault();
               handleSubmit();
             }}
           />

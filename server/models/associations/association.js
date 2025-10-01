@@ -38,4 +38,12 @@ export const setUpAssociation = () => {
     otherKey: "friend_id",
     timestamps: true,
   });
+
+  User.belongsToMany(User, {
+    through: "direct_message_history",
+    as: "direct_message_records",
+    foreignKey: "user_id",
+    otherKey: "dm_history_user_id",
+    timestamps: true,
+  });
 };

@@ -1,67 +1,72 @@
-import React, { useState, useContext, memo, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useContext,
+  memo,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import DmItem from "./DmItem.jsx";
-import DmContext from "../contexts/DmContext.jsx";
 import { PulseLoader } from "react-spinners";
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import MyLoader from "./InfiniteLoader.jsx";
 import toast from "react-hot-toast";
-import PinMsgModal from "./PinMsgModal.jsx";
 import DmModalNotifier from "./DmModalNotifier.jsx";
 import { socket } from "../socket.js";
-import { CachedContext } from "../contexts/CacheContext.jsx";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useLayoutEffect } from "react";
+import ChatSkeleton from "./ChatSkeleton.jsx";
 
-const DmList = memo(function DmList({ messagesEndRef }) {
+const DmList = ({ receiver, isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
-  const { cachedChat, setCachedChat } = useContext(CachedContext);
-  const {
-    chatData: { messages, pendingMessages },
-    setChatData,
-  } = useContext(DmContext);
   const typeRef = useRef(null);
-  const fetchMoreData = async () => {
-    const offset = messages.length;
-    try {
-      const res = await fetch(`/api/dm/${offset}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          receiverId,
-        }),
-      });
-      const data = await res.json();
+  const {
+    dmChat: { messages, pendingMessages },
+    setDmChat,
+    scrollElementRef,
+    dmChatRef,
+  } = useOutletContext();
+  const { scrollPosition, initialPageParam } = dmChatRef.current;
+  const fetchMoreData = async ({ pageParam }) => {
+    const res = await fetch(`/api/dm/moreData?nextId=${pageParam}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        receiverId,
+      }),
+    });
+    const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.msg);
-      }
-
-      const { dms } = data;
-      setCachedChat((prev) => {
-        let existing = prev.get(receiverId);
-        const newMap = new Map(prev);
-        existing = [...existing, ...dms];
-        newMap.set(receiverId, existing);
-        return newMap;
-      });
-      if (!dms.length) {
-        setChatData((prev) => ({
-          ...prev,
-          reachedTop: false,
-          hasMoreUp: false,
-        }));
-        return;
-      }
-      setChatData((prev) => ({
-        ...prev,
-        reachedTop: false,
-        messages: [...prev.messages, ...dms],
-      }));
-    } catch (err) {
-      toast.error(err.message);
-      console.log(err);
+    if (!res.ok) {
+      console.log("ERROR");
+      throw new Error(data.error);
     }
+
+    return data;
   };
+  const {
+    data,
+    error,
+    fetchNextPage,
+    isFetched,
+    hasNextPage,
+    isSuccess,
+    isError,
+    dataUpdatedAt,
+  } = useInfiniteQuery({
+    queryKey: ["moreMessages", receiverId],
+    queryFn: fetchMoreData,
+    initialPageParam: initialPageParam[receiverId],
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextId ?? undefined;
+    },
+    enabled: false,
+  });
+  const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
+
   const [modal, setModal] = useState({
     activeMsg: null,
     show: false,
@@ -76,10 +81,11 @@ const DmList = memo(function DmList({ messagesEndRef }) {
       return;
     }
     socket.emit(
-      "pinned msgs",
+      "send pinned msgs",
       {
         id: modal.activeMsg.id,
         isPinned: true,
+        receiverId,
       },
       (err, res) => {
         if (err) {
@@ -113,32 +119,136 @@ const DmList = memo(function DmList({ messagesEndRef }) {
       }
     );
   };
+  const itemsContainerRef = useRef(null);
+  const prevScrollHeight = useRef(0);
 
-  useEffect(
-    () => console.log("cachedChat changed 2", cachedChat),
-    [cachedChat]
+  const rowVirtualizer = useVirtualizer({
+    count: messages[receiverId]?.length,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: () => 80,
+    overscan: 5,
+    gap: 20,
+  });
+
+  const items = useMemo(
+    () => [
+      ...(messages[receiverId] ?? []),
+      ...(pendingMessages[receiverId] ?? []),
+    ],
+    [messages[receiverId]]
   );
+
+  // if (isError) {
+  //   console.log(error.message);
+  // }
+
+  useEffect(() => {
+    const el = scrollElementRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      scrollPosition[receiverId] = el.scrollTop;
+    };
+
+    el.addEventListener("scroll", handleScroll);
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+    };
+  }, [scrollElementRef.current]);
+
+  useLayoutEffect(() => {
+    if (!items.length) return;
+
+    const el = scrollElementRef.current;
+    if (!el) return;
+
+    if (isFetched) {
+      const isDataNew = prevDataUpdatedAtRef.current != dataUpdatedAt;
+
+      prevDataUpdatedAtRef.current = dataUpdatedAt;
+
+      if (isDataNew) {
+        const diff = el.scrollHeight - prevScrollHeight.current;
+        el.scrollTop = el.scrollTop + diff;
+      } else {
+        el.scrollTop = scrollPosition[receiverId];
+      }
+    } else if (scrollPosition[receiverId] == undefined) {
+      el.scrollTop = el.scrollHeight;
+    } else {
+      el.scrollTop = scrollPosition[receiverId];
+    }
+
+    prevScrollHeight.current = el.scrollHeight;
+    scrollPosition[receiverId] = el.scrollTop;
+  }, [items]);
+
+  useEffect(() => {
+    if (!isSuccess) return;
+
+    const { dms } = data.pages[data.pages.length - 1];
+    const isDataNew = prevDataUpdatedAtRef.current != dataUpdatedAt;
+
+    if (!dms.length) return;
+    if (!isDataNew) return;
+
+    setDmChat((prev) => ({
+      ...prev,
+      messages: {
+        ...prev.messages,
+        [receiverId]: [...dms, ...(prev.messages[receiverId] ?? [])],
+      },
+      hasMoreUp: {
+        ...prev.hasMoreUp,
+        [receiverId]: hasNextPage,
+      },
+    }));
+  }, [data]);
 
   return (
     <>
-      {messages.length === 0 ? (
-        <div className="empty-state">
-          No messages yet. Start the conversation!
-        </div>
+      {isInitialDataLoading || !messages[receiverId] ? (
+        <ChatSkeleton />
       ) : (
-        <MyLoader next={fetchMoreData} loader={<PulseLoader color={"white"} />}>
-          <ul className="d-flex flex-column-reverse gap-3 m-2">
-            {[...pendingMessages, ...messages].map((msg) => (
-              <DmItem
-                key={msg.id ?? msg.clientOffset}
-                msg={msg}
-                handleDmModalNotifier={handleDmModalNotifier}
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </ul>
+        <MyLoader
+          next={fetchNextPage}
+          loader={<PulseLoader color={"white"} />}
+          receiver={receiver}
+        >
+          <div
+            style={{
+              height: rowVirtualizer.getTotalSize(),
+              position: "relative",
+            }}
+            className="p-2"
+            ref={itemsContainerRef}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const item = items[virtualRow.index];
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    top: 0,
+                    left: 0,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                >
+                  <DmItem
+                    msg={item}
+                    handleDmModalNotifier={handleDmModalNotifier}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </MyLoader>
       )}
+
       <DmModalNotifier
         type={typeRef.current}
         activeMsg={modal.activeMsg}
@@ -148,6 +258,6 @@ const DmList = memo(function DmList({ messagesEndRef }) {
       />
     </>
   );
-});
+};
 
 export default DmList;

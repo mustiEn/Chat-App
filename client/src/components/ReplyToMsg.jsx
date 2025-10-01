@@ -3,10 +3,10 @@ import { RxCross2 } from "react-icons/rx";
 import { RxCrossCircled } from "react-icons/rx";
 import styles from "../css/reply_to_msg.module.css";
 import { useContext } from "react";
-import DmContext from "../contexts/DmContext";
+import { useOutletContext } from "react-router-dom";
 
 const ReplyToMsg = ({ toWho }) => {
-  const { setChatData } = useContext(DmContext);
+  const { setDmChat } = useOutletContext();
   return (
     <div
       id={`${styles["replyToMsg"]}`}
@@ -18,7 +18,7 @@ const ReplyToMsg = ({ toWho }) => {
       <RxCrossCircled
         className={`${styles["icon"]}`}
         onClick={() =>
-          setChatData((prev) => ({
+          setDmChat((prev) => ({
             ...prev,
             msgToReply: null,
           }))

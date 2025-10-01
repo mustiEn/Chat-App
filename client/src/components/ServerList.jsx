@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { memo, useContext, useMemo, useState } from "react";
 import { NavLink, useLoaderData, useLocation } from "react-router-dom";
 import { TbActivity } from "react-icons/tb";
 import { IoAddCircleSharp } from "react-icons/io5";
@@ -10,7 +10,7 @@ import AppsModal from "./AppsModal";
 import AddServerModal from "./AddServerModal";
 import HeaderContext from "../contexts/HeaderContext";
 
-const ServerList = () => {
+const ServerList = memo(function Serverlist() {
   // const servers = useLoaderData();
   // const servers = Array.from({length:5})
   const setHeader = useContext(HeaderContext);
@@ -93,7 +93,7 @@ const ServerList = () => {
             key={server}
             content={popOverContent(server + 1)}
             trigger={popOverTrigger(
-              "/group-chat",
+              "/@me/group-chat",
               server + 1,
               undefined,
               "Jack Daniels"
@@ -116,6 +116,6 @@ const ServerList = () => {
       />
     </>
   );
-};
+});
 
 export default ServerList;

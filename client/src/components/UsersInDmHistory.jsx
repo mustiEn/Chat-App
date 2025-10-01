@@ -1,65 +1,90 @@
-import React, { useContext, useEffect } from "react";
+import React, { memo, useContext, useEffect, useMemo } from "react";
 import Button from "react-bootstrap/esm/Button";
-import { NavLink } from "react-router-dom";
+import { NavLink, useOutletContext, useParams } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { SidebarContext } from "../contexts/SidebarContext";
+import DmHistorySkeleton from "./DmHistorySkeleton";
 // import DmHistorySkeleton from './DmHistorySkeleton'
 
-const UsersInDmHistory = ({ arr }) => {
+const UsersInDmHistory = memo(function UsersInDmHistory() {
+  const { userId: receiverId } = useParams();
+  const { dmHistoryUsers, setDmHistoryUsers } = useContext(SidebarContext);
   const setHeader = useContext(HeaderContext);
-  const setDmHistorySessionStorage = (id) => {
-    sessionStorage.setItem("userId", id);
+  const getDmHistory = async () => {
+    const res = await fetch("/api/dmHistory");
+    const { dmHistoryResult } = await res.json();
+
+    if (!res.ok) throw new Error(dmHistoryResult.error);
+
+    return dmHistoryResult;
   };
-  // useEffect(() => {
-  //   if (sessionStorage.getItem("userId")) {
-  //     const userId = sessionStorage.getItem("userId");
-  //     navigate(`dm/${userId}`);
-  //   }
-  // }, []);
+  const { data, error, isError, isSuccess, isLoading } = useQuery({
+    queryKey: ["json"],
+    queryFn: getDmHistory,
+    staleTime: Infinity,
+  });
+
+  useEffect(() => {
+    if (!isSuccess) return;
+
+    setDmHistoryUsers(data);
+  }, [data]);
+
   return (
     <>
       <ul className="d-flex flex-column gap-1">
-        {arr.map((i) => (
-          <li
-            key={i}
-            // className="position-relative"
-            style={{ width: "100%", height: 45 }}
-            onClick={() => setHeader(i)}
-          >
-            <Button
-              variant={"dark"}
-              as={NavLink}
-              to={`${i}`}
-              className={"position-relative w-100 h-100"}
-              onClick={() => setDmHistorySessionStorage(i)}
+        {isLoading ? (
+          <DmHistorySkeleton />
+        ) : !dmHistoryUsers.length ? (
+          <DmHistorySkeleton />
+        ) : (
+          dmHistoryUsers.map((e, i) => (
+            <li
+              key={e.id}
+              // className="position-relative"
+              style={{ width: "100%", height: 45 }}
+              onClick={() => setHeader(e.display_name)}
             >
-              <div
-                className="position-absolute w-100 h-100 top-0 start-0 z-0"
-                style={{
-                  // backgroundImage: "url(/atomic.gif)",
-                  backgroundRepeat: "no-repeat",
-                  backgroundSize: "cover",
-                  backgroundPosition: "100% 30%",
-                  maskImage:
-                    "linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0))",
-                  WebkitMaskImage:
-                    "linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0))",
-                }}
-              ></div>
-              <div className="d-flex align-items-center gap-3 position-absolute z-1">
-                <img
-                  src="https://placehold.co/32"
-                  className="rounded-circle"
-                  alt=""
-                />
-                <div>Hack Daniels</div>
-              </div>
-            </Button>
-          </li>
-        ))}
-        {/* <DmHistorySkeleton /> */}
+              <Button
+                variant={"dark"}
+                as={NavLink}
+                to={`${e.id}`}
+                className={"position-relative w-100 h-100"}
+              >
+                <div
+                  className="position-absolute w-100 h-100 top-0 start-0 z-0"
+                  style={{
+                    // backgroundImage: "url(/atomic.gif)",
+                    backgroundRepeat: "no-repeat",
+                    backgroundSize: "cover",
+                    backgroundPosition: "100% 30%",
+                    maskImage:
+                      "linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0))",
+                    WebkitMaskImage:
+                      "linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0))",
+                  }}
+                ></div>
+                <div className="d-flex align-items-center gap-3 position-absolute z-1">
+                  <img
+                    src={e.profile ?? "https://placehold.co/32"}
+                    className="rounded-circle"
+                    alt=""
+                  />
+                  <div>
+                    {e.display_name.length > 15
+                      ? e.display_name.slice(15).concat("...")
+                      : e.display_name}
+                  </div>
+                </div>
+              </Button>
+            </li>
+          ))
+        )}
       </ul>
     </>
   );
-};
+});
 
 export default UsersInDmHistory;

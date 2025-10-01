@@ -21,8 +21,7 @@ export const setUpSocket = (io) => {
       const sorted = key.sort((a, b) => a - b);
       const room = sorted.join("_");
       socket.join(room);
-      logger.log("joined room", room);
-
+      logger.log("Joined room:", room);
       done({
         status: "ok",
       });
@@ -31,16 +30,16 @@ export const setUpSocket = (io) => {
     socket.on("leave room", (receiverId, done) => {
       receiverId = Number(receiverId);
       const key = [userId, receiverId];
-      const sorted = key.sort((a, b) => a - b);
-      const room = sorted.join("_");
+      const room = key.sort((a, b) => a - b).join("_");
       socket.leave(room);
       done({
         status: "ok",
       });
-      logger.log("left room", room);
     });
 
-    socket.on("edited msgs", async (msg, done) => {
+    socket.on("send edited msgs", async (msg, done) => {
+      const key = [userId, msg.receiverId];
+      const room = key.sort((a, b) => a - b).join("_");
       let result;
       try {
         if (result) {
@@ -62,7 +61,7 @@ export const setUpSocket = (io) => {
         );
         result = (await DirectMessage.findByPk(msg.id)).toJSON();
 
-        io.emit("edited msgs", { result: [result] });
+        io.to(room).emit("receive edited msgs", { result: [result] });
         logger.log("message edited");
         done({
           status: "ok",
@@ -72,8 +71,15 @@ export const setUpSocket = (io) => {
       }
     });
 
-    socket.on("dms", async (msg, clientOffset, isDisconnected, done) => {
+    socket.on("send dms", async (msg, clientOffset, isDisconnected, done) => {
       let result;
+      const key = [userId, msg.receiverId];
+      const room = key.sort((a, b) => a - b).join("_");
+
+      logger.log("MSG ==>", msg);
+      logger.log("USER ==>", userId);
+      logger.log("ClientOffset ==>", clientOffset);
+      logger.log("isDisconnected ==>", isDisconnected);
 
       try {
         result = (
@@ -115,12 +121,7 @@ export const setUpSocket = (io) => {
         result = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
         });
-        logger.log(result);
-        io.emit("dms", { result, wasDisconnected: isDisconnected });
-        logger.log("message sent");
-        done({
-          status: "ok",
-        });
+        logger.log("MSG SAVED TO DB ==>", result);
       } catch (error) {
         if (
           error.name === "SequelizeUniqueConstraintError" &&
@@ -132,9 +133,22 @@ export const setUpSocket = (io) => {
 
         console.error("❌ Unexpected error inserting message:", error);
       }
+      io.to(room).emit("receive dms", {
+        result,
+        wasDisconnected: isDisconnected,
+      });
+      logger.log("message sent/emitted");
+      return done({
+        status: "ok",
+      });
     });
 
-    socket.on("pinned msgs", async (msg, done) => {
+    socket.on("send pinned msgs", async (msg, done) => {
+      logger.log(msg);
+      const receiverId = Number(msg.receiverId);
+      const key = [userId, receiverId];
+      const room = key.sort((a, b) => a - b).join("_");
+      logger.log("room:", room);
       try {
         let pinnedMessage = (await DirectMessage.findByPk(msg.id)).toJSON();
 
@@ -180,10 +194,11 @@ export const setUpSocket = (io) => {
           });
         }
 
-        io.emit("pinned msgs", {
+        io.to(room).emit("receive pinned msgs", {
           result: pinnedMessage,
           isPinned: msg.isPinned,
         });
+        logger.log("pinned sent");
         return done({
           status: "ok",
         });
@@ -220,7 +235,7 @@ export const setUpSocket = (io) => {
         });
       }
     });
-
+    // how does discord handle offline pinned msg update when user1 is online and 2 is off
     if (!socket.recovered) {
       logger.log("socket recovered");
       logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
@@ -231,12 +246,12 @@ export const setUpSocket = (io) => {
         const msgsSql = `
           SELECT dm.*, u.display_name
             FROM direct_messages dm
-            INNER JOIN users u ON dm.from_id = u.id 
-            WHERE 
+            INNER JOIN users u ON dm.from_id = u.id
+            WHERE
               from_id = ${socket.handshake.auth.receiverId} AND
               to_id = ${userId} AND
               dm.id > ${socket.handshake.auth.serverOffset ?? 0}
-            ORDER BY createdAt DESC
+            ORDER BY createdAt ASC
         `;
         const msgs = await sequelize.query(msgsSql, {
           type: QueryTypes.SELECT,
@@ -255,48 +270,43 @@ export const setUpSocket = (io) => {
           raw: true,
         });
         const pinnedMessagesSql = `
-          SELECT 
+          SELECT
             dm.id,
-            sender.display_name, 
-            sender.username, 
+            sender.display_name,
+            sender.username,
             sender.profile,
             dm.clientOffset,
             dm.message,
             dm.createdAt created_at,
             dm.pin_updated_at
-          FROM 
-            direct_messages dm 
-            INNER JOIN users sender ON sender.id = dm.from_id 
-            INNER JOIN users receiver ON receiver.id = dm.to_id 
-            LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
-          WHERE 
+          FROM
+            direct_messages dm
+            INNER JOIN users sender ON sender.id = dm.from_id
+            INNER JOIN users receiver ON receiver.id = dm.to_id
+            LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id
+          WHERE
             ((
-              dm.to_id = ${userId} 
+              dm.to_id = ${userId}
               AND dm.from_id = ${socket.handshake.auth.receiverId}
-            ) 
+            )
             OR
             (
               dm.to_id = ${socket.handshake.auth.receiverId}
-              AND dm.from_id = ${userId} 
-            )) 
+              AND dm.from_id = ${userId}
+            ))
             AND dm.is_pinned = 1
-            ${
-              userLastDisconnect
-                ? `AND dm.pin_updated_at >= "${userLastDisconnect}"`
-                : ""
-            }
-          ORDER BY 
+          ORDER BY
             dm.pin_updated_at DESC
         `;
         const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
           type: QueryTypes.SELECT,
         });
 
-        socket.emit("dms", { result: msgs, wasDisconnected });
-        socket.emit("edited msgs", { result: editedMsgs });
-        socket.emit("pinned msgs", {
+        socket.emit("receive dms", { result: msgs, wasDisconnected });
+        socket.emit("receive edited msgs", { result: editedMsgs });
+        socket.emit("receive pinned msgs", {
           result: pinnedMessages,
-          isPinned: null,
+          isPinned: "recovery",
         });
         logger.log("recovery done");
       } catch (e) {

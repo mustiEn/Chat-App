@@ -6,7 +6,6 @@ import AllFriends from "./AllFriends";
 import AddFriend from "./AddFriend";
 
 const FriendsPanel = () => {
-  const pathname = useLocation().pathname;
   const [activeComp, setActiveComp] = useState(0);
   const renderComponent = () => {
     let comp;
@@ -19,14 +18,12 @@ const FriendsPanel = () => {
     }
     return comp;
   };
-  console.log(" FriendsPanel rendered");
 
   return (
     <>
       <div className="fs-2 text-white">
         <FriendsPanelTop props={[setActiveComp, activeComp]} />
         FriendsPanel
-        {/* <Outlet /> */}
         {renderComponent()}
       </div>
     </>

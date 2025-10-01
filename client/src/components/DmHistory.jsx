@@ -20,7 +20,6 @@ const DmHistory = () => {
   const popOverTrigger = (icon) => {
     return <div>{icon}</div>;
   };
-  const arr = Array.from({ length: 5 }, (_, i) => i);
 
   //! bak
   // useEffect(() => {
@@ -36,7 +35,7 @@ const DmHistory = () => {
             content={popOverContent("Create DM")}
           />
         </div>
-        <UsersInDmHistory arr={arr} />
+        <UsersInDmHistory />
         <button onClick={() => socket.disconnect()}>close</button>
         <button onClick={() => socket.connect()}>connect</button>
       </div>

@@ -2,7 +2,7 @@ export const loadDmData = async ({ params }) => {
   try {
     const { userId: receiverId } = params;
     const offset = 0;
-    const res = await fetch(`/api/dm/${offset}`, {
+    const res = await fetch(`/api/dm/initialData/${offset}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -12,6 +12,7 @@ export const loadDmData = async ({ params }) => {
       }),
     });
     const data = await res.json();
+    console.log("LOADER");
 
     if (!res.ok) {
       throw new Error(data.msg);

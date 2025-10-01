@@ -12,7 +12,7 @@ import timezone from "dayjs/plugin/timezone.js";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export const getDmData = async (req, res, next) => {
+export const getInitalDmData = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
@@ -21,13 +21,13 @@ export const getDmData = async (req, res, next) => {
     let receiver = {};
 
     if (!result.isEmpty()) {
-      console.log(result.array());
+      logger.log(result.array());
       throw new Error("Validation failed");
     }
 
     const { receiverId, offset } = matchedData(req);
-    const limit = 10;
-    logger.log("offset", offset);
+    const limit = 30;
+    // logger.log("offset", offset);
 
     receiver = await User.findByPk(receiverId);
 
@@ -36,6 +36,97 @@ export const getDmData = async (req, res, next) => {
     const since = userLastDisconnect
       ? `AND dm.createdAt <= "${userLastDisconnect}"`
       : "";
+    // logger.log("SINCE,", since);
+
+    const dmsSql = ` 
+      SELECT 
+        dm.id,
+        dm.from_id from_id, 
+        sender.display_name, 
+        sender.username, 
+        sender.profile,
+        dm.clientOffset, 
+        dm.message,
+        dm.is_edited,
+        dm.is_pinned, 
+        dm.createdAt created_at, 
+        replied_msg.message reply_to_msg_message, 
+        replied_msg_sender.display_name reply_to_msg_sender,
+				replied_msg_sender.profile reply_to_msg_profile
+      FROM 
+        direct_messages dm 
+        INNER JOIN users sender 
+          ON sender.id = dm.from_id          
+        LEFT JOIN direct_messages replied_msg 
+          ON dm.reply_to_msg = replied_msg.id 
+        LEFT JOIN users replied_msg_sender 
+          ON replied_msg.from_id = replied_msg_sender.id 
+      WHERE 
+        (
+          (
+            dm.to_id = :userId 
+            AND dm.from_id = :receiverId
+          ) 
+          OR
+          (
+            dm.to_id = :receiverId
+            AND dm.from_id = :userId 
+          )
+        )
+         
+      ORDER BY 
+        dm.createdAt DESC
+      LIMIT 
+        ${limit}
+    `;
+
+    dms = await sequelize.query(dmsSql, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        userId,
+        receiverId,
+      },
+    });
+    dms = dms.reverse();
+    receiver = await User.findOne({
+      attributes: [
+        "id",
+        "display_name",
+        "username",
+        "profile",
+        "background_color",
+        "about_me",
+        "createdAt",
+      ],
+      where: { id: receiverId },
+    });
+    // logger.log(dms.length);
+    const nextId = dms[0]?.id ?? null;
+
+    res.status(200).json({ dms, receiver, nextId });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getDmData = async (req, res, next) => {
+  try {
+    const result = validationResult(req);
+    const userId = req.session.passport.user;
+    let dms;
+    let receiver = {};
+
+    if (!result.isEmpty()) {
+      logger.log(result.array());
+      throw new Error("Validation failed");
+    }
+
+    let { receiverId, nextId } = matchedData(req);
+    const limit = 30;
+    logger.log("offset", nextId);
+
+    receiver = await User.findByPk(receiverId);
+
+    if (!receiver) throw new Error("Receiver not found");
 
     const dmsSql = `
       SELECT 
@@ -72,13 +163,11 @@ export const getDmData = async (req, res, next) => {
             AND dm.from_id = :userId 
           )
         )
-        ${since} 
+        AND
+          dm.id < :nextId  
       ORDER BY 
         dm.createdAt DESC
-      LIMIT 
-        ${limit}
-      OFFSET 
-        ${offset}
+      LIMIT :limit
     `;
 
     dms = await sequelize.query(dmsSql, {
@@ -86,25 +175,40 @@ export const getDmData = async (req, res, next) => {
       replacements: {
         userId,
         receiverId,
+        nextId,
+        limit,
       },
     });
+    dms = dms.reverse();
 
-    if (offset && offset == 0) {
-      receiver = await User.findOne({
-        attributes: [
-          "id",
-          "display_name",
-          "username",
-          "profile",
-          "background_color",
-          "about_me",
-          "createdAt",
-        ],
-        where: { id: receiverId },
-      });
-    }
+    nextId = dms.length < 30 ? null : dms[0].id;
+    logger.log(nextId);
 
-    res.status(200).json({ dms, receiver });
+    res.status(200).json({ dms, nextId });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getDmHistory = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    const dmHistorySql = `
+      SELECT 
+        u.id, 
+        u.display_name, 
+        u.profile, 
+        dmh.createdAt created_at 
+      FROM 
+        direct_message_history dmh 
+        INNER JOIN users u ON dm_history_user_id = u.id 
+      WHERE 
+        user_id = :userId
+    `;
+    const dmHistory = await sequelize.query(dmHistorySql, {
+      type: QueryTypes.SELECT,
+      replacements: { userId },
+    });
+    res.status(200).json({ dmHistoryResult: dmHistory });
   } catch (error) {
     next(error);
   }
@@ -116,7 +220,7 @@ export const getPinnedMessages = async (req, res, next) => {
     const userId = req.session.passport.user;
 
     if (!result.isEmpty()) {
-      console.log(result.array());
+      logger.log(result.array());
       throw new Error("Validation failed");
     }
 
@@ -175,7 +279,7 @@ export const exploreUsers = async (req, res, next) => {
   try {
     const result = validationResult(req);
     if (!result.isEmpty()) {
-      console.log(result.array());
+      logger.log(result.array());
       throw new Error("Validation failed");
     }
     const data = matchedData(req);

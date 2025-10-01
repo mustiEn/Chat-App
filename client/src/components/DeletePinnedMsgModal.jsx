@@ -3,7 +3,6 @@ import Button from "react-bootstrap/esm/Button";
 import Modal from "react-bootstrap/Modal";
 import { formatDate } from "../utils";
 import toast from "react-hot-toast";
-import DmContext from "../contexts/DmContext";
 import { socket } from "../socket";
 import styles from "../css/delete_pinned_msg_modal.module.css";
 
@@ -18,7 +17,7 @@ const DeletePinnedMsgModal = ({
       return;
     }
     socket.emit(
-      "pinned msgs",
+      "send pinned msgs",
       {
         id: activePinnedMsg.id,
         isPinned: false,

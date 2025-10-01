@@ -3,15 +3,17 @@ import { RxDrawingPin, RxCross2 } from "react-icons/rx";
 import styles from "../css/pinned_msgs_box.module.css";
 import { formatDate } from "../utils";
 import { HiOutlineFaceFrown } from "react-icons/hi2";
-import DmContext from "../contexts/DmContext";
+
 import { PulseLoader } from "react-spinners";
 import DmModalNotifier from "./DmModalNotifier";
 import { socket } from "../socket";
+import { useOutletContext, useParams } from "react-router-dom";
 
 const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
+  const { userId: receiverId } = useParams();
   const {
-    chatData: { pinnedMsgs },
-  } = useContext(DmContext);
+    dmChat: { pinnedMsgs },
+  } = useOutletContext();
   const [modal, setModal] = useState({
     activeMsg: null,
     show: false,
@@ -22,11 +24,13 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
       toast.error("We couldn't unpin the message");
       return;
     }
+
     socket.emit(
-      "pinned msgs",
+      "send pinned msgs",
       {
         id: modal.activeMsg.id,
         isPinned: false,
+        receiverId,
       },
       (err, res) => {
         if (err) {
@@ -36,6 +40,7 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
         }
       }
     );
+
     setModal({
       activeMsg: null,
       show: false,
@@ -60,7 +65,7 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
         <hr className="my-0" />
         {isPending ? (
           <PulseLoader color="white" />
-        ) : pinnedMsgs.length === 0 ? (
+        ) : !pinnedMsgs[receiverId]?.length ? (
           <>
             <HiOutlineFaceFrown
               className="w-100 mt-5"
@@ -79,7 +84,7 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
               height: 330,
             }}
           >
-            {pinnedMsgs.map((msg, i) => (
+            {pinnedMsgs[receiverId].map((msg, i) => (
               <li
                 key={msg.id}
                 className={`${styles["pinned-msg"]} d-flex align-items-center gap-2 p-2 border border-white border-opacity-25 rounded-3 position-relative mx-1`}

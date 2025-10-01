@@ -1,122 +1,107 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { useLoaderData, useParams } from "react-router-dom";
+import { useLoaderData, useOutletContext, useParams } from "react-router-dom";
 import FriendProfile from "./FriendProfile";
 import DmDisplay from "./DmDisplay";
 import DmPanelTop from "./DmPanelTop";
 import styles from "../css/dm_panel.module.css";
 import { socket } from "../socket";
-import DmContext from "../contexts/DmContext";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { CachedContext } from "../contexts/CacheContext";
+import toast from "react-hot-toast";
 
 const DmPanel = () => {
-  const { cachedChat, setCachedChat, cachedReceiver, setCachedReceiver } =
-    useContext(CachedContext);
-  const { receiver, dms } = useLoaderData();
-  const div = useRef(null);
-  const [chatData, setChatData] = useState({
-    messages: [],
-    authenticatedUserId: socket.auth.userId,
-    pendingMessages: [],
-    pendingEditedMessages: [],
-    pinnedMsgs: [],
-    newPinnedMsgs: false,
-    msgToReply: null,
-    reachedTop: false,
-    hasMoreUp: true,
-  });
+  const {
+    dmChat: { messages, receivers },
+    setDmChat,
+    dmChatRef,
+  } = useOutletContext();
+  const { initialPageParam } = dmChatRef.current;
   const { userId: receiverId } = useParams();
-  const [prevReceiverId, setPrevReceiverId] = useState(receiverId);
+  const chatExists = messages[receiverId] != undefined;
+  const fetchInitialChat = async () => {
+    const res = await fetch(`/api/dm/initialData/0`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ receiverId }),
+    });
+    const data = await res.json();
+    console.log("react query intial");
+
+    if (!res.ok) throw new Error(data.error);
+
+    return data;
+  };
+  const { data, isSuccess, isError, error, isLoading } = useQuery({
+    queryKey: ["initalChatData", receiverId],
+    queryFn: fetchInitialChat,
+    enabled: !chatExists,
+  });
+
   const [showOffset, setShowOffset] = useState(false);
-
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
-  const value = useMemo(
-    () => ({
-      chatData,
-      setChatData,
-      div,
-    }),
-    [chatData, receiverId, div]
-  );
 
-  // if (prevReceiverId != receiverId) {
-  //   setPrevReceiverId(receiverId);
-  //   setChatData({
-  //     authenticatedUserId: socket.auth.userId,
-  //     pendingMessages: [],
-  //     pendingEditedMessages: [],
-  //     pinnedMsgs: [],
-  //     newPinnedMsgs: false,
-  //     msgToReply: null,
-  //     reachedTop: false,
-  //     hasMoreUp: true,
-  //     messages: dms,
-  //   });
-  //   socket.auth.serverOffset = dms[dms.length - 1]?.id;
-  // }
+  if (chatExists) {
+    // console.log("chatexists 1", socket.auth.serverOffset);
+    socket.auth.serverOffset =
+      messages[receiverId][messages[receiverId].length - 1]?.id;
+    // console.log("chatexists 2", socket.auth.serverOffset);
+  }
+  if (isError) {
+    toast.error(error.message);
+  }
+
+  //* get mgss when being off chat
 
   useEffect(() => {
-    const existing = cachedChat.get(receiverId);
-    if (existing) {
-      console.log("cachedChat.get(receiverId) exists", existing);
-      setChatData((cd) => ({ ...cd, messages: existing }));
-      socket.auth.serverOffset = existing[existing.length - 1]?.id;
-    } else {
-      console.log("cachedChat.get(receiverId) dont exist", existing);
-      (async () => {
-        try {
-          const res = await fetch(`/api/dm/0`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ receiverId }),
-          });
-          const { dms } = await res.json();
-          setChatData((cd) => ({ ...cd, messages: dms }));
-          setCachedChat((prev) => {
-            const newMap = new Map(prev);
-            newMap.set(receiverId, dms);
-            return newMap;
-          });
-          setCachedReceiver((prev) => {
-            const newMap = new Map(prev);
-            newMap.set(receiverId, receiver);
-            return newMap;
-          });
-          // also set socket offset if you need it
-          socket.auth.serverOffset = dms[dms.length - 1]?.id;
-        } catch (err) {
-          console.error("Failed to load DMs:", err);
-        }
-      })();
-    }
-  }, [receiverId]);
+    if (!isSuccess) return;
+    if (chatExists) return;
+    const { dms, receiver, nextId } = data;
 
-  useEffect(() => console.log("cached chat data", cachedChat), [cachedChat]);
+    setDmChat((prev) => ({
+      ...prev,
+      msgToReply: null,
+      messages: { ...prev.messages, [receiverId]: dms },
+      hasMoreUp: {
+        ...prev.hasMoreUp,
+        [receiverId]: dms.length < 30 ? false : true,
+      },
+      receivers: { ...prev.receivers, [receiverId]: receiver },
+    }));
+    initialPageParam[receiverId] = nextId;
+
+    socket.auth.serverOffset = dms[dms.length - 1]?.id;
+  }, [data]);
 
   return (
     <>
-      <DmContext value={value}>
-        <DmPanelTop
-          key={receiverId}
-          receiver={receiver}
-          handleOffsetToggle={handleOffsetToggle}
+      <DmPanelTop
+        key={receiverId}
+        receiver={receivers[receiverId] ?? []}
+        handleOffsetToggle={handleOffsetToggle}
+        showOffset={showOffset}
+      />
+      <div
+        className="d-flex flex-grow-1 w-100"
+        style={{
+          minHeight: 0,
+        }}
+      >
+        <div
+          id={styles["dmPanelContent"]}
+          className={`w-100 d-flex flex-column position-relative gap-2`}
+        >
+          <DmDisplay
+            // key={receiverId}
+            receiver={receivers[receiverId] ?? []}
+            isInitialDataLoading={isLoading}
+          />
+        </div>
+
+        <FriendProfile
+          friend={receivers[receiverId] ?? []}
           showOffset={showOffset}
         />
-        <div
-          className="d-flex flex-grow-1 w-100"
-          style={{
-            minHeight: 0,
-          }}
-        >
-          <div
-            id={styles["dmPanelContent"]}
-            className={`w-100 d-flex flex-column position-relative gap-2`}
-          >
-            <DmDisplay receiver={receiver} key={receiverId} />
-          </div>
-          <FriendProfile friend={receiver} showOffset={showOffset} />
-        </div>
-      </DmContext>
+      </div>
     </>
   );
 };

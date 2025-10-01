@@ -6,11 +6,21 @@ import { isAuthenticated } from "../middlewares/check_auth_user.js";
 const router = express.Router();
 
 router.post(
-  "/dm/:offset",
+  "/dm/initialData/:offset",
   [
     isAuthenticated,
     body("receiverId").notEmpty().isNumeric(),
     param("offset").notEmpty().isNumeric(),
+  ],
+  userController.getInitalDmData
+);
+
+router.post(
+  "/dm/moreData",
+  [
+    isAuthenticated,
+    body("receiverId").notEmpty().isNumeric(),
+    query("nextId").notEmpty().isNumeric(),
   ],
   userController.getDmData
 );
@@ -20,5 +30,7 @@ router.get(
   [isAuthenticated, param("receiverId").notEmpty().isNumeric()],
   userController.getPinnedMessages
 );
+
+router.get("/dmHistory", isAuthenticated, userController.getDmHistory);
 
 export default router;

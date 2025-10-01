@@ -6,13 +6,15 @@ import { AiOutlineShop } from "react-icons/ai";
 import { NavLink } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
 
+const links = [
+  { content: "Friends", icon: <FaUsers />, link: "/@me" },
+  { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
+  { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
+];
+
 const DmSidebarNavTop = () => {
   const setHeader = useContext(HeaderContext);
-  const links = [
-    { content: "Friends", icon: <FaUsers />, link: "/@me" },
-    { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
-    { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
-  ];
+
   return (
     <>
       <div className="mt-2 w-100">

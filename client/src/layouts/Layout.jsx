@@ -5,8 +5,11 @@ import { Outlet } from "react-router-dom";
 import HeaderProvider from "../contexts/HeaderContext";
 import { socket } from "../socket";
 import { Toaster } from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Layout = () => {
+  const queryClient = useQueryClient();
+
   const [header, setHeader] = useState("Friends");
   const value = setHeader;
   const onConnect = () => {
@@ -17,7 +20,7 @@ const Layout = () => {
   };
   const getInitial = (userId) => {
     socket.auth.userId = userId;
-    console.log(userId);
+    // console.log(userId);
   };
   const onDisconnect = () => {
     console.log("❌ Socket disconnected");
@@ -38,6 +41,9 @@ const Layout = () => {
       socket.off("initial", getInitial);
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
+
+      queryClient.removeQueries({ queryKey: ["pinnedMsgs"] });
+
       console.log("SOCKET DISCONNECTED layout");
     };
   }, []);
@@ -45,26 +51,6 @@ const Layout = () => {
   return (
     <>
       <Header content={header} />
-      {/* <div
-        className="d-flex"
-        style={{
-          width: 700,
-          height: 700,
-        }}
-      >
-        <div
-          className="1 border border-primary"
-          style={{
-            width: 250,
-          }}
-        ></div>
-        <div
-          className="2 border border-danger"
-          style={{
-            width: 250,
-          }}
-        ></div>
-      </div> */}
       <div
         id="responiveContainer"
         className="d-flex w-100 flex-grow-1"
@@ -72,10 +58,10 @@ const Layout = () => {
           height: "calc(100% - 30px)",
         }}
       >
-        <HeaderProvider.Provider value={value}>
+        <HeaderProvider value={value}>
           <ServerList />
           <Outlet />
-        </HeaderProvider.Provider>
+        </HeaderProvider>
       </div>
       <Toaster position="top-right" />
     </>
