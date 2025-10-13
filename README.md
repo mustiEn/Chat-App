@@ -1,6 +1,6 @@
 # Chat App
 
-An online chat app where users can add friends, create groups, make online purchases etc.
+An online chat app where users can add friends, create groups, make online purchases etc. (still in development)
 
 ## Features
 
