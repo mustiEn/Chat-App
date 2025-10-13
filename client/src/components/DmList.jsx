@@ -14,20 +14,32 @@ import toast from "react-hot-toast";
 import DmModalNotifier from "./DmModalNotifier.jsx";
 import { socket } from "../socket.js";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  QueryClient,
+  useInfiniteQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useLayoutEffect } from "react";
 import ChatSkeleton from "./ChatSkeleton.jsx";
 
 const DmList = ({ receiver, isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
+  const queryClient = useQueryClient();
+  const queryData = queryClient.getQueryData(["initialChatData", receiverId]);
+  let currentChat = queryData?.dms || [];
   const typeRef = useRef(null);
   const {
-    dmChat: { messages, pendingMessages },
+    dmChat: { pendingMessages },
     setDmChat,
     scrollElementRef,
     dmChatRef,
   } = useOutletContext();
-  const { scrollPosition, initialPageParam } = dmChatRef.current;
+  const {
+    scrollPosition,
+    initialPageParam,
+    prevScrollHeight,
+    prevChatDataUpdatedAtRef,
+  } = dmChatRef.current;
   const fetchMoreData = async ({ pageParam }) => {
     const res = await fetch(`/api/dm/moreData?nextId=${pageParam}`, {
       method: "POST",
@@ -65,8 +77,6 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
     },
     enabled: false,
   });
-  const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
-
   const [modal, setModal] = useState({
     activeMsg: null,
     show: false,
@@ -89,10 +99,14 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
       },
       (err, res) => {
         if (err) {
-          console.log("err", err);
-        } else {
-          console.log("res", res);
+          console.log("Error: ", err);
         }
+
+        queryClient.setQueryData(
+          ["initialChatData", String(receiverId)],
+          (olderData) => [modal.activeMsg, ...olderData]
+        );
+        console.log("Pinned message successfully", res);
       }
     );
     setModal({
@@ -120,22 +134,17 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
     );
   };
   const itemsContainerRef = useRef(null);
-  const prevScrollHeight = useRef(0);
-
   const rowVirtualizer = useVirtualizer({
-    count: messages[receiverId]?.length,
+    count:
+      (currentChat?.length ?? 0) + (pendingMessages[receiverId]?.length ?? 0),
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
     overscan: 5,
     gap: 20,
   });
-
   const items = useMemo(
-    () => [
-      ...(messages[receiverId] ?? []),
-      ...(pendingMessages[receiverId] ?? []),
-    ],
-    [messages[receiverId]]
+    () => [...(currentChat ?? []), ...(pendingMessages[receiverId] ?? [])],
+    [currentChat, pendingMessages[receiverId]]
   );
 
   // if (isError) {
@@ -154,32 +163,35 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
     return () => {
       el.removeEventListener("scroll", handleScroll);
     };
-  }, [scrollElementRef.current]);
+  }, [scrollElementRef.current, receiverId]);
 
   useLayoutEffect(() => {
+    //* If item length FaChampagneGlasses,adjust scrollPosition
     if (!items.length) return;
 
     const el = scrollElementRef.current;
+
     if (!el) return;
-
     if (isFetched) {
-      const isDataNew = prevDataUpdatedAtRef.current != dataUpdatedAt;
+      const isDataNew = prevChatDataUpdatedAtRef[receiverId] != dataUpdatedAt;
 
-      prevDataUpdatedAtRef.current = dataUpdatedAt;
+      prevChatDataUpdatedAtRef[receiverId] = dataUpdatedAt;
 
       if (isDataNew) {
-        const diff = el.scrollHeight - prevScrollHeight.current;
+        const diff = el.scrollHeight - (prevScrollHeight[receiverId] ?? 0);
+
         el.scrollTop = el.scrollTop + diff;
       } else {
+        //* After the fetch, new data hasnt been fetched
         el.scrollTop = scrollPosition[receiverId];
       }
     } else if (scrollPosition[receiverId] == undefined) {
       el.scrollTop = el.scrollHeight;
-    } else {
-      el.scrollTop = scrollPosition[receiverId];
     }
 
-    prevScrollHeight.current = el.scrollHeight;
+    scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
+
+    prevScrollHeight[receiverId] = el.scrollHeight;
     scrollPosition[receiverId] = el.scrollTop;
   }, [items]);
 
@@ -187,17 +199,20 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
     if (!isSuccess) return;
 
     const { dms } = data.pages[data.pages.length - 1];
-    const isDataNew = prevDataUpdatedAtRef.current != dataUpdatedAt;
+    const isDataNew = prevChatDataUpdatedAtRef[receiverId] != dataUpdatedAt;
 
     if (!dms.length) return;
     if (!isDataNew) return;
 
+    queryClient.setQueryData(["initialChatData", receiverId], (oldData) => ({
+      ...oldData,
+      dms: [...dms, ...oldData.dms],
+    }));
+
+    scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
+
     setDmChat((prev) => ({
       ...prev,
-      messages: {
-        ...prev.messages,
-        [receiverId]: [...dms, ...(prev.messages[receiverId] ?? [])],
-      },
       hasMoreUp: {
         ...prev.hasMoreUp,
         [receiverId]: hasNextPage,
@@ -207,7 +222,7 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
 
   return (
     <>
-      {isInitialDataLoading || !messages[receiverId] ? (
+      {isInitialDataLoading || !currentChat ? (
         <ChatSkeleton />
       ) : (
         <MyLoader

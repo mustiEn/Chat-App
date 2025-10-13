@@ -25,6 +25,16 @@ export const DirectMessage = sequelize.define(
       defaultValue: false,
       allowNull: false,
     },
+    is_deleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    request_state: {
+      type: DataTypes.ENUM,
+      values: ["accepted", "pending", "rejected"],
+      defaultValue: null,
+    },
     pin_updated_at: {
       type: DataTypes.DATE,
       defaultValue: null,

@@ -56,9 +56,9 @@ const Options = memo(function Options({ msg = [], handleDmModalNotifier }) {
     []
   );
   const isUserIdIsEqualToFromId = (optionName) => {
-    if (optionName == "Delete" && socket.auth.userId !== msg.from_id) {
+    if (optionName == "Delete" && socket.auth.user?.id !== msg.from_id) {
       return true;
-    } else if (optionName == "Edit" && socket.auth.userId !== msg.from_id) {
+    } else if (optionName == "Edit" && socket.auth.user?.id !== msg.from_id) {
       return true;
     }
   };

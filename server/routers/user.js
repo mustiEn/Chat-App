@@ -12,7 +12,7 @@ router.post(
     body("receiverId").notEmpty().isNumeric(),
     param("offset").notEmpty().isNumeric(),
   ],
-  userController.getInitalDmData
+  userController.getInitialDmData
 );
 
 router.post(
@@ -32,5 +32,11 @@ router.get(
 );
 
 router.get("/dmHistory", isAuthenticated, userController.getDmHistory);
+
+router.get(
+  "/message-requests",
+  isAuthenticated,
+  userController.getMessageRequests
+);
 
 export default router;

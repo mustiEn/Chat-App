@@ -4,13 +4,17 @@ import { NavLink, useOutletContext, useParams } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { SidebarContext } from "../contexts/SidebarContext";
 import DmHistorySkeleton from "./DmHistorySkeleton";
 // import DmHistorySkeleton from './DmHistorySkeleton'
 
-const UsersInDmHistory = memo(function UsersInDmHistory() {
-  const { userId: receiverId } = useParams();
-  const { dmHistoryUsers, setDmHistoryUsers } = useContext(SidebarContext);
+const UsersInDmHistory = memo(function UsersInDmHistory({
+  dmHistoryUsers,
+  setDmHistoryUsers,
+  dmChat,
+  setDmChat,
+}) {
+  const { receivers } = dmChat;
+  //^ can querydata be used instead of context
   const setHeader = useContext(HeaderContext);
   const getDmHistory = async () => {
     const res = await fetch("/api/dmHistory");
@@ -28,8 +32,10 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
 
   useEffect(() => {
     if (!isSuccess) return;
+    if (!data?.length) return;
+    if (dmHistoryUsers.length) return;
 
-    setDmHistoryUsers(data);
+    setDmHistoryUsers((prev) => [...data, ...prev]);
   }, [data]);
 
   return (
@@ -73,7 +79,7 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
                     alt=""
                   />
                   <div>
-                    {e.display_name.length > 15
+                    {e.display_name?.length > 15
                       ? e.display_name.slice(15).concat("...")
                       : e.display_name}
                   </div>

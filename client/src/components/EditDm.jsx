@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import { useEffect } from "react";
 import Form from "react-bootstrap/Form";
 import TextareaAutosize from "react-textarea-autosize";
@@ -7,14 +7,18 @@ import { socket } from "../socket";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
+import { useQueryClient } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
 const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
+  const { userId: receiverId } = useParams();
+  const queryClient = useQueryClient();
   const editInpRef = useRef(null);
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
     if (editInpRef.current != document.activeElement) {
@@ -25,33 +29,36 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
         message: "",
       });
       return;
+    } else if (msg.message == editedMessage.message) {
+      return;
+    }
+
+    if (!socket.connected) {
+      const { dms } = queryClient.getQueryData(["initialChatData", receiverId]);
+      const mappedDms = dms.map((m) =>
+        m.id == msg.id
+          ? {
+              ...m,
+              message: editedMessage.message,
+              isPending: true,
+              is_edited: true,
+            }
+          : m
+      );
+
+      queryClient.setQueryData(
+        ["initialChatData", receiverId],
+        (olderData) => ({
+          ...olderData,
+          dms: mappedDms,
+        })
+      );
     }
 
     setEditedMessage({
       id: null,
       message: "",
     });
-
-    if (!socket.connected) {
-      setDmChat((prev) => {
-        const messages = prev.messages[receiverId].map((m) =>
-          m.id == msg.id
-            ? {
-                ...m,
-                message: editedMessage.message,
-                isPending: true,
-                is_edited: true,
-              }
-            : m
-        );
-
-        return {
-          ...prev,
-          messages: { ...prev.messages, [receiverId]: messages },
-        };
-      });
-    }
-
     socket.emit(
       "send edited msgs",
       {
@@ -64,10 +71,33 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
           console.log("Edited Message failed:", err);
           return;
         }
-        console.log(res);
+
+        const { dms } = queryClient.getQueryData([
+          "initialChatData",
+          receiverId,
+        ]);
+        const mappedDms = dms.map((m) =>
+          m.id == msg.id
+            ? {
+                ...m,
+                message: editedMessage.message,
+                isPending: false,
+                is_edited: true,
+              }
+            : m
+        );
+        queryClient.setQueryData(
+          ["initialChatData", receiverId],
+          (olderData) => ({
+            ...olderData,
+            dms: mappedDms,
+          })
+        );
+
+        console.log("Edited Message successfull: ", res);
       }
     );
-  };
+  }, [receiverId, editedMessage]);
 
   return (
     <>
@@ -95,7 +125,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
           // onHeightChange={scrollbottom}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              handleEdit(msg.id);
+              handleEdit();
             } else if (e.key === "Escape") {
               setEditedMessage({
                 id: null,

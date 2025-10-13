@@ -10,6 +10,7 @@ const links = [
   { content: "Friends", icon: <FaUsers />, link: "/@me" },
   { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
   { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
+  { content: "Requests", icon: <AiOutlineShop />, link: "requests" },
 ];
 
 const DmSidebarNavTop = () => {

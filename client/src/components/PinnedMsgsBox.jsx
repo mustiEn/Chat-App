@@ -8,11 +8,13 @@ import { PulseLoader } from "react-spinners";
 import DmModalNotifier from "./DmModalNotifier";
 import { socket } from "../socket";
 import { useOutletContext, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
-const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
+const PinnedMsgsBox = ({ ref, isPending }) => {
   const { userId: receiverId } = useParams();
+  const queryClient = useQueryClient();
   const {
-    dmChat: { pinnedMsgs },
+    dmChat: { pinnedMsgs, showPinnedMsgs },
   } = useOutletContext();
   const [modal, setModal] = useState({
     activeMsg: null,
@@ -34,10 +36,20 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
       },
       (err, res) => {
         if (err) {
-          console.log("err", err);
-        } else {
-          console.log("res", res);
+          console.log("Error: ", err);
         }
+
+        queryClient.setQueryData(
+          ["initialChatData", String(receiverId)],
+          (olderData) => {
+            const filteredData = olderData.filter(
+              ({ id }) => id != modal.activeMsg.id
+            );
+
+            return filteredData;
+          }
+        );
+        console.log("Unpinned successfully", res);
       }
     );
 
@@ -53,7 +65,7 @@ const PinnedMsgsBox = ({ ref, showPinnedMsgs, isPending }) => {
         id={styles["pinnedMsgsBox"]}
         ref={ref}
         className={
-          showPinnedMsgs
+          showPinnedMsgs[receiverId]
             ? "border border-white border-opacity-25 rounded-3 position-absolute z-3 text-white"
             : "d-none"
         }

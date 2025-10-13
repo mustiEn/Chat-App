@@ -12,6 +12,7 @@ import Shop from "./components/Shop";
 import Login from "./views/Login";
 import * as Loader from "./loaders/index.js";
 import Logout from "./views/Logout.jsx";
+import MessageRequests from "./components/MessageRequests.jsx";
 
 function App() {
   const router = createBrowserRouter([
@@ -35,6 +36,10 @@ function App() {
             {
               path: "shop",
               element: <Shop />,
+            },
+            {
+              path: "requests",
+              element: <MessageRequests />,
             },
             {
               path: "group-chat",

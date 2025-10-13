@@ -16,10 +16,10 @@ export const setUpAssociation = () => {
     foreignKey: "to_id",
   });
   DirectMessage.belongsTo(User, {
-    foreignKey: "pinned_by",
+    foreignKey: "pinned_by_id",
   });
   User.hasMany(DirectMessage, {
-    foreignKey: "pinned_by",
+    foreignKey: "pinned_by_id",
   });
 
   User.belongsToMany(Group, {
@@ -33,7 +33,7 @@ export const setUpAssociation = () => {
 
   User.belongsToMany(User, {
     through: "friends",
-    as: "friend",
+    as: "userFriends",
     foreignKey: "user_id",
     otherKey: "friend_id",
     timestamps: true,
@@ -41,9 +41,17 @@ export const setUpAssociation = () => {
 
   User.belongsToMany(User, {
     through: "direct_message_history",
-    as: "direct_message_records",
+    as: "directMessageHistory",
     foreignKey: "user_id",
     otherKey: "dm_history_user_id",
+    timestamps: true,
+  });
+
+  User.belongsToMany(User, {
+    through: "blocked_users",
+    as: "blockedUsers",
+    foreignKey: "blocked_id",
+    otherKey: "blocked_by_id",
     timestamps: true,
   });
 };
