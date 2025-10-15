@@ -13,8 +13,9 @@ import { useQueryClient } from "@tanstack/react-query";
 const PinnedMsgsBox = ({ ref, isPending }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
+  const pinnedMsgs = queryClient.getQueryData(["pinnedMsgs", receiverId]);
   const {
-    dmChat: { pinnedMsgs, showPinnedMsgs },
+    dmChat: { showPinnedMsgs },
   } = useOutletContext();
   const [modal, setModal] = useState({
     activeMsg: null,
@@ -32,7 +33,7 @@ const PinnedMsgsBox = ({ ref, isPending }) => {
       {
         id: modal.activeMsg.id,
         isPinned: false,
-        receiverId,
+        toId: receiverId,
       },
       (err, res) => {
         if (err) {
@@ -40,7 +41,7 @@ const PinnedMsgsBox = ({ ref, isPending }) => {
         }
 
         queryClient.setQueryData(
-          ["initialChatData", String(receiverId)],
+          ["pinnedMsgs", String(receiverId)],
           (olderData) => {
             const filteredData = olderData.filter(
               ({ id }) => id != modal.activeMsg.id
@@ -77,7 +78,7 @@ const PinnedMsgsBox = ({ ref, isPending }) => {
         <hr className="my-0" />
         {isPending ? (
           <PulseLoader color="white" />
-        ) : !pinnedMsgs[receiverId]?.length ? (
+        ) : !pinnedMsgs?.length ? (
           <>
             <HiOutlineFaceFrown
               className="w-100 mt-5"
@@ -96,7 +97,7 @@ const PinnedMsgsBox = ({ ref, isPending }) => {
               height: 330,
             }}
           >
-            {pinnedMsgs[receiverId].map((msg, i) => (
+            {pinnedMsgs.map((msg, i) => (
               <li
                 key={msg.id}
                 className={`${styles["pinned-msg"]} d-flex align-items-center gap-2 p-2 border border-white border-opacity-25 rounded-3 position-relative mx-1`}

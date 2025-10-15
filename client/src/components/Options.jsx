@@ -11,7 +11,11 @@ import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 
 import Tooltip from "react-bootstrap/Tooltip";
 
-const Options = memo(function Options({ msg = [], handleDmModalNotifier }) {
+const Options = memo(function Options({
+  msg = [],
+  handleDmModalNotifier,
+  setEditedMessage,
+}) {
   const { setDmChat } = useOutletContext();
 
   const handleEditableMsg = (msg) => {

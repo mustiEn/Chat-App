@@ -51,6 +51,9 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
     enabled: false,
   });
 
+  useEffect(() => {
+    console.log(data);
+  }, [data]);
   // if (isError) toast.error(error.message);
 
   useEffect(() => {

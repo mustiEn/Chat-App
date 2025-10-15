@@ -93,7 +93,8 @@ export const getInitialDmData = async (req, res, next) => {
     const dmsSql = ` 
       SELECT 
         dm.id,
-        dm.from_id from_id, 
+        dm.from_id,
+        dm.to_id, 
         sender.display_name, 
         sender.username, 
         sender.profile,
@@ -392,6 +393,7 @@ export const getMessageRequests = async (req, res, next) => {
         sender.display_name, 
         sender.username, 
         sender.profile, 
+        dm.to_id,
         dm.clientOffset, 
         dm.message, 
         dm.request_state, 

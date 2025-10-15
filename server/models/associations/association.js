@@ -16,10 +16,10 @@ export const setUpAssociation = () => {
     foreignKey: "to_id",
   });
   DirectMessage.belongsTo(User, {
-    foreignKey: "pinned_by_id",
+    foreignKey: "last_pin_action_by_id",
   });
   User.hasMany(DirectMessage, {
-    foreignKey: "pinned_by_id",
+    foreignKey: "last_pin_action_by_id",
   });
 
   User.belongsToMany(Group, {

@@ -30,6 +30,7 @@ const DmHistory = ({
   // useEffect(() => {
   //   navigate("/@me/3");
   // }, []);
+
   return (
     <>
       <div className="px-2 w-100">
@@ -46,7 +47,13 @@ const DmHistory = ({
           dmChat={dmChat}
           setDmChat={setDmChat}
         />
-        <button onClick={() => socket.disconnect()}>close</button>
+        <button
+          onClick={() => {
+            socket.disconnect();
+          }}
+        >
+          close
+        </button>
         <button onClick={() => socket.connect()}>connect</button>
       </div>
     </>

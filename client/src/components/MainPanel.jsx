@@ -20,8 +20,8 @@ const MainPanel = () => {
     receivers: {},
   });
   const [msgRequests, setMsgRequests] = useState({
-    fromOthers: {},
-    fromMe: {},
+    fromOthers: [],
+    fromMe: [],
   });
   const [dmHistoryUsers, setDmHistoryUsers] = useState([]);
   const [groupChat, setGroupChat] = useState({});
@@ -44,11 +44,12 @@ const MainPanel = () => {
       socket.auth.user = user;
       // console.log(userId);
     };
-    const onDisconnect = () => {
-      console.log("❌ Socket disconnected");
+    const onDisconnect = (reason) => {
+      console.log("❌ Socket disconnected, ", reason);
     };
     const handleEditedMessages = ({ result }) => {
-      result.forEach((editedMsg) => {
+      const newEditedMessages = result[0] ? result : [result];
+      newEditedMessages.forEach((editedMsg) => {
         const { dms } = queryClient.getQueryData([
           "initialChatData",
           String(editedMsg.from_id),
@@ -74,7 +75,8 @@ const MainPanel = () => {
       });
     };
     const handleNewMessages = ({ result }) => {
-      result.forEach((newMsg) => {
+      const newMsgs = result[0] ? result : [result];
+      newMsgs.forEach((newMsg) => {
         queryClient.setQueryData(
           ["initialChatData", String(newMsg.from_id)],
           (oldData) => ({
@@ -86,49 +88,36 @@ const MainPanel = () => {
         socket.auth.serverOffset[newMsg.from_id] = newMsg.id;
       });
     };
-    const handleMessageRequests = ({ result, sender }) => {
-      queryClient.setQueryData(
-        ["initialChatData", String(sender.id)],
-        (olderData) => ({
-          ...olderData,
-          dms: [result],
-        })
-      );
-      console.log(sender);
-
-      setMsgRequests((prev) => ({
-        ...prev,
-        fromOthers: { ...prev.fromOthers, [sender.id]: [result] },
-      }));
-      setDmHistoryUsers((prev) => [sender, ...prev]);
-    };
-    const handlePinnedMessages = ({ result, isPinned }) => {
-      if (isPinned != "recovery") {
-        const [pinnedMsg] = result;
-        const pinnedById = pinnedMsg.pinned_by_id;
+    const handlePinnedMessages = ({ result, isRecovery }) => {
+      if (!isRecovery) {
+        const pinnedMsg = result;
+        const { last_pin_action_by_id: lastPinActionById, is_pinned } =
+          pinnedMsg;
 
         const isQueryFetched = queryClient.getQueryState([
-          "initialChatData",
-          String(pinnedById),
+          "pinnedMsgs",
+          String(lastPinActionById),
         ]);
 
         //^ here, add a notification and amend if needed.if notification is here,no need to check ispinned, cuz now i cant know whether to notify on mount
-        if (isPinned) {
+        if (is_pinned) {
           setDmChat((prev) => ({
             ...prev,
             newPinnedMsgExists: {
               ...prev.newPinnedMsgExists,
-              [pinnedById]: prev.showPinnedMsgs[pinnedById] ? false : true, //* if the modal is open,dont notify the user, if not, do it
+              [lastPinActionById]: prev.showPinnedMsgs[lastPinActionById]
+                ? false
+                : true, //* if the modal is open,dont notify the user, if not, do it
             },
           }));
         }
         if (!isQueryFetched) return; //* if not already fetch,skip since its gonna fetch it on mount
 
         queryClient.setQueryData(
-          ["initialChatData", String(pinnedById)],
+          ["pinnedMsgs", String(lastPinActionById)],
           (olderData) => {
-            if (isPinned) {
-              return [pinnedMsg, ...olderData];
+            if (is_pinned) {
+              return [pinnedMsg, ...(olderData ?? [])];
             } else {
               const filteredData = olderData.filter(
                 ({ id }) => id != pinnedMsg.id
@@ -140,30 +129,31 @@ const MainPanel = () => {
         );
       } else {
         result.forEach((pinnedMsg) => {
-          const pinnedById = pinnedMsg.pinned_by_id;
+          const { last_pin_action_by_id: lastPinActionById, is_pinned } =
+            pinnedMsg;
           const isQueryFetched = queryClient.getQueryState([
-            "initialChatData",
-            String(pinnedById),
+            "pinnedMsgs",
+            String(lastPinActionById),
           ]);
 
           //^ notification thing applies to this here too.
-          if (isPinned) {
-            const pinnedById = pinnedMsg.pinned_by_id;
-
+          if (is_pinned) {
             setDmChat((prev) => ({
               ...prev,
               newPinnedMsgExists: {
                 ...prev.newPinnedMsgExists,
-                [pinnedById]: prev.showPinnedMsgs[pinnedById] ? false : true, //* if the modal is open,dont notify the user, if not, do it
+                [lastPinActionById]: prev.showPinnedMsgs[lastPinActionById]
+                  ? false
+                  : true, //* if the modal is open,dont notify the user, if not, do it
               },
             }));
           }
           if (!isQueryFetched) return; //* if not already fetch,skip since its gonna fetch it on mount
 
           queryClient.setQueryData(
-            ["initialChatData", String(pinnedById)],
+            ["pinnedMsgs", String(lastPinActionById)],
             (olderData) => {
-              if (isPinned) {
+              if (is_pinned) {
                 const pinnedMsgAlreadyExists = olderData.find(
                   ({ id }) => id == pinnedMsg.id
                 );
@@ -172,7 +162,7 @@ const MainPanel = () => {
                   olderData.filter((e) => e.id != pinnedMsg.id);
                 }
 
-                return [pinnedMsg, ...olderData];
+                return [pinnedMsg, ...(olderData ?? [])];
               } else {
                 const filteredData = olderData.filter(
                   ({ id }) => id != pinnedMsg.id
@@ -191,10 +181,12 @@ const MainPanel = () => {
     socket.on("connect_error", onConnectErr);
     socket.on("initial", getInitial);
     socket.on("receive dms", handleNewMessages);
-    socket.on("receive msg requests", handleMessageRequests);
     socket.on("receive edited msgs", handleEditedMessages);
     socket.on("receive pinned msgs", handlePinnedMessages);
     socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", (err) =>
+      console.error("⚠️ Connect error:", err)
+    );
 
     return () => {
       socket.off("connect", onConnect);
@@ -202,7 +194,6 @@ const MainPanel = () => {
       socket.off("initial", getInitial);
       socket.off("receive edited msgs", handleEditedMessages);
       socket.off("receive dms", handleNewMessages);
-      socket.off("receive msg requests", handleMessageRequests);
       socket.off("receive pinned msgs", handlePinnedMessages);
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
@@ -213,8 +204,8 @@ const MainPanel = () => {
   }, []);
 
   useEffect(() => {
-    const receiveMessageRequestAcceptance = (sender, msg) => {
-      console.log("receiveMessageRequestAcceptance func runnning");
+    const receiveMessageRequestAcceptance = ({ sender, result }) => {
+      console.log("receiveMessageRequestAcceptance func runnning", sender);
       socket.emit("join room", sender.id);
 
       const state = queryClient.getQueryState([
@@ -222,22 +213,22 @@ const MainPanel = () => {
         String(sender.id),
       ]);
       //^ This is to keep cache empty if undefined cuz on dmpanel mount,its already gonna comeup
-      if (state && Object.keys(msg).length) {
+      if (state && Object.keys(result).length) {
         queryClient.setQueryData(
           ["initialChatData", String(sender.id)],
           (olderData) => ({
             ...olderData,
-            dms: [...(olderData?.dms ?? []), msg],
+            dms: [...(olderData?.dms ?? []), result],
           })
         );
       }
 
       setMsgRequests((prev) => {
-        const { [sender.id]: _, ...filtered } = prev.fromMe;
+        const filtered = prev.fromMe.filter(({ to_id }) => to_id != sender.id);
 
         return {
+          ...prev,
           fromMe: filtered,
-          fromOthers: prev.fromOthers,
         };
       });
 
@@ -247,16 +238,39 @@ const MainPanel = () => {
         setDmHistoryUsers((prev) => [sender, ...prev]);
       }
     };
+    const handleMessageRequests = ({ result, sender }) => {
+      queryClient.setQueryData(
+        ["initialChatData", String(sender.id)],
+        (olderData) => ({
+          ...olderData,
+          dms: [result],
+        })
+      );
+      console.log(dmHistoryUsers);
+
+      setMsgRequests((prev) => ({
+        ...prev,
+        fromOthers: [...prev.fromOthers, result],
+      }));
+
+      const isUserInDmHistory = dmHistoryUsers.some(
+        ({ id }) => id == sender.id
+      );
+
+      if (!isUserInDmHistory) setDmHistoryUsers((prev) => [sender, ...prev]);
+    };
     socket.on(
       "receive msg request acceptance",
       receiveMessageRequestAcceptance
     );
+    socket.on("receive msg requests", handleMessageRequests);
 
     return () => {
       socket.off(
         "receive msg request acceptance",
         receiveMessageRequestAcceptance
       );
+      socket.off("receive msg requests", handleMessageRequests);
     };
   }, [dmHistoryUsers]);
 

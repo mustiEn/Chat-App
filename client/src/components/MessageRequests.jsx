@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useEffect } from "react";
 import { formatDate } from "../utils";
 import styles from "../css/dm_panel.module.css";
 import Button from "react-bootstrap/esm/Button";
 import { useOutletContext, useParams } from "react-router-dom";
 import { socket } from "../socket";
+import { useRef } from "react";
 
 const MessageRequests = () => {
+  const queryClient = useQueryClient();
   const { msgRequests, setMsgRequests } = useOutletContext();
   const getMessageRequests = async () => {
     try {
@@ -21,9 +23,11 @@ const MessageRequests = () => {
     }
   };
   const handleMessageRequestAcceptance = (status, msg) => {
-    const payload = {
+    console.log(msg);
+
+    const emitData = {
       reqMsg: msg,
-      isAccepted: status,
+      status,
     };
     const handleEmitCallback = (err, res) => {
       if (err || res.status === "duplicated" || res.status === "error") {
@@ -32,11 +36,13 @@ const MessageRequests = () => {
       }
 
       setMsgRequests((prev) => {
-        const { [msg.from_id]: _, ...filtered } = prev.fromOthers;
+        const filtered = prev.fromOthers.filter(
+          ({ from_id }) => from_id != msg.from_id
+        );
 
         return {
-          fromOthers: filtered,
           ...prev,
+          fromOthers: filtered,
         };
       });
       socket.auth.serverOffset[msg.from_id] = msg.id;
@@ -44,7 +50,7 @@ const MessageRequests = () => {
       console.log("Message succesfull: ", res);
     };
 
-    socket.emit("send msg request acceptance", {}, payload, (err, res) =>
+    socket.emit("send msg request acceptance", {}, emitData, (err, res) =>
       handleEmitCallback(err, res)
     );
   };
@@ -54,26 +60,20 @@ const MessageRequests = () => {
     queryFn: getMessageRequests,
     staleTime: Infinity,
   });
-
+  const isFirstMount = useRef(false);
   useEffect(() => {
     if (!isSuccess) return;
     if (!data.length) return;
 
-    if (Object.keys(msgRequests.fromOthers).length) return;
+    if (isFirstMount.current) return;
+    if (msgRequests.fromOthers.length) return;
 
-    setMsgRequests((prev) => {
-      const newD = data.reduce((acc, curr) => {
-        acc[curr.from_id] = curr;
-        return acc;
-      }, {});
-
-      return { ...prev, fromOthers: { ...newD } };
-    });
+    setMsgRequests((prev) => ({
+      ...prev,
+      fromOthers: data,
+    }));
+    isFirstMount.current = true;
   }, [data]);
-
-  useEffect(() => {
-    console.log(msgRequests);
-  }, [msgRequests]);
 
   return (
     <>
@@ -82,10 +82,10 @@ const MessageRequests = () => {
       <br />
       {isLoading ? (
         <div>Loading...</div>
-      ) : !Object.values(msgRequests.fromOthers)?.length ? (
+      ) : !msgRequests.fromOthers?.length ? (
         <div>No data</div>
       ) : (
-        Object.values(msgRequests.fromOthers).map((msg) => (
+        msgRequests.fromOthers.map((msg) => (
           <div
             className={`${styles["aa"]} d-flex align-items-center gap-2 w-100 `}
             key={msg.id}

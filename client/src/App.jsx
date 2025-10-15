@@ -13,6 +13,9 @@ import Login from "./views/Login";
 import * as Loader from "./loaders/index.js";
 import Logout from "./views/Logout.jsx";
 import MessageRequests from "./components/MessageRequests.jsx";
+import { QueryClient } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 function App() {
   const router = createBrowserRouter([
@@ -31,7 +34,7 @@ function App() {
             {
               path: ":userId",
               element: <DmPanel />,
-              // loader: Loader.loadDmData,
+              loader: Loader.loadDmData(queryClient),
             },
             {
               path: "shop",

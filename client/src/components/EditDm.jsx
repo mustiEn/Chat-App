@@ -63,6 +63,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
       "send edited msgs",
       {
         id: editedMessage.id,
+        toId: receiverId,
         message: editedMessage.message,
         updatedAt: time,
       },

@@ -17,16 +17,18 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   QueryClient,
   useInfiniteQuery,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { useLayoutEffect } from "react";
 import ChatSkeleton from "./ChatSkeleton.jsx";
+import { dmDataQuery } from "../loaders/index.js";
 
 const DmList = ({ receiver, isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
-  const queryData = queryClient.getQueryData(["initialChatData", receiverId]);
-  let currentChat = queryData?.dms || [];
+  const { data: l } = useQuery(dmDataQuery(receiverId));
+  const { dms: currentChat = [] } = l ?? [];
   const typeRef = useRef(null);
   const {
     dmChat: { pendingMessages },
@@ -34,6 +36,7 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
     scrollElementRef,
     dmChatRef,
   } = useOutletContext();
+
   const {
     scrollPosition,
     initialPageParam,
@@ -95,17 +98,17 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
       {
         id: modal.activeMsg.id,
         isPinned: true,
-        receiverId,
+        toId: receiverId,
       },
       (err, res) => {
         if (err) {
           console.log("Error: ", err);
         }
 
-        queryClient.setQueryData(
-          ["initialChatData", String(receiverId)],
-          (olderData) => [modal.activeMsg, ...olderData]
-        );
+        queryClient.setQueryData(["pinnedMsgs", receiverId], (olderData) => [
+          modal.activeMsg,
+          ...(olderData ?? []),
+        ]);
         console.log("Pinned message successfully", res);
       }
     );
@@ -222,7 +225,7 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
 
   return (
     <>
-      {isInitialDataLoading || !currentChat ? (
+      {!currentChat ? (
         <ChatSkeleton />
       ) : (
         <MyLoader

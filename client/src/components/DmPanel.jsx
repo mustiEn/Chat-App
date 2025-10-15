@@ -6,7 +6,7 @@ import DmPanelTop from "./DmPanelTop";
 import styles from "../css/dm_panel.module.css";
 import { socket } from "../socket";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { dmDataQuery } from "../loaders";
 import toast from "react-hot-toast";
 
 const DmPanel = () => {
@@ -44,11 +44,7 @@ const DmPanel = () => {
     isLoading,
     isFetched,
     dataUpdatedAt,
-  } = useQuery({
-    queryKey: ["initialChatData", receiverId],
-    queryFn: fetchInitialChat,
-    staleTime: Infinity,
-  });
+  } = useQuery(dmDataQuery(receiverId));
   const chatExists = data?.dms != undefined;
 
   const [showOffset, setShowOffset] = useState(false);
@@ -77,29 +73,20 @@ const DmPanel = () => {
     console.log("dms: ", dms);
 
     if (dms[0]?.request_state == "pending") {
-      console.log("it is a req");
+      console.log(
+        "in panel,new req adding cuz current receiverid doesnt exist"
+      );
 
-      const mergedReqMessages = {
-        ...msgRequests.fromOthers,
-        ...msgRequests.fromMe,
-      };
+      setMsgRequests((prev) => {
+        const isReqFromReceiver = dms[0].from_id == receiverId;
 
-      if (!mergedReqMessages[dms[0].from_id]) {
-        console.log(
-          "in panel,new req adding cuz current receiverid doesnt exist"
-        );
-
-        setMsgRequests((prev) => {
-          const isReqFromReceiver = dms[0].from_id == receiverId;
-
-          return isReqFromReceiver
-            ? {
-                ...prev,
-                fromOthers: { ...prev.fromOthers, [receiverId]: dms[0] },
-              }
-            : { ...prev, fromMe: { ...prev.fromMe, [receiverId]: dms[0] } };
-        });
-      }
+        return isReqFromReceiver
+          ? {
+              ...prev,
+              fromOthers: [...prev.fromOthers, dms[0]],
+            }
+          : { ...prev, fromMe: [...prev.fromMe, dms[0]] };
+      });
     }
 
     setDmChat((prev) => ({
@@ -122,26 +109,6 @@ const DmPanel = () => {
     initialPageParam[receiverId] = nextId;
     socket.auth.serverOffset[receiverId] = dms[dms.length - 1]?.id;
   }, [data]);
-
-  //? useEffect(() => {
-  //   socket.emit("join room", receiverId, (err, res) => {
-  //     if (err) {
-  //       console.log(err);
-  //     } else {
-  //       console.log("Joined room");
-  //     }
-  //   });
-
-  //   return () => {
-  //     socket.emit("leave room", receiverId, (err, res) => {
-  //       if (err) {
-  //         console.log(err);
-  //       } else {
-  //         console.log("Left room");
-  //       }
-  //     });
-  //   };
-  // }, []);
 
   return (
     <>

@@ -10,6 +10,7 @@ export const setUpSocket = (io) => {
     const userId = socket.request.session?.passport?.user;
     const sender = await User.findByPk(userId, {
       attributes: ["id", "display_name", "username", "profile"],
+      raw: true,
     });
     const userLastDisconnect = lastDisconnect.get(userId);
     const usersWithInContactSql = `
@@ -37,7 +38,7 @@ export const setUpSocket = (io) => {
       },
     });
 
-    if (userLastDisconnect) lastDisconnect.delete(userId);
+    // if (userLastDisconnect) lastDisconnect.delete(userId);
 
     logger.log(`User with id => ${userId} connected`);
 
@@ -45,7 +46,7 @@ export const setUpSocket = (io) => {
     socket.join(userId);
 
     usersWithInContact.forEach((e) => {
-      logger.log(e);
+      // logger.log(e);
       const receiverId = e.user_id;
       const key = [userId, receiverId];
       const room = key.sort((a, b) => a - b).join("_");
@@ -57,7 +58,7 @@ export const setUpSocket = (io) => {
       const key = [userId, receiverId];
       const room = key.sort((a, b) => a - b).join("_");
       socket.join(room);
-      logger.log("Joined room:", room);
+      // logger.log("Joined room:", room);
       done({
         status: "ok",
       });
@@ -74,19 +75,21 @@ export const setUpSocket = (io) => {
     });
 
     socket.on("send edited msgs", async (msg, done) => {
-      const receiverId = Number(msg.to_id);
-      let result;
+      const receiverId = Number(msg.toId);
+      const key = [userId, receiverId];
+      const room = key.sort((a, b) => a - b).join("_");
+      let message;
+
       try {
-        const message = await DirectMessage.findByPk(msg.id, { raw: true });
+        message = await DirectMessage.findByPk(msg.id, { raw: true });
 
         if (!message) throw new Error("Message not found");
-
         if (message.message == msg.message) {
           logger.log("⚠️ Duplicate message, already edited");
-          return done({ status: "already edited" });
+          return done({ status: "already edited", result: [message] });
         }
 
-        result = await DirectMessage.update(
+        message = await DirectMessage.update(
           {
             message: msg.message,
             updatedAt: msg.updatedAt,
@@ -98,28 +101,29 @@ export const setUpSocket = (io) => {
             },
           }
         );
-        result = await DirectMessage.findByPk(msg.id, { raw: true });
+        message = await DirectMessage.findByPk(msg.id, { raw: true });
       } catch (error) {
         logger.log("❌ Unexpected error updating message:", error);
         return done({
           status: "error",
-          error,
+          error: error.message,
         });
       }
 
-      const key = [userId, receiverId];
-      const room = key.sort((a, b) => a - b).join("_");
-      socket.to(room).emit("receive edited msgs", { result: [result] });
+      socket.to(room).emit("receive edited msgs", { result: [message] });
       logger.log("message edited");
+
       done({
         status: "ok",
+        result: message,
       });
     });
 
     socket.on("send msg request acceptance", async (msg, answer, done) => {
-      let acceptance = {};
+      const receiverId = Number(answer.reqMsg.from_id);
+      let result = {};
       try {
-        logger.log("send msg request acceptance", answer.reqMsg.from_id);
+        logger.log("send msg request acceptance", receiverId);
         const requestMessage = await DirectMessage.findByPk(answer.reqMsg.id);
 
         if (!requestMessage) throw new Error("Message not found");
@@ -152,19 +156,18 @@ export const setUpSocket = (io) => {
               dm.id = :id
           `;
 
-          [acceptance] = await sequelize.query(msgSql, {
+          [result] = await sequelize.query(msgSql, {
             type: QueryTypes.SELECT,
             replacements: {
               id: newMsg.id,
             },
           });
-          logger.log(acceptance);
         }
 
         await DirectMessage.update(
           {
             request_state: answer.status,
-            is_deleted: answer.status == "rejected" ? 1 : 0,
+            // is_deleted: answer.status == "rejected" ? 1 : 0,
           },
           {
             where: {
@@ -176,33 +179,31 @@ export const setUpSocket = (io) => {
         logger.log(error);
         return done({
           status: "error",
-          error,
+          error: error.message,
         });
       }
 
       if (answer.status == "accepted") {
-        const key = [userId, Number(answer.reqMsg.from_id)];
+        const key = [userId, receiverId];
         const room = key.sort((a, b) => a - b).join("_");
-        socket.join(room);
-        io.to(answer.reqMsg.from_id).emit(
-          "receive msg request acceptance",
+        console.log(sender);
+
+        io.to(receiverId).emit("receive msg request acceptance", {
           sender,
-          acceptance
-        );
+          result,
+        });
+        socket.join(room);
       }
 
       logger.log("Emit receive msg request acceptance");
       return done({
         status: "ok",
-        payload: acceptance,
+        result,
       });
     });
 
     socket.on("send msg requests", async (msg, done) => {
-      logger.log("send msg requests");
       const receiverId = Number(msg.to_id);
-      const key = [userId, receiverId];
-      const room = key.sort((a, b) => a - b).join("_");
       let result;
 
       msg = {
@@ -211,11 +212,12 @@ export const setUpSocket = (io) => {
       };
 
       try {
-        result = (await DirectMessage.create(msg)).toJSON();
+        result = await DirectMessage.create(msg, { raw: true });
 
         const resultSql = `
           SELECT
             dm.id,
+            dm.to_id,
             dm.from_id,
             u.display_name,
             u.username,
@@ -237,10 +239,9 @@ export const setUpSocket = (io) => {
             dm.id = ${result.id}
         `;
 
-        result = await sequelize.query(resultSql, {
+        [result] = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
         });
-        logger.log("REQ SAVED TO DB ==>", result);
       } catch (error) {
         if (
           error.name === "SequelizeUniqueConstraintError" &&
@@ -253,12 +254,13 @@ export const setUpSocket = (io) => {
         console.error("❌ Unexpected error inserting message:", error);
       }
       io.to(receiverId).emit("receive msg requests", {
-        result,
         sender,
+        result,
       });
       logger.log("REQ sent/emitted, receive msg requests", receiverId);
       return done({
         status: "ok",
+        result,
       });
     });
 
@@ -266,10 +268,6 @@ export const setUpSocket = (io) => {
       let result;
       const key = [userId, Number(msg.to_id)];
       const room = key.sort((a, b) => a - b).join("_");
-
-      logger.log("MSG ==>", msg);
-      logger.log("USER ==>", userId);
-      logger.log("ClientOffset ==>", msg.clientOffset);
 
       try {
         const newMsg = await DirectMessage.create(msg, { raw: true });
@@ -300,13 +298,12 @@ export const setUpSocket = (io) => {
             dm.id = :id
         `;
 
-        result = await sequelize.query(resultSql, {
+        [result] = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
           replacements: {
             id: newMsg.id,
           },
         });
-        logger.log("MSG SAVED TO DB ==>", result);
       } catch (error) {
         if (
           error.name === "SequelizeUniqueConstraintError" &&
@@ -321,15 +318,14 @@ export const setUpSocket = (io) => {
         result,
         sender,
       });
-      logger.log("message sent/emitted");
       return done({
         status: "ok",
-        payload: result,
+        result: result,
       });
     });
 
     socket.on("send pinned msgs", async (msg, done) => {
-      const receiverId = Number(msg.receiverId);
+      const receiverId = Number(msg.toId);
       const room = [userId, receiverId].sort((a, b) => a - b).join("_");
       let pinnedMessage;
 
@@ -342,7 +338,7 @@ export const setUpSocket = (io) => {
           {
             is_pinned: msg.isPinned,
             pin_updated_at: fn("NOW"),
-            pinned_by_id: msg.isPinned ? userId : null,
+            last_pin_action_by_id: userId,
           },
           {
             where: {
@@ -362,14 +358,14 @@ export const setUpSocket = (io) => {
               dm.message,
               dm.createdAt created_at,
               dm.pin_updated_at,
-              dm.pinned_by_id
+              dm.last_pin_action_by_id
             FROM 
               direct_messages dm 
               INNER JOIN users sender ON sender.id = dm.from_id 
               INNER JOIN users receiver ON receiver.id = dm.to_id 
               LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
             WHERE 
-              dm.id = msgId
+              dm.id = :msgId
           `;
           pinnedMessage = await sequelize.query(pinnedMessagesSql, {
             type: QueryTypes.SELECT,
@@ -387,13 +383,12 @@ export const setUpSocket = (io) => {
 
       socket.to(room).emit("receive pinned msgs", {
         result: pinnedMessage,
-        isPinned: msg.isPinned,
+        isRecovery: false,
       });
       logger.log("pinned sent");
       return done({
         status: "ok",
         result: pinnedMessage,
-        isPinned: msg.isPinned,
       });
     });
 
@@ -424,18 +419,18 @@ export const setUpSocket = (io) => {
     });
 
     if (!socket.recovered) {
+      const userLastDisconnect = lastDisconnect.get(userId);
       logger.log("socket recovered");
       logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
+      logger.log(lastDisconnect.get(userId));
 
       try {
         const obj = socket.handshake.auth.serverOffset;
 
-        if (!Object.keys(obj).length) return;
-
-        for (const receiverId in obj) {
-          const serverOffset = obj[receiverId];
-          const userLastDisconnect = lastDisconnect.get(userId);
-          const messagesSql = `
+        if (userLastDisconnect && Object.keys(obj).length) {
+          for (const receiverId in obj) {
+            const serverOffset = obj[receiverId];
+            const messagesSql = `
             SELECT 
               dm.id,
               dm.from_id,
@@ -454,78 +449,83 @@ export const setUpSocket = (io) => {
               replied_msg_sender.profile reply_to_msg_profile 
             FROM direct_messages dm
             INNER JOIN users u ON dm.from_id = u.id
+            LEFT JOIN direct_messages replied_msg 
+              ON dm.reply_to_msg = replied_msg.id 
+            LEFT JOIN users replied_msg_sender 
+              ON replied_msg.from_id = replied_msg_sender.id
             WHERE
-              from_id = :receiverId 
-              AND to_id = :userId 
+              dm.from_id = :receiverId 
+              AND dm.to_id = :userId 
               AND dm.id > :serverOffset
-            ORDER BY createdAt ASC
+            ORDER BY dm.createdAt ASC
           `;
-          const messages = await sequelize.query(messagesSql, {
-            type: QueryTypes.SELECT,
-            replacements: {
-              receiverId,
-              userId,
-              serverOffset,
-            },
-          });
-          const editedMessages = await DirectMessage.findAll({
-            attributes: ["id", "message"],
-            where: {
-              from_id: receiverId,
-              to_id: userId,
-              updatedAt: {
-                [Op.gte]: userLastDisconnect,
+            const messages = await sequelize.query(messagesSql, {
+              type: QueryTypes.SELECT,
+              replacements: {
+                receiverId,
+                userId,
+                serverOffset,
               },
-              is_edited: true,
-            },
-            order: [["updatedAt", "ASC"]],
-            raw: true,
-          });
-          const pinnedMessagesSql = `
-            SELECT
-              dm.id,
-              sender.display_name,
-              sender.username,
-              sender.profile,
-              dm.from_id,
-              dm.to_id,
-              dm.is_pinned,
-              dm.pinned_by,
-              dm.clientOffset,
-              dm.message,
-              dm.createdAt created_at,
-              dm.pin_updated_at
-            FROM
-              direct_messages dm
-              INNER JOIN users sender ON sender.id = dm.from_id
-              INNER JOIN users receiver ON receiver.id = dm.to_id
-              LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id
-            WHERE
-              (	            
-                dm.to_id = :userId
-                OR
-                dm.from_id = :userId
-              )
-              AND dm.pinned_by_id == :receiverId
-              AND dm.pin_updated_at >= ":lastDisconnect"
-            ORDER BY
-              dm.pin_updated_at DESC
-          `;
-          const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
-            type: QueryTypes.SELECT,
-            replacements: {
-              userId,
-              receiverId,
-              lastDisconnect: userLastDisconnect,
-            },
-          });
+            });
+            const editedMessages = await DirectMessage.findAll({
+              attributes: ["id", "message"],
+              where: {
+                from_id: receiverId,
+                to_id: userId,
+                updatedAt: {
+                  [Op.gte]: userLastDisconnect,
+                },
+                is_edited: true,
+              },
+              order: [["updatedAt", "ASC"]],
+              raw: true,
+            });
+            const pinnedMessagesSql = `
+              SELECT
+                dm.id,
+                sender.display_name,
+                sender.username,
+                sender.profile,
+                dm.from_id,
+                dm.to_id,
+                dm.is_pinned,
+                dm.last_pin_action_by_id,
+                dm.clientOffset,
+                dm.message,
+                dm.createdAt created_at,
+                dm.pin_updated_at
+              FROM
+                direct_messages dm
+                INNER JOIN users sender ON sender.id = dm.from_id
+                INNER JOIN users receiver ON receiver.id = dm.to_id
+                LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id
+              WHERE
+                (	            
+                  dm.to_id = :userId
+                  OR
+                  dm.from_id = :userId
+                )
+                AND dm.last_pin_action_by_id = :receiverId
+                AND dm.pin_updated_at >= :lastDisconnect
+              ORDER BY
+                dm.pin_updated_at DESC
+            `;
+            const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
+              type: QueryTypes.SELECT,
+              replacements: {
+                userId,
+                receiverId,
+                lastDisconnect: userLastDisconnect,
+              },
+            });
 
-          socket.emit("receive dms", { result: messages });
-          socket.emit("receive edited msgs", { result: editedMessages });
-          socket.emit("receive pinned msgs", {
-            result: pinnedMessages,
-            isPinned: "recovery",
-          });
+            socket.emit("receive dms", { result: messages });
+            socket.emit("receive edited msgs", { result: editedMessages });
+            socket.emit("receive pinned msgs", {
+              result: pinnedMessages,
+              isRecovery: true,
+            });
+          }
         }
       } catch (e) {
         logger.log("recovery error", e);

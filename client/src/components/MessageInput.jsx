@@ -22,6 +22,7 @@ const MessageInput = () => {
   const {
     dmChat: { msgToReply, receivers, pendingMessages },
     setDmChat,
+    dmHistoryUsers,
     setDmHistoryUsers,
     msgRequests,
     setMsgRequests,
@@ -43,7 +44,8 @@ const MessageInput = () => {
         createdAt: time,
       };
       const handleEmitCallback = (err, res, key) => {
-        if (err || res.status === "duplicated" || res.status === "error") {
+        if (res.status === "duplicated") return;
+        if (err || res.status === "error") {
           console.log("Message failed:", err, res.error);
           return;
         }
@@ -51,33 +53,42 @@ const MessageInput = () => {
 
         if (key == "acceptance") {
           setMsgRequests((prev) => {
-            const { [receiverId]: _, ...rest } = prev.fromOthers;
-            return { ...prev, fromOthers: rest };
+            const filtered = prev.fromOthers.filter(
+              ({ from_id }) => from_id != receiverId
+            );
+            return { ...prev, fromOthers: filtered };
           });
         } else if (key == "request") {
           setMsgRequests((prev) => ({
             ...prev,
-            fromMe: { ...prev.fromMe, [receiverId]: res.payload },
+            fromMe: [...prev.fromMe, res.result],
           }));
-          setDmHistoryUsers((prev) => [receivers[receiverId], ...prev]);
+
+          const isUserInDmHistory = dmHistoryUsers.some(
+            ({ id }) => id == receiverId
+          );
+
+          if (!isUserInDmHistory)
+            setDmHistoryUsers((prev) => [receivers[receiverId], ...prev]);
         }
+        console.log(res.result);
 
         setDmChat((prev) => {
-          console.log("prev:", prev.pendingMessages, res.payload[0].to_id);
+          console.log("prev:", prev.pendingMessages, res.result.to_id);
 
-          if (!prev.pendingMessages[res.payload[0].to_id]) return prev;
+          if (!prev.pendingMessages[res.result.to_id]) return prev;
 
           console.log("it exists");
 
           const newPendingMessages = prev.pendingMessages[
-            res.payload[0].to_id
-          ].filter((m) => m.clientOffset !== res.payload[0].clientOffset);
+            res.result.to_id
+          ].filter((m) => m.clientOffset !== res.result.clientOffset);
 
           return {
             ...prev,
             pendingMessages: {
               ...prev.pendingMessages,
-              [res.payload[0].to_id]: newPendingMessages,
+              [res.result.to_id]: newPendingMessages,
             },
           };
         });
@@ -86,19 +97,21 @@ const MessageInput = () => {
           ["initialChatData", receiverId],
           (olderData) => ({
             ...olderData,
-            dms: [...olderData.dms, res.payload[0]],
+            dms: [...olderData.dms, res.result],
           })
         );
-        socket.auth.serverOffset[receiverId] = res.payload[0].id;
+        socket.auth.serverOffset[receiverId] = res.result.id;
 
         console.log("Message successful:", res);
       };
 
-      if (msgRequests.fromOthers[receiverId]) {
+      if (msgRequests.fromOthers.some(({ from_id }) => from_id == receiverId)) {
         console.log("acceptance if");
 
         const acceptance = {
-          reqMsg: msgRequests.fromOthers[receiverId],
+          reqMsg: msgRequests.fromOthers.find(
+            ({ from_id }) => from_id == receiverId
+          ),
           status: "accepted",
         };
 
@@ -177,7 +190,7 @@ const MessageInput = () => {
     <div className="w-100 px-2 mt-auto mb-4">
       {receivers[receiverId]?.is_blocked ? (
         <div>You blocked this user</div>
-      ) : msgRequests.fromMe[receiverId] ? (
+      ) : msgRequests.fromMe.some(({ to_id }) => to_id == receiverId) ? (
         <h4>Your msg been sent waiting for acceptance</h4>
       ) : (
         <>
@@ -214,7 +227,9 @@ const MessageInput = () => {
                 id={styles["msg-input"]}
                 className="border-0 bg-transparent msg-input text-white w-100"
                 placeholder={`${
-                  msgRequests.fromOthers[receiverId]
+                  msgRequests.fromOthers.find(
+                    ({ from_id }) => from_id == receiverId
+                  )
                     ? "Any message will be considered as acceptance"
                     : "Type a message..."
                 }`}
