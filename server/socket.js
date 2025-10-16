@@ -431,34 +431,34 @@ export const setUpSocket = (io) => {
           for (const receiverId in obj) {
             const serverOffset = obj[receiverId];
             const messagesSql = `
-            SELECT 
-              dm.id,
-              dm.from_id,
-              dm.to_id, 
-              u.display_name, 
-              u.username, 
-              u.profile,
-              dm.clientOffset, 
-              dm.message,
-              dm.is_edited,
-              dm.is_pinned,
-              dm.request_state, 
-              dm.createdAt created_at, 
-              replied_msg.message reply_to_msg_message, 
-              replied_msg_sender.display_name reply_to_msg_sender, 
-              replied_msg_sender.profile reply_to_msg_profile 
-            FROM direct_messages dm
-            INNER JOIN users u ON dm.from_id = u.id
-            LEFT JOIN direct_messages replied_msg 
-              ON dm.reply_to_msg = replied_msg.id 
-            LEFT JOIN users replied_msg_sender 
-              ON replied_msg.from_id = replied_msg_sender.id
-            WHERE
-              dm.from_id = :receiverId 
-              AND dm.to_id = :userId 
-              AND dm.id > :serverOffset
-            ORDER BY dm.createdAt ASC
-          `;
+              SELECT 
+                dm.id,
+                dm.from_id,
+                dm.to_id, 
+                u.display_name, 
+                u.username, 
+                u.profile,
+                dm.clientOffset, 
+                dm.message,
+                dm.is_edited,
+                dm.is_pinned,
+                dm.request_state, 
+                dm.createdAt created_at, 
+                replied_msg.message reply_to_msg_message, 
+                replied_msg_sender.display_name reply_to_msg_sender, 
+                replied_msg_sender.profile reply_to_msg_profile 
+              FROM direct_messages dm
+              INNER JOIN users u ON dm.from_id = u.id
+              LEFT JOIN direct_messages replied_msg 
+                ON dm.reply_to_msg = replied_msg.id 
+              LEFT JOIN users replied_msg_sender 
+                ON replied_msg.from_id = replied_msg_sender.id
+              WHERE
+                dm.from_id = :receiverId 
+                AND dm.to_id = :userId 
+                AND dm.id > :serverOffset
+              ORDER BY dm.createdAt ASC
+            `;
             const messages = await sequelize.query(messagesSql, {
               type: QueryTypes.SELECT,
               replacements: {
@@ -519,12 +519,15 @@ export const setUpSocket = (io) => {
               },
             });
 
-            socket.emit("receive dms", { result: messages });
-            socket.emit("receive edited msgs", { result: editedMessages });
-            socket.emit("receive pinned msgs", {
-              result: pinnedMessages,
-              isRecovery: true,
-            });
+            if (messages.length)
+              socket.emit("receive dms", { result: messages });
+            if (editedMessages.length)
+              socket.emit("receive edited msgs", { result: editedMessages });
+            if (pinnedMessages.length)
+              socket.emit("receive pinned msgs", {
+                result: pinnedMessages,
+                isRecovery: true,
+              });
           }
         }
       } catch (e) {

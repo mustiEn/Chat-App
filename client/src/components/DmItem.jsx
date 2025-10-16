@@ -6,6 +6,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import styles from "../css/dm_panel.module.css";
 import DmItemInner from "./DmItemInner.jsx";
+import { useEffect } from "react";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -14,6 +15,9 @@ const DmItem = ({ msg, handleDmModalNotifier }) => {
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
 
   //* document.querySelector iyi mi
+  useEffect(() => {
+    console.log("Dm Item");
+  }, []);
 
   return (
     <>

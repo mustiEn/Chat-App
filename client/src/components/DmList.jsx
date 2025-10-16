@@ -155,6 +155,10 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
   // }
 
   useEffect(() => {
+    console.log("Dm list");
+  }, []);
+
+  useEffect(() => {
     const el = scrollElementRef.current;
     if (!el) return;
 

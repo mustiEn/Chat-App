@@ -12,6 +12,9 @@ import { v4 as uuidv4 } from "uuid";
 import { useOutletContext, useParams } from "react-router-dom";
 import { socket } from "../socket.js";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMsgRequestStore } from "../stores/useMsgRequestStore.js";
+import { useShallow } from "zustand/shallow";
+import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -19,13 +22,20 @@ dayjs.extend(timezone);
 const MessageInput = () => {
   const queryClient = useQueryClient();
   const { userId: receiverId } = useParams();
+  const [msgRequests, addToMyRequests, removeFromOthersRequests] =
+    useMsgRequestStore(
+      useShallow((prev) => [
+        prev.msgRequests,
+        prev.addToMyRequests,
+        prev.removeFromOthersRequests,
+      ])
+    );
+  const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
+    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+  );
   const {
     dmChat: { msgToReply, receivers, pendingMessages },
     setDmChat,
-    dmHistoryUsers,
-    setDmHistoryUsers,
-    msgRequests,
-    setMsgRequests,
   } = useOutletContext();
   const [message, setMessage] = useState("");
   const fileInpRef = useRef(null);
@@ -49,29 +59,18 @@ const MessageInput = () => {
           console.log("Message failed:", err, res.error);
           return;
         }
-        console.log(dayjs().second());
 
         if (key == "acceptance") {
-          setMsgRequests((prev) => {
-            const filtered = prev.fromOthers.filter(
-              ({ from_id }) => from_id != receiverId
-            );
-            return { ...prev, fromOthers: filtered };
-          });
+          removeFromOthersRequests(receiverId);
         } else if (key == "request") {
-          setMsgRequests((prev) => ({
-            ...prev,
-            fromMe: [...prev.fromMe, res.result],
-          }));
+          addToMyRequests([res.result]);
 
           const isUserInDmHistory = dmHistoryUsers.some(
             ({ id }) => id == receiverId
           );
 
-          if (!isUserInDmHistory)
-            setDmHistoryUsers((prev) => [receivers[receiverId], ...prev]);
+          if (!isUserInDmHistory) addToDmHistoryUsers([receivers[receiverId]]);
         }
-        console.log(res.result);
 
         setDmChat((prev) => {
           console.log("prev:", prev.pendingMessages, res.result.to_id);
@@ -185,6 +184,10 @@ const MessageInput = () => {
       textInpRef.current.focus();
     }
   }, []);
+
+  useEffect(() => {
+    console.log("Message Input");
+  }, [pendingMessages]);
 
   return (
     <div className="w-100 px-2 mt-auto mb-4">

@@ -8,34 +8,24 @@ import { socket } from "../socket";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dmDataQuery } from "../loaders";
 import toast from "react-hot-toast";
+import { useMsgRequestStore } from "../stores/useMsgRequestStore";
+import { useShallow } from "zustand/shallow";
+import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore";
 
 const DmPanel = () => {
-  const queryClient = useQueryClient();
+  const [addToMyRequests, addToOthersRequests] = useMsgRequestStore(
+    useShallow((prev) => [prev.addToMyRequests, prev.addToOthersRequests])
+  );
+  const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
+    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+  );
   const {
-    dmChat: { messages, receivers },
+    dmChat: { receivers },
     setDmChat,
-    dmHistoryUsers,
-    setDmHistoryUsers,
-    msgRequests,
-    setMsgRequests,
     dmChatRef,
   } = useOutletContext();
   const { initialPageParam, prevChatDataUpdatedAtRef } = dmChatRef.current;
   const { userId: receiverId } = useParams();
-
-  const fetchInitialChat = async () => {
-    const res = await fetch(`/api/dm/initialData/0`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ receiverId }),
-    });
-    const data = await res.json();
-    console.log("react query intial");
-
-    if (!res.ok) throw new Error(data.error);
-
-    return data;
-  };
   const {
     data,
     isSuccess,
@@ -46,7 +36,6 @@ const DmPanel = () => {
     dataUpdatedAt,
   } = useQuery(dmDataQuery(receiverId));
   const chatExists = data?.dms != undefined;
-
   const [showOffset, setShowOffset] = useState(false);
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
 
@@ -70,6 +59,13 @@ const DmPanel = () => {
     if (receivers[receiverId]) return;
 
     const { dms, receiver, nextId } = data;
+    const setMsgRequest = () => {
+      const isReqFromReceiver = dms[0].from_id == receiverId;
+
+      isReqFromReceiver
+        ? addToOthersRequests([dms[0]])
+        : addToMyRequests([dms[0]]);
+    };
     console.log("dms: ", dms);
 
     if (dms[0]?.request_state == "pending") {
@@ -77,16 +73,7 @@ const DmPanel = () => {
         "in panel,new req adding cuz current receiverid doesnt exist"
       );
 
-      setMsgRequests((prev) => {
-        const isReqFromReceiver = dms[0].from_id == receiverId;
-
-        return isReqFromReceiver
-          ? {
-              ...prev,
-              fromOthers: [...prev.fromOthers, dms[0]],
-            }
-          : { ...prev, fromMe: [...prev.fromMe, dms[0]] };
-      });
+      setMsgRequest();
     }
 
     setDmChat((prev) => ({
@@ -101,14 +88,16 @@ const DmPanel = () => {
 
     const isUserInDmHistory = dmHistoryUsers.some((i) => i.id == receiverId);
 
-    if (!isUserInDmHistory) {
-      setDmHistoryUsers((prev) => [receiver, ...prev]);
-    }
+    if (!isUserInDmHistory) addToDmHistoryUsers([receiver]);
 
     prevChatDataUpdatedAtRef[receiverId] = dataUpdatedAt;
     initialPageParam[receiverId] = nextId;
     socket.auth.serverOffset[receiverId] = dms[dms.length - 1]?.id;
   }, [data]);
+
+  useEffect(() => {
+    console.log("DM panel");
+  }, []);
 
   return (
     <>

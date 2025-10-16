@@ -8,12 +8,7 @@ import "../css/friends.css";
 import UsersInDmHistory from "./UsersInDmHistory";
 import { socket } from "../socket";
 
-const DmHistory = ({
-  dmHistoryUsers,
-  setDmHistoryUsers,
-  dmChat,
-  setDmChat,
-}) => {
+const DmHistory = ({ dmChat, setDmChat }) => {
   const navigate = useNavigate();
   const popOverContent = (content) => {
     return (
@@ -41,12 +36,7 @@ const DmHistory = ({
             content={popOverContent("Create DM")}
           />
         </div>
-        <UsersInDmHistory
-          dmHistoryUsers={dmHistoryUsers}
-          setDmHistoryUsers={setDmHistoryUsers}
-          dmChat={dmChat}
-          setDmChat={setDmChat}
-        />
+        <UsersInDmHistory dmChat={dmChat} setDmChat={setDmChat} />
         <button
           onClick={() => {
             socket.disconnect();

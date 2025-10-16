@@ -5,17 +5,15 @@ import HeaderContext from "../contexts/HeaderContext";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import DmHistorySkeleton from "./DmHistorySkeleton";
+import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore";
+import { useShallow } from "zustand/shallow";
 // import DmHistorySkeleton from './DmHistorySkeleton'
 
-const UsersInDmHistory = memo(function UsersInDmHistory({
-  dmHistoryUsers,
-  setDmHistoryUsers,
-  dmChat,
-  setDmChat,
-}) {
-  const { receivers } = dmChat;
-  //^ can querydata be used instead of context
+const UsersInDmHistory = memo(function UsersInDmHistory() {
   const setHeader = useContext(HeaderContext);
+  const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
+    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+  );
   const getDmHistory = async () => {
     const res = await fetch("/api/dmHistory");
     const { dmHistoryResult } = await res.json();
@@ -35,7 +33,7 @@ const UsersInDmHistory = memo(function UsersInDmHistory({
     if (!data?.length) return;
     if (dmHistoryUsers.length) return;
 
-    setDmHistoryUsers((prev) => [...data, ...prev]);
+    addToDmHistoryUsers(data);
   }, [data]);
 
   return (

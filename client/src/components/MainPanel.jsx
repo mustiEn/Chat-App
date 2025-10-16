@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Outlet, useLocation, useParams } from "react-router-dom";
+import { Outlet, useParams } from "react-router-dom";
 import "../css/main_panel.css";
 import Sidebar from "./Sidebar";
 import { socket } from "../socket";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMsgRequestStore } from "../stores/useMsgRequestStore";
+import { useShallow } from "zustand/shallow";
+import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore";
 
 const MainPanel = () => {
-  const params = useParams();
   const queryClient = useQueryClient();
+  const [removeFromMyRequests, addToOthersRequests] = useMsgRequestStore(
+    useShallow((prev) => [prev.removeFromMyRequests, prev.addToOthersRequests])
+  );
   const [dmChat, setDmChat] = useState({
-    messages: {},
     pendingMessages: {},
-    pinnedMsgs: {},
     newPinnedMsgExists: {},
     showPinnedMsgs: {},
     msgToReply: null,
@@ -19,11 +22,9 @@ const MainPanel = () => {
     scrollPosition: {},
     receivers: {},
   });
-  const [msgRequests, setMsgRequests] = useState({
-    fromOthers: [],
-    fromMe: [],
-  });
-  const [dmHistoryUsers, setDmHistoryUsers] = useState([]);
+  const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
+    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+  );
   const [groupChat, setGroupChat] = useState({});
   const scrollElementRef = useRef(null);
   const dmChatRef = useRef({
@@ -32,6 +33,10 @@ const MainPanel = () => {
     prevChatDataUpdatedAtRef: {},
     initialPageParam: {},
   });
+
+  useEffect(() => {
+    console.log("Main panel");
+  }, []);
 
   useEffect(() => {
     const onConnect = () => {
@@ -223,20 +228,11 @@ const MainPanel = () => {
         );
       }
 
-      setMsgRequests((prev) => {
-        const filtered = prev.fromMe.filter(({ to_id }) => to_id != sender.id);
-
-        return {
-          ...prev,
-          fromMe: filtered,
-        };
-      });
+      removeFromMyRequests(sender.id);
 
       const isUserInDmHistory = dmHistoryUsers.some((i) => i.id == sender.id);
 
-      if (!isUserInDmHistory) {
-        setDmHistoryUsers((prev) => [sender, ...prev]);
-      }
+      if (!isUserInDmHistory) addToDmHistoryUsers([sender]);
     };
     const handleMessageRequests = ({ result, sender }) => {
       queryClient.setQueryData(
@@ -248,16 +244,13 @@ const MainPanel = () => {
       );
       console.log(dmHistoryUsers);
 
-      setMsgRequests((prev) => ({
-        ...prev,
-        fromOthers: [...prev.fromOthers, result],
-      }));
+      addToOthersRequests([result]);
 
       const isUserInDmHistory = dmHistoryUsers.some(
         ({ id }) => id == sender.id
       );
 
-      if (!isUserInDmHistory) setDmHistoryUsers((prev) => [sender, ...prev]);
+      if (!isUserInDmHistory) addToDmHistoryUsers([sender]);
     };
     socket.on(
       "receive msg request acceptance",
@@ -277,12 +270,7 @@ const MainPanel = () => {
   return (
     <>
       <div id="mainPanel" className="d-flex w-100">
-        <Sidebar
-          dmHistoryUsers={dmHistoryUsers}
-          setDmHistoryUsers={setDmHistoryUsers}
-          dmChat={dmChat}
-          setDmChat={setDmChat}
-        />
+        <Sidebar dmChat={dmChat} setDmChat={setDmChat} />
         <div className="d-flex flex-column border border-white border-opacity-25 border-start-0 border-end-0 w-100">
           <Outlet
             context={{
@@ -290,10 +278,6 @@ const MainPanel = () => {
               setGroupChat,
               dmChat,
               setDmChat,
-              msgRequests,
-              setMsgRequests,
-              dmHistoryUsers,
-              setDmHistoryUsers,
               scrollElementRef,
               dmChatRef,
             }}

@@ -72,6 +72,7 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
         }));
       }
     };
+    console.log("Dm Panel Top");
 
     document.addEventListener("click", closePinnedMsgsBox);
 

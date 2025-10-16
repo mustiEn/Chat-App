@@ -6,10 +6,18 @@ import Button from "react-bootstrap/esm/Button";
 import { useOutletContext, useParams } from "react-router-dom";
 import { socket } from "../socket";
 import { useRef } from "react";
+import { useMsgRequestStore } from "../stores/useMsgRequestStore";
+import { shallow, useShallow } from "zustand/shallow";
 
 const MessageRequests = () => {
-  const queryClient = useQueryClient();
-  const { msgRequests, setMsgRequests } = useOutletContext();
+  const [msgRequests, addToOthersRequests, removeFromOthersRequests] =
+    useMsgRequestStore(
+      useShallow((prev) => [
+        prev.msgRequests,
+        prev.addToOthersRequests,
+        prev.removeFromOthersRequests,
+      ])
+    );
   const getMessageRequests = async () => {
     try {
       const res = await fetch("/api/message-requests");
@@ -35,16 +43,7 @@ const MessageRequests = () => {
         return;
       }
 
-      setMsgRequests((prev) => {
-        const filtered = prev.fromOthers.filter(
-          ({ from_id }) => from_id != msg.from_id
-        );
-
-        return {
-          ...prev,
-          fromOthers: filtered,
-        };
-      });
+      removeFromOthersRequests(msg.from_id);
       socket.auth.serverOffset[msg.from_id] = msg.id;
 
       console.log("Message succesfull: ", res);
@@ -68,10 +67,7 @@ const MessageRequests = () => {
     if (isFirstMount.current) return;
     if (msgRequests.fromOthers.length) return;
 
-    setMsgRequests((prev) => ({
-      ...prev,
-      fromOthers: data,
-    }));
+    addToOthersRequests([data]);
     isFirstMount.current = true;
   }, [data]);
 

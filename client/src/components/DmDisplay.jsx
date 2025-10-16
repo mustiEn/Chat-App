@@ -13,10 +13,7 @@ dayjs.extend(timezone);
 
 const DmDisplay = ({ receiver, isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
-  const { setDmChat } = useOutletContext();
   const [isConnected, setIsConnected] = useState(socket.connected);
-
-  const handleDeletedMessage = ({ result: deletedMsgs }) => {};
 
   return (
     <>

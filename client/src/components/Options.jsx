@@ -10,6 +10,7 @@ import { useOutletContext } from "react-router-dom";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 
 import Tooltip from "react-bootstrap/Tooltip";
+import { useEffect } from "react";
 
 const Options = memo(function Options({
   msg = [],
@@ -66,11 +67,10 @@ const Options = memo(function Options({
       return true;
     }
   };
-  const renderTooltip = (props) => (
-    <Tooltip id="button-tooltip" {...props}>
-      Simple tooltip
-    </Tooltip>
-  );
+
+  useEffect(() => {
+    console.log("Options");
+  }, []);
   return (
     <>
       {options().map((option, i) => {
