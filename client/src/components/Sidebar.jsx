@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import DmSidebarNavTop from "./DmSidebarNavTop";
 import DmHistory from "./DmHistory";
 
-const Sidebar = ({ dmChat, setDmChat }) => {
+const Sidebar = () => {
   const location = useLocation();
 
   return (
@@ -18,7 +18,7 @@ const Sidebar = ({ dmChat, setDmChat }) => {
         ) : (
           <>
             <DmSidebarNavTop />
-            <DmHistory dmChat={dmChat} setDmChat={setDmChat} />
+            <DmHistory />
           </>
         )}
       </div>

@@ -6,18 +6,15 @@ import styles from "../css/dm_panel.module.css";
 import { PiPencilSimple, PiArrowBendUpLeft } from "react-icons/pi";
 import { ImBin } from "react-icons/im";
 import { RxDrawingPin } from "react-icons/rx";
-import { useOutletContext } from "react-router-dom";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-
-import Tooltip from "react-bootstrap/Tooltip";
 import { useEffect } from "react";
+import { useMsgToReplyStore } from "../stores/useMsgToReplyStore";
 
 const Options = memo(function Options({
   msg = [],
   handleDmModalNotifier,
   setEditedMessage,
 }) {
-  const { setDmChat } = useOutletContext();
+  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
 
   const handleEditableMsg = (msg) => {
     setEditedMessage({
@@ -41,11 +38,7 @@ const Options = memo(function Options({
       {
         name: "Reply",
         icon: <PiArrowBendUpLeft />,
-        func: (msg) =>
-          setDmChat((prev) => ({
-            ...prev,
-            msgToReply: msg,
-          })),
+        func: (msg) => setMsgToReply(msg),
       },
       {
         name: "Delete",
@@ -68,9 +61,9 @@ const Options = memo(function Options({
     }
   };
 
-  useEffect(() => {
-    console.log("Options");
-  }, []);
+  // useEffect(() => {
+  //   console.log("Options");
+  // }, []);
   return (
     <>
       {options().map((option, i) => {

@@ -121,7 +121,7 @@ export const setUpSocket = (io) => {
 
     socket.on("send msg request acceptance", async (msg, answer, done) => {
       const receiverId = Number(answer.reqMsg.from_id);
-      let result = {};
+      let result = [{}];
       try {
         logger.log("send msg request acceptance", receiverId);
         const requestMessage = await DirectMessage.findByPk(answer.reqMsg.id);
@@ -156,7 +156,7 @@ export const setUpSocket = (io) => {
               dm.id = :id
           `;
 
-          [result] = await sequelize.query(msgSql, {
+          result = await sequelize.query(msgSql, {
             type: QueryTypes.SELECT,
             replacements: {
               id: newMsg.id,
@@ -175,6 +175,7 @@ export const setUpSocket = (io) => {
             },
           }
         );
+        result[0].from_id = userId;
       } catch (error) {
         logger.log(error);
         return done({
@@ -186,10 +187,8 @@ export const setUpSocket = (io) => {
       if (answer.status == "accepted") {
         const key = [userId, receiverId];
         const room = key.sort((a, b) => a - b).join("_");
-        console.log(sender);
 
         io.to(receiverId).emit("receive msg request acceptance", {
-          sender,
           result,
         });
         socket.join(room);
@@ -239,7 +238,7 @@ export const setUpSocket = (io) => {
             dm.id = ${result.id}
         `;
 
-        [result] = await sequelize.query(resultSql, {
+        result = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
         });
       } catch (error) {
@@ -298,7 +297,7 @@ export const setUpSocket = (io) => {
             dm.id = :id
         `;
 
-        [result] = await sequelize.query(resultSql, {
+        result = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
           replacements: {
             id: newMsg.id,
@@ -318,6 +317,7 @@ export const setUpSocket = (io) => {
         result,
         sender,
       });
+      logger.log("Sent dm:", result);
       return done({
         status: "ok",
         result: result,
@@ -468,7 +468,7 @@ export const setUpSocket = (io) => {
               },
             });
             const editedMessages = await DirectMessage.findAll({
-              attributes: ["id", "message"],
+              attributes: ["id", "message", "from_id"],
               where: {
                 from_id: receiverId,
                 to_id: userId,
@@ -528,7 +528,64 @@ export const setUpSocket = (io) => {
                 result: pinnedMessages,
                 isRecovery: true,
               });
+
+            logger.log(`ReceiverId: ${receiverId}`);
+            logger.log("Dms:", messages);
+            logger.log("EditedMsgs:", editedMessages);
+            logger.log("Pinnedmsgs:", pinnedMessages);
           }
+
+          const msgRequestAcceptanceSql = `
+            SELECT 
+              dm.id, 
+              temp2.from_id, 
+              dm.to_id, 
+              dm.clientOffset, 
+              dm.message, 
+              dm.is_edited, 
+              dm.is_pinned, 
+              dm.request_state, 
+              dm.createdAt created_at 
+            FROM 
+              direct_messages dm 
+              RIGHT JOIN (
+                SELECT 
+                  MAX(dm2.id) id, 
+                  temp.from_id, 
+                  dm2.message, 
+                  dm2.request_state, 
+                  dm2.createdAt created_at 
+                FROM 
+                  direct_messages dm2 
+                  RIGHT JOIN (
+                    SELECT 
+                      dm3.to_id from_id 
+                    FROM 
+                      direct_messages dm3 
+                    WHERE 
+                      dm3.from_id = :userId 
+                      AND dm3.request_state = "accepted" 
+                      AND dm3.createdAt >= :lastDisconnect
+                  ) temp ON dm2.from_id = temp.from_id 
+                  AND dm2.createdAt >= :lastDisconnect 
+                GROUP BY 
+                  dm2.from_id
+              ) temp2 ON temp2.id = dm.id
+          `;
+          const msgRequestAcceptance = await sequelize.query(
+            msgRequestAcceptanceSql,
+            {
+              type: QueryTypes.SELECT,
+              replacements: {
+                userId,
+                lastDisconnect,
+              },
+            }
+          );
+
+          socket.emit("receive msg request acceptance", {
+            result: msgRequestAcceptance,
+          });
         }
       } catch (e) {
         logger.log("recovery error", e);

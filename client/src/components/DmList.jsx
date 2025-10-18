@@ -23,19 +23,18 @@ import {
 import { useLayoutEffect } from "react";
 import ChatSkeleton from "./ChatSkeleton.jsx";
 import { dmDataQuery } from "../loaders/index.js";
+import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
+import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 
 const DmList = ({ receiver, isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
+  const addToHasMoreUp = useHasMoreUpStore((state) => state.addToHasMoreUp);
   const queryClient = useQueryClient();
-  const { data: l } = useQuery(dmDataQuery(receiverId));
-  const { dms: currentChat = [] } = l ?? [];
+  const { data: cachedQuery } = useQuery(dmDataQuery(receiverId));
+  const currentChat = cachedQuery?.dms ?? [];
   const typeRef = useRef(null);
-  const {
-    dmChat: { pendingMessages },
-    setDmChat,
-    scrollElementRef,
-    dmChatRef,
-  } = useOutletContext();
+  const pendingMsgs = usePendingMsgStore((state) => state.pendingMsgs);
+  const { scrollElementRef, dmChatRef } = useOutletContext();
 
   const {
     scrollPosition,
@@ -138,25 +137,24 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
   };
   const itemsContainerRef = useRef(null);
   const rowVirtualizer = useVirtualizer({
-    count:
-      (currentChat?.length ?? 0) + (pendingMessages[receiverId]?.length ?? 0),
+    count: (currentChat?.length ?? 0) + (pendingMsgs[receiverId]?.length ?? 0),
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
     overscan: 5,
     gap: 20,
   });
   const items = useMemo(
-    () => [...(currentChat ?? []), ...(pendingMessages[receiverId] ?? [])],
-    [currentChat, pendingMessages[receiverId]]
+    () => [...(currentChat ?? []), ...(pendingMsgs[receiverId] ?? [])],
+    [currentChat, pendingMsgs[receiverId]]
   );
 
   // if (isError) {
   //   console.log(error.message);
   // }
 
-  useEffect(() => {
-    console.log("Dm list");
-  }, []);
+  // useEffect(() => {
+  //   console.log("Dm list");
+  // }, []);
 
   useEffect(() => {
     const el = scrollElementRef.current;
@@ -218,18 +216,12 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
 
     scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
 
-    setDmChat((prev) => ({
-      ...prev,
-      hasMoreUp: {
-        ...prev.hasMoreUp,
-        [receiverId]: hasNextPage,
-      },
-    }));
+    addToHasMoreUp(receiverId, hasNextPage);
   }, [data]);
 
   return (
     <>
-      {!currentChat ? (
+      {isInitialDataLoading ? (
         <ChatSkeleton />
       ) : (
         <MyLoader

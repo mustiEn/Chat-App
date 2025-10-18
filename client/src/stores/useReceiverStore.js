@@ -5,8 +5,9 @@ export const useReceiverStore = create(
   immer((set) => ({
     receivers: {},
     addToReceivers: (receiverId, val) =>
-      set((prev) => {
-        prev.receiver[receiverId] = val;
+      set((state) => {
+        // if(!state.receivers[receiverId]) state.receivers
+        state.receivers[receiverId] = val;
       }),
   }))
 );

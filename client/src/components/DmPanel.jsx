@@ -11,19 +11,23 @@ import toast from "react-hot-toast";
 import { useMsgRequestStore } from "../stores/useMsgRequestStore";
 import { useShallow } from "zustand/shallow";
 import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore";
+import { useHasMoreUpStore } from "../stores/useHasMoreUpStore";
+import { useReceiverStore } from "../stores/useReceiverStore";
+import { useMsgToReplyStore } from "../stores/useMsgToReplyStore";
 
 const DmPanel = () => {
   const [addToMyRequests, addToOthersRequests] = useMsgRequestStore(
-    useShallow((prev) => [prev.addToMyRequests, prev.addToOthersRequests])
+    useShallow((state) => [state.addToMyRequests, state.addToOthersRequests])
   );
   const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
-    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+    useShallow((state) => [state.dmHistoryUsers, state.addToDmHistoryUsers])
   );
-  const {
-    dmChat: { receivers },
-    setDmChat,
-    dmChatRef,
-  } = useOutletContext();
+  const addToHasMoreUp = useHasMoreUpStore((state) => state.addToHasMoreUp);
+  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
+  const [receivers, addToReceivers] = useReceiverStore(
+    useShallow((state) => [state.receivers, state.addToReceivers])
+  );
+  const { dmChatRef } = useOutletContext();
   const { initialPageParam, prevChatDataUpdatedAtRef } = dmChatRef.current;
   const { userId: receiverId } = useParams();
   const {
@@ -68,25 +72,14 @@ const DmPanel = () => {
     };
     console.log("dms: ", dms);
 
-    if (dms[0]?.request_state == "pending") {
-      console.log(
-        "in panel,new req adding cuz current receiverid doesnt exist"
-      );
+    if (dms[0]?.request_state == "pending") setMsgRequest();
 
-      setMsgRequest();
-    }
+    const isDmsLengthLess = dms.length < 30 ? false : true;
+    addToHasMoreUp(receiverId, isDmsLengthLess);
+    setMsgToReply(null);
+    addToReceivers(receiverId, receiver);
 
-    setDmChat((prev) => ({
-      ...prev,
-      msgToReply: null,
-      hasMoreUp: {
-        ...prev.hasMoreUp,
-        [receiverId]: dms.length < 30 ? false : true,
-      },
-      receivers: { ...prev.receivers, [receiverId]: receiver },
-    }));
-
-    const isUserInDmHistory = dmHistoryUsers.some((i) => i.id == receiverId);
+    const isUserInDmHistory = dmHistoryUsers.some(({ id }) => id == receiverId);
 
     if (!isUserInDmHistory) addToDmHistoryUsers([receiver]);
 
@@ -95,9 +88,9 @@ const DmPanel = () => {
     socket.auth.serverOffset[receiverId] = dms[dms.length - 1]?.id;
   }, [data]);
 
-  useEffect(() => {
-    console.log("DM panel");
-  }, []);
+  // useEffect(() => {
+  //   console.log("DM panel");
+  // }, []);
 
   return (
     <>

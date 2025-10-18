@@ -1,12 +1,10 @@
 import React from "react";
-import { RxCross2 } from "react-icons/rx";
 import { RxCrossCircled } from "react-icons/rx";
 import styles from "../css/reply_to_msg.module.css";
-import { useContext } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useMsgToReplyStore } from "../stores/useMsgToReplyStore";
 
 const ReplyToMsg = ({ toWho }) => {
-  const { setDmChat } = useOutletContext();
+  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
   return (
     <div
       id={`${styles["replyToMsg"]}`}
@@ -17,12 +15,7 @@ const ReplyToMsg = ({ toWho }) => {
       </div>
       <RxCrossCircled
         className={`${styles["icon"]}`}
-        onClick={() =>
-          setDmChat((prev) => ({
-            ...prev,
-            msgToReply: null,
-          }))
-        }
+        onClick={() => setMsgToReply(null)}
       />
     </div>
   );

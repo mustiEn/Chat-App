@@ -1,27 +1,27 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import React, { useEffect } from "react";
 import { formatDate } from "../utils";
 import styles from "../css/dm_panel.module.css";
 import Button from "react-bootstrap/esm/Button";
-import { useOutletContext, useParams } from "react-router-dom";
 import { socket } from "../socket";
 import { useRef } from "react";
 import { useMsgRequestStore } from "../stores/useMsgRequestStore";
-import { shallow, useShallow } from "zustand/shallow";
+import { useShallow } from "zustand/shallow";
 
 const MessageRequests = () => {
   const [msgRequests, addToOthersRequests, removeFromOthersRequests] =
     useMsgRequestStore(
-      useShallow((prev) => [
-        prev.msgRequests,
-        prev.addToOthersRequests,
-        prev.removeFromOthersRequests,
+      useShallow((state) => [
+        state.msgRequests,
+        state.addToOthersRequests,
+        state.removeFromOthersRequests,
       ])
     );
   const getMessageRequests = async () => {
     try {
       const res = await fetch("/api/message-requests");
       const data = await res.json();
+      console.log("message - reqs");
 
       if (!res.ok) throw new Error(data.error);
 
@@ -59,16 +59,19 @@ const MessageRequests = () => {
     queryFn: getMessageRequests,
     staleTime: Infinity,
   });
-  const isFirstMount = useRef(false);
   useEffect(() => {
     if (!isSuccess) return;
     if (!data.length) return;
 
-    if (isFirstMount.current) return;
+    const anyIdAlreadyExists = msgRequests.fromOthers.some(
+      ({ id }) => id == data[0].id
+    );
+    console.log(anyIdAlreadyExists);
+
+    if (anyIdAlreadyExists) return;
     if (msgRequests.fromOthers.length) return;
 
-    addToOthersRequests([data]);
-    isFirstMount.current = true;
+    addToOthersRequests(data);
   }, [data]);
 
   return (

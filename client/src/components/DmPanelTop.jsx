@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import Button from "react-bootstrap/esm/Button";
 import Form from "react-bootstrap/Form";
@@ -13,18 +7,26 @@ import { CgProfile } from "react-icons/cg";
 import stylesPanelTop from "../css/dm_panel_top.module.css";
 import PinnedMsgsBox from "./PinnedMsgsBox";
 import Popover from "./Popover";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import styles from "../css/dm_panel.module.css";
-import { socket } from "../socket";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { useShallow } from "zustand/shallow";
+import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore";
+import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore";
 
 const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
   const { userId: receiverId } = useParams();
-  const {
-    setDmChat,
-    dmChat: { newPinnedMsgExists, showPinnedMsgs },
-  } = useOutletContext();
+  const [showPinnedMsgBox, addToShowPinnedMsgBox] = useShowPinnedMsgBoxStore(
+    useShallow((state) => [state.showPinnedMsgBox, state.addToShowPinnedMsgBox])
+  );
+  const [newPinnedMsgExists, addToNewPinnedMsgExists] =
+    useNewPinnedMsgIndicatorStore(
+      useShallow((state) => [
+        state.newPinnedMsgExists,
+        state.addToNewPinnedMsgExists,
+      ])
+    );
   const [search, setSearch] = useState("");
   const pinnedMsgsBoxRef = useRef(null);
   const getPinnedMessages = async () => {
@@ -51,28 +53,24 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
     enabled: false,
   });
 
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
+  // useEffect(() => {
+  //   console.log(data);
+  // }, [data]);
   // if (isError) toast.error(error.message);
 
   useEffect(() => {
     const closePinnedMsgsBox = (event) => {
       const isAnyModalShown = document.querySelector(".fade.modal.show");
 
-      if (!showPinnedMsgs) return;
+      if (!showPinnedMsgBox[receiverId]) return;
       if (isAnyModalShown) return;
       if (
         pinnedMsgsBoxRef.current &&
         !pinnedMsgsBoxRef.current.contains(event.target)
       ) {
-        setDmChat((prev) => ({
-          ...prev,
-          showPinnedMsgs: { ...prev.showPinnedMsgs, [receiverId]: false },
-        }));
+        addToShowPinnedMsgBox(receiverId, false);
       }
     };
-    console.log("Dm Panel Top");
 
     document.addEventListener("click", closePinnedMsgsBox);
 
@@ -101,19 +99,9 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
                 <div
                   className="position-relative"
                   onClick={(e) => {
-                    if (!showPinnedMsgs[receiverId]) e.stopPropagation();
-
-                    setDmChat((prev) => ({
-                      ...prev,
-                      showPinnedMsgs: {
-                        ...prev.showPinnedMsgs,
-                        [receiverId]: true,
-                      },
-                      newPinnedMsgExists: {
-                        ...prev.newPinnedMsgExists,
-                        [receiverId]: false,
-                      },
-                    }));
+                    if (!showPinnedMsgBox[receiverId]) e.stopPropagation();
+                    addToShowPinnedMsgBox(receiverId, true);
+                    addToNewPinnedMsgExists(receiverId, false);
 
                     if (!isFetched) refetch();
                   }}
@@ -121,7 +109,7 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
                   <RxDrawingPin
                     id="drawingPin"
                     className={`ms-auto fs-5 ${
-                      showPinnedMsgs[receiverId] && stylesPanelTop["active"]
+                      showPinnedMsgBox[receiverId] && stylesPanelTop["active"]
                     } ${stylesPanelTop["dm-panel-top-icon"]}`}
                   />
                   {newPinnedMsgExists[receiverId] && (

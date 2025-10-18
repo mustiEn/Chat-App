@@ -5,12 +5,12 @@ export const useDmHistoryUserStore = create(
   immer((set) => ({
     dmHistoryUsers: [],
     addToDmHistoryUsers: (users) =>
-      set((prev) => {
-        prev.dmHistoryUsers.unshift(...users);
+      set((state) => {
+        state.dmHistoryUsers.unshift(...users);
       }),
     removeFromDmHistoryUsers: (user) =>
-      set((prev) => {
-        prev.dmHistoryUsers.filter(({ id }) => id != user.id);
+      set((state) => {
+        state.dmHistoryUsers.filter(({ id }) => id != user.id);
       }),
   }))
 );

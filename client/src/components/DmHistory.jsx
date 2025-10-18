@@ -8,8 +8,7 @@ import "../css/friends.css";
 import UsersInDmHistory from "./UsersInDmHistory";
 import { socket } from "../socket";
 
-const DmHistory = ({ dmChat, setDmChat }) => {
-  const navigate = useNavigate();
+const DmHistory = () => {
   const popOverContent = (content) => {
     return (
       <div className="d-flex flex-column">
@@ -36,7 +35,7 @@ const DmHistory = ({ dmChat, setDmChat }) => {
             content={popOverContent("Create DM")}
           />
         </div>
-        <UsersInDmHistory dmChat={dmChat} setDmChat={setDmChat} />
+        <UsersInDmHistory />
         <button
           onClick={() => {
             socket.disconnect();

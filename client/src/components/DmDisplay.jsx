@@ -1,6 +1,5 @@
 import { socket } from "../socket.js";
-import { useEffect } from "react";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useState } from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";

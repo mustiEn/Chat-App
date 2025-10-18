@@ -9,12 +9,15 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { v4 as uuidv4 } from "uuid";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { socket } from "../socket.js";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMsgRequestStore } from "../stores/useMsgRequestStore.js";
 import { useShallow } from "zustand/shallow";
 import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
+import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
+import { useReceiverStore } from "../stores/useReceiverStore.js";
+import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -22,132 +25,105 @@ dayjs.extend(timezone);
 const MessageInput = () => {
   const queryClient = useQueryClient();
   const { userId: receiverId } = useParams();
-  const [msgRequests, addToMyRequests, removeFromOthersRequests] =
-    useMsgRequestStore(
-      useShallow((prev) => [
-        prev.msgRequests,
-        prev.addToMyRequests,
-        prev.removeFromOthersRequests,
-      ])
-    );
-  const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
-    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+  const msgRequests = useMsgRequestStore((state) => state.msgRequests);
+  const addToMyRequests = useMsgRequestStore((state) => state.addToMyRequests);
+  const removeFromOthersRequests = useMsgRequestStore(
+    (state) => state.removeFromOthersRequests
   );
-  const {
-    dmChat: { msgToReply, receivers, pendingMessages },
-    setDmChat,
-  } = useOutletContext();
+  const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
+  const addToDmHistoryUsers = useDmHistoryUserStore(
+    (state) => state.addToDmHistoryUsers
+  );
+  const msgToReply = useMsgToReplyStore((state) => state.msgToReply);
+  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
+
+  const receivers = useReceiverStore((state) => state.receivers);
+  const addToPendingMsgs = usePendingMsgStore(
+    (state) => state.addToPendingMsgs
+  );
+  const removeFromPendingMsgs = usePendingMsgStore(
+    (state) => state.removeFromPendingMsgs
+  );
+
   const [message, setMessage] = useState("");
   const fileInpRef = useRef(null);
   const textInpRef = useRef(null);
+  const handleEmitCallback = (err, res, key) => {
+    const { pendingMsgs } = usePendingMsgStore.getState();
 
-  const handleSubmit = useCallback(() => {
-    const handleSocketEmit = (time, clientOffset) => {
-      console.log("handleSocketEmit func running");
-      const { dms } = queryClient.getQueryData(["initialChatData", receiverId]);
-      const emitData = {
-        message: message,
-        from_id: socket.auth.user.id,
-        to_id: Number(receiverId),
-        clientOffset,
-        reply_to_msg: msgToReply ?? null,
-        createdAt: time,
-      };
-      const handleEmitCallback = (err, res, key) => {
-        if (res.status === "duplicated") return;
-        if (err || res.status === "error") {
-          console.log("Message failed:", err, res.error);
-          return;
-        }
+    if (res.status === "duplicated") return;
+    if (err || res.status === "error") {
+      console.log("Message failed:", err, res.error);
+      return;
+    }
 
-        if (key == "acceptance") {
-          removeFromOthersRequests(receiverId);
-        } else if (key == "request") {
-          addToMyRequests([res.result]);
+    if (key == "acceptance") {
+      removeFromOthersRequests(receiverId);
+    } else if (key == "request") {
+      const isUserInDmHistory = useDmHistoryUserStore
+        .getState()
+        .dmHistoryUsers.some(({ id }) => id == receiverId);
+      addToMyRequests(res.result);
 
-          const isUserInDmHistory = dmHistoryUsers.some(
-            ({ id }) => id == receiverId
-          );
+      if (!isUserInDmHistory) addToDmHistoryUsers([receivers[receiverId]]);
+    }
 
-          if (!isUserInDmHistory) addToDmHistoryUsers([receivers[receiverId]]);
-        }
+    console.log("prev:", pendingMsgs, res.result);
+    console.log(pendingMsgs[res.result[0].to_id]);
 
-        setDmChat((prev) => {
-          console.log("prev:", prev.pendingMessages, res.result.to_id);
+    if (pendingMsgs[res.result[0].to_id])
+      removeFromPendingMsgs(receiverId, res.result[0].clientOffset);
 
-          if (!prev.pendingMessages[res.result.to_id]) return prev;
+    queryClient.setQueryData(["initialChatData", receiverId], (olderData) => ({
+      ...olderData,
+      dms: [...olderData.dms, res.result[0]],
+    }));
+    socket.auth.serverOffset[receiverId] = res.result[0].id;
 
-          console.log("it exists");
-
-          const newPendingMessages = prev.pendingMessages[
-            res.result.to_id
-          ].filter((m) => m.clientOffset !== res.result.clientOffset);
-
-          return {
-            ...prev,
-            pendingMessages: {
-              ...prev.pendingMessages,
-              [res.result.to_id]: newPendingMessages,
-            },
-          };
-        });
-
-        queryClient.setQueryData(
-          ["initialChatData", receiverId],
-          (olderData) => ({
-            ...olderData,
-            dms: [...olderData.dms, res.result],
-          })
-        );
-        socket.auth.serverOffset[receiverId] = res.result.id;
-
-        console.log("Message successful:", res);
-      };
-
-      if (msgRequests.fromOthers.some(({ from_id }) => from_id == receiverId)) {
-        console.log("acceptance if");
-
-        const acceptance = {
-          reqMsg: msgRequests.fromOthers.find(
-            ({ from_id }) => from_id == receiverId
-          ),
-          status: "accepted",
-        };
-
-        socket.emit(
-          "send msg request acceptance",
-          emitData,
-          acceptance,
-          (err, res) => handleEmitCallback(err, res, "acceptance")
-        );
-      } else if (!dms.length && receivers[receiverId].with_in_no_contact) {
-        console.log("not in contact if");
-
-        socket.emit("send msg requests", emitData, (err, res) =>
-          handleEmitCallback(err, res, "request")
-        );
-      } else {
-        console.log("dms if");
-
-        socket.emit("send dms", emitData, (err, res) =>
-          handleEmitCallback(err, res, "dm")
-        );
-      }
-    };
-    const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
-    const clientOffset = uuidv4();
-    const msgPayload = {
-      display_name: socket.auth.user.display_name,
+    console.log("Message successful:", res);
+  };
+  const handleSocketEmit = (time, clientOffset) => {
+    const { dms } = queryClient.getQueryData(["initialChatData", receiverId]);
+    const emitData = {
       message: message,
       from_id: socket.auth.user.id,
       to_id: Number(receiverId),
       clientOffset,
-      created_at: time,
-      reply_to_msg_message: msgToReply?.message ?? null,
-      reply_to_msg_sender: msgToReply?.display_name ?? null,
-      reply_to_msg_profile: msgToReply?.profile ?? null,
+      reply_to_msg: msgToReply ?? null,
+      createdAt: time,
     };
 
+    if (msgRequests.fromOthers.some(({ from_id }) => from_id == receiverId)) {
+      console.log("acceptance if");
+
+      const acceptance = {
+        reqMsg: msgRequests.fromOthers.find(
+          ({ from_id }) => from_id == receiverId
+        ),
+        status: "accepted",
+      };
+
+      socket.emit(
+        "send msg request acceptance",
+        emitData,
+        acceptance,
+        (err, res) => handleEmitCallback(err, res, "acceptance")
+      );
+    } else if (!dms.length && receivers[receiverId].with_in_no_contact) {
+      console.log("not in contact if");
+
+      socket.emit("send msg requests", emitData, (err, res) =>
+        handleEmitCallback(err, res, "request")
+      );
+    } else {
+      console.log("dms if");
+
+      socket.emit("send dms", emitData, (err, res) =>
+        handleEmitCallback(err, res, "dm")
+      );
+    }
+  };
+  const handleSubmit = (msgPayload) => {
     if (textInpRef.current != document.activeElement) {
       return;
     } else if (!message.trim()) {
@@ -156,28 +132,13 @@ const MessageInput = () => {
 
     if (!socket.connected) {
       console.log("socket not connected and set dmchat pending msgs");
-      setDmChat((prev) => ({
-        ...prev,
-        pendingMessages: {
-          ...prev.pendingMessages,
-          [receiverId]: [
-            ...(prev.pendingMessages[receiverId] ?? []),
-            { ...msgPayload, isPending: true },
-          ],
-        },
-      }));
+      addToPendingMsgs(receiverId, { ...msgPayload, isPending: true });
     }
 
     setMessage("");
-    handleSocketEmit(time, clientOffset, msgPayload);
 
-    if (msgToReply) {
-      setDmChat((prev) => ({
-        ...prev,
-        msgToReply: null,
-      }));
-    }
-  }, [msgToReply, message, receiverId, pendingMessages]);
+    if (msgToReply) setMsgToReply(null);
+  };
 
   useEffect(() => {
     if (textInpRef.current) {
@@ -185,9 +146,9 @@ const MessageInput = () => {
     }
   }, []);
 
-  useEffect(() => {
-    console.log("Message Input");
-  }, [pendingMessages]);
+  // useEffect(() => {
+  //   console.log("pending", usePendingMsgStore.getState());
+  // }, [usePendingMsgStore.getState().pendingMsgs]);
 
   return (
     <div className="w-100 px-2 mt-auto mb-4">
@@ -251,7 +212,21 @@ const MessageInput = () => {
                 onKeyUp={(e) => {
                   if (e.key != "Enter") return;
                   e.preventDefault();
-                  handleSubmit();
+                  const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
+                  const clientOffset = uuidv4();
+                  const msgPayload = {
+                    display_name: socket.auth.user.display_name,
+                    message: message,
+                    from_id: socket.auth.user.id,
+                    to_id: Number(receiverId),
+                    clientOffset,
+                    created_at: time,
+                    reply_to_msg_message: msgToReply?.message ?? null,
+                    reply_to_msg_sender: msgToReply?.display_name ?? null,
+                    reply_to_msg_profile: msgToReply?.profile ?? null,
+                  };
+                  handleSubmit(msgPayload);
+                  handleSocketEmit(time, clientOffset, msgPayload);
                 }}
               />
             </div>

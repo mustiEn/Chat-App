@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import "../css/main_panel.css";
 import Sidebar from "./Sidebar";
 import { socket } from "../socket";
@@ -7,23 +7,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMsgRequestStore } from "../stores/useMsgRequestStore";
 import { useShallow } from "zustand/shallow";
 import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore";
+import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore";
+import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore";
 
 const MainPanel = () => {
   const queryClient = useQueryClient();
-  const [removeFromMyRequests, addToOthersRequests] = useMsgRequestStore(
-    useShallow((prev) => [prev.removeFromMyRequests, prev.addToOthersRequests])
+  const removeFromMyRequests = useMsgRequestStore(
+    (state) => state.removeFromMyRequests
   );
-  const [dmChat, setDmChat] = useState({
-    pendingMessages: {},
-    newPinnedMsgExists: {},
-    showPinnedMsgs: {},
-    msgToReply: null,
-    hasMoreUp: {},
-    scrollPosition: {},
-    receivers: {},
-  });
-  const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
-    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+  const addToOthersRequests = useMsgRequestStore(
+    (state) => state.addToOthersRequests
+  );
+  const showPinnedMsgBox = useShowPinnedMsgBoxStore(
+    (state) => state.showPinnedMsgBox
+  );
+  const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
+    (state) => state.addToNewPinnedMsgExists
+  );
+  const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
+  const addToDmHistoryUsers = useDmHistoryUserStore(
+    (state) => state.addToDmHistoryUsers
   );
   const [groupChat, setGroupChat] = useState({});
   const scrollElementRef = useRef(null);
@@ -53,8 +56,9 @@ const MainPanel = () => {
       console.log("❌ Socket disconnected, ", reason);
     };
     const handleEditedMessages = ({ result }) => {
-      const newEditedMessages = result[0] ? result : [result];
-      newEditedMessages.forEach((editedMsg) => {
+      console.log("Edited msgs: ", result);
+
+      result.forEach((editedMsg) => {
         const { dms } = queryClient.getQueryData([
           "initialChatData",
           String(editedMsg.from_id),
@@ -80,8 +84,9 @@ const MainPanel = () => {
       });
     };
     const handleNewMessages = ({ result }) => {
-      const newMsgs = result[0] ? result : [result];
-      newMsgs.forEach((newMsg) => {
+      console.log("new msgs: ", result);
+
+      result.forEach((newMsg) => {
         queryClient.setQueryData(
           ["initialChatData", String(newMsg.from_id)],
           (oldData) => ({
@@ -94,10 +99,10 @@ const MainPanel = () => {
       });
     };
     const handlePinnedMessages = ({ result, isRecovery }) => {
+      console.log("pinned msgs:", result);
+
       if (!isRecovery) {
-        const pinnedMsg = result;
-        const { last_pin_action_by_id: lastPinActionById, is_pinned } =
-          pinnedMsg;
+        const { last_pin_action_by_id: lastPinActionById, is_pinned } = result;
 
         const isQueryFetched = queryClient.getQueryState([
           "pinnedMsgs",
@@ -106,15 +111,9 @@ const MainPanel = () => {
 
         //^ here, add a notification and amend if needed.if notification is here,no need to check ispinned, cuz now i cant know whether to notify on mount
         if (is_pinned) {
-          setDmChat((prev) => ({
-            ...prev,
-            newPinnedMsgExists: {
-              ...prev.newPinnedMsgExists,
-              [lastPinActionById]: prev.showPinnedMsgs[lastPinActionById]
-                ? false
-                : true, //* if the modal is open,dont notify the user, if not, do it
-            },
-          }));
+          const val = showPinnedMsgBox[lastPinActionById] ? false : true;
+
+          addToNewPinnedMsgExists(lastPinActionById, val); //* if the modal is open,dont notify the user, if not, do it
         }
         if (!isQueryFetched) return; //* if not already fetch,skip since its gonna fetch it on mount
 
@@ -143,15 +142,9 @@ const MainPanel = () => {
 
           //^ notification thing applies to this here too.
           if (is_pinned) {
-            setDmChat((prev) => ({
-              ...prev,
-              newPinnedMsgExists: {
-                ...prev.newPinnedMsgExists,
-                [lastPinActionById]: prev.showPinnedMsgs[lastPinActionById]
-                  ? false
-                  : true, //* if the modal is open,dont notify the user, if not, do it
-              },
-            }));
+            const val = showPinnedMsgBox[lastPinActionById] ? false : true;
+
+            addToNewPinnedMsgExists(lastPinActionById, val); //* if the modal is open,dont notify the user, if not, do it
           }
           if (!isQueryFetched) return; //* if not already fetch,skip since its gonna fetch it on mount
 
@@ -209,30 +202,37 @@ const MainPanel = () => {
   }, []);
 
   useEffect(() => {
-    const receiveMessageRequestAcceptance = ({ sender, result }) => {
-      console.log("receiveMessageRequestAcceptance func runnning", sender);
-      socket.emit("join room", sender.id);
-
-      const state = queryClient.getQueryState([
-        "initialChatData",
-        String(sender.id),
-      ]);
-      //^ This is to keep cache empty if undefined cuz on dmpanel mount,its already gonna comeup
-      if (state && Object.keys(result).length) {
-        queryClient.setQueryData(
-          ["initialChatData", String(sender.id)],
-          (olderData) => ({
-            ...olderData,
-            dms: [...(olderData?.dms ?? []), result],
-          })
+    const receiveMessageRequestAcceptance = ({ result }) => {
+      result.forEach((reqAcceptance) => {
+        console.log(
+          "receiveMessageRequestAcceptance func runnning",
+          reqAcceptance.from_id
         );
-      }
+        socket.emit("join room", reqAcceptance.from_id);
 
-      removeFromMyRequests(sender.id);
+        const state = queryClient.getQueryState([
+          "initialChatData",
+          String(reqAcceptance.from_id),
+        ]);
+        //^ This is to keep cache empty if undefined cuz on dmpanel mount,its already gonna comeup
+        if (state && Object.keys(reqAcceptance).length) {
+          queryClient.setQueryData(
+            ["initialChatData", String(reqAcceptance.from_id)],
+            (olderData) => ({
+              ...olderData,
+              dms: [...(olderData?.dms ?? []), reqAcceptance],
+            })
+          );
+        }
 
-      const isUserInDmHistory = dmHistoryUsers.some((i) => i.id == sender.id);
+        removeFromMyRequests(reqAcceptance.from_id);
 
-      if (!isUserInDmHistory) addToDmHistoryUsers([sender]);
+        const isUserInDmHistory = dmHistoryUsers.some(
+          (i) => i.id == reqAcceptance.from_id
+        );
+
+        if (!isUserInDmHistory) addToDmHistoryUsers([reqAcceptance.from_id]);
+      });
     };
     const handleMessageRequests = ({ result, sender }) => {
       queryClient.setQueryData(
@@ -270,14 +270,12 @@ const MainPanel = () => {
   return (
     <>
       <div id="mainPanel" className="d-flex w-100">
-        <Sidebar dmChat={dmChat} setDmChat={setDmChat} />
+        <Sidebar />
         <div className="d-flex flex-column border border-white border-opacity-25 border-start-0 border-end-0 w-100">
           <Outlet
             context={{
               groupChat,
               setGroupChat,
-              dmChat,
-              setDmChat,
               scrollElementRef,
               dmChatRef,
             }}

@@ -11,7 +11,6 @@ const getDmData = async (receiverId) => {
       }),
     });
     const data = await res.json();
-    console.log("LOADER");
 
     if (!res.ok) {
       throw new Error(data.msg);

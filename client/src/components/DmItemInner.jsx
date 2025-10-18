@@ -3,8 +3,12 @@ import EditDm from "./EditDm";
 import { formatDate } from "../utils";
 import styles from "../css/dm_panel.module.css";
 import MsgRepliedDiv from "../components/MsgRepliedDiv";
+import { useEffect } from "react";
 
 const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
+  // useEffect(() => {
+  //   console.log("msg in inner: ", msg);
+  // }, [msg]);
   return (
     <>
       {msg.reply_to_msg_sender && <MsgRepliedDiv msg={msg} />}

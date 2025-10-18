@@ -11,20 +11,19 @@ import { useOutletContext, useParams } from "react-router-dom";
 import DmHeadProfile from "./DmHeadProfile";
 import { useInView } from "react-intersection-observer";
 import { useQueryClient } from "@tanstack/react-query";
+import { useHasMoreUpStore } from "../stores/useHasMoreUpStore";
 
 const InfiniteLoader = ({ next, loader, children, receiver }) => {
-  const typeRef = useRef(null);
   const { userId: receiverId } = useParams();
+  const hasMoreUp = useHasMoreUpStore((state) => state.hasMoreUp);
+
   const queryClient = useQueryClient();
   const queryData = queryClient.getQueryData(["initialChatData", receiverId]);
-  const currentChat = queryData?.dms || [];
-  const { ref, inView, entry } = useInView({
+  const currentChat = queryData?.dms ?? [];
+  const { ref, inView } = useInView({
     threshold: 1,
   });
-  const {
-    dmChat: { hasMoreUp, messages },
-    scrollElementRef,
-  } = useOutletContext();
+  const { scrollElementRef } = useOutletContext();
 
   useEffect(() => {
     if (hasMoreUp[receiverId] && inView) {

@@ -9,14 +9,15 @@ import DmModalNotifier from "./DmModalNotifier";
 import { socket } from "../socket";
 import { useOutletContext, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore";
 
 const PinnedMsgsBox = ({ ref, isPending }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
   const pinnedMsgs = queryClient.getQueryData(["pinnedMsgs", receiverId]);
-  const {
-    dmChat: { showPinnedMsgs },
-  } = useOutletContext();
+  const showPinnedMsgBox = useShowPinnedMsgBoxStore(
+    (state) => state.showPinnedMsgBox
+  );
   const [modal, setModal] = useState({
     activeMsg: null,
     show: false,
@@ -66,7 +67,7 @@ const PinnedMsgsBox = ({ ref, isPending }) => {
         id={styles["pinnedMsgsBox"]}
         ref={ref}
         className={
-          showPinnedMsgs[receiverId]
+          showPinnedMsgBox[receiverId]
             ? "border border-white border-opacity-25 rounded-3 position-absolute z-3 text-white"
             : "d-none"
         }

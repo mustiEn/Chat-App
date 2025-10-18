@@ -1,9 +1,8 @@
-import React, { memo, useContext, useEffect, useMemo } from "react";
+import React, { memo, useContext, useEffect } from "react";
 import Button from "react-bootstrap/esm/Button";
-import { NavLink, useOutletContext, useParams } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import DmHistorySkeleton from "./DmHistorySkeleton";
 import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore";
 import { useShallow } from "zustand/shallow";
@@ -12,18 +11,19 @@ import { useShallow } from "zustand/shallow";
 const UsersInDmHistory = memo(function UsersInDmHistory() {
   const setHeader = useContext(HeaderContext);
   const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
-    useShallow((prev) => [prev.dmHistoryUsers, prev.addToDmHistoryUsers])
+    useShallow((state) => [state.dmHistoryUsers, state.addToDmHistoryUsers])
   );
   const getDmHistory = async () => {
     const res = await fetch("/api/dmHistory");
     const { dmHistoryResult } = await res.json();
+    console.log("dmHistoryResult");
 
     if (!res.ok) throw new Error(dmHistoryResult.error);
 
     return dmHistoryResult;
   };
   const { data, error, isError, isSuccess, isLoading } = useQuery({
-    queryKey: ["json"],
+    queryKey: ["dmHistory"],
     queryFn: getDmHistory,
     staleTime: Infinity,
   });

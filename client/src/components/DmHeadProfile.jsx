@@ -1,7 +1,6 @@
-import React, { useContext } from "react";
+import React from "react";
 import Button from "react-bootstrap/esm/Button";
 import { LuDot } from "react-icons/lu";
-import { useOutletContext, useParams } from "react-router-dom";
 
 const DmHeadProfile = ({ receiver }) => {
   return (

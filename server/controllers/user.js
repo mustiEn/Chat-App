@@ -285,6 +285,7 @@ export const getDmHistory = async (req, res, next) => {
       type: QueryTypes.SELECT,
       replacements: { userId },
     });
+
     res.status(200).json({ dmHistoryResult: dmHistory });
   } catch (error) {
     next(error);
