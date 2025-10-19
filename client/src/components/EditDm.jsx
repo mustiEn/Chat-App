@@ -18,7 +18,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
   const queryClient = useQueryClient();
   const editInpRef = useRef(null);
 
-  const handleEdit = useCallback(() => {
+  const handleEdit = () => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
     if (editInpRef.current != document.activeElement) {
@@ -98,7 +98,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
         console.log("Edited Message successfull: ", res);
       }
     );
-  }, [receiverId, editedMessage]);
+  };
 
   return (
     <>

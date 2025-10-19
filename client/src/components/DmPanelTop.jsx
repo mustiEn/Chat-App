@@ -11,22 +11,25 @@ import { useParams } from "react-router-dom";
 import styles from "../css/dm_panel.module.css";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { useShallow } from "zustand/shallow";
-import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore";
-import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore";
+import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
+import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
+import { useReceiverStore } from "../stores/useReceiverStore.js";
 
-const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
+const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { userId: receiverId } = useParams();
-  const [showPinnedMsgBox, addToShowPinnedMsgBox] = useShowPinnedMsgBoxStore(
-    useShallow((state) => [state.showPinnedMsgBox, state.addToShowPinnedMsgBox])
+  const receiver = useReceiverStore((state) => state.receivers[receiverId]);
+  const showPinnedMsgBox = useShowPinnedMsgBoxStore(
+    (state) => state.showPinnedMsgBox
   );
-  const [newPinnedMsgExists, addToNewPinnedMsgExists] =
-    useNewPinnedMsgIndicatorStore(
-      useShallow((state) => [
-        state.newPinnedMsgExists,
-        state.addToNewPinnedMsgExists,
-      ])
-    );
+  const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
+    (state) => state.addToShowPinnedMsgBox
+  );
+  const newPinnedMsgExists = useNewPinnedMsgIndicatorStore(
+    (state) => state.newPinnedMsgExists
+  );
+  const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
+    (state) => state.addToNewPinnedMsgExists
+  );
   const [search, setSearch] = useState("");
   const pinnedMsgsBoxRef = useRef(null);
   const getPinnedMessages = async () => {
@@ -53,21 +56,22 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
     enabled: false,
   });
 
-  // useEffect(() => {
-  //   console.log(data);
-  // }, [data]);
   // if (isError) toast.error(error.message);
 
   useEffect(() => {
     const closePinnedMsgsBox = (event) => {
       const isAnyModalShown = document.querySelector(".fade.modal.show");
+      const isTargetModalBtn = event.target.closest(".modal");
 
-      if (!showPinnedMsgBox[receiverId]) return;
       if (isAnyModalShown) return;
+      if (isTargetModalBtn) return;
+      if (!showPinnedMsgBox[receiverId]) return;
       if (
         pinnedMsgsBoxRef.current &&
         !pinnedMsgsBoxRef.current.contains(event.target)
       ) {
+        console.log("box is closing...");
+
         addToShowPinnedMsgBox(receiverId, false);
       }
     };
@@ -77,7 +81,7 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
     return () => {
       document.removeEventListener("click", closePinnedMsgsBox);
     };
-  }, []);
+  }, [showPinnedMsgBox]);
 
   return (
     <>
@@ -88,7 +92,7 @@ const DmPanelTop = ({ receiver, handleOffsetToggle, showOffset }) => {
         >
           <div className="d-flex align-items-center gap-2">
             <img src="https://placehold.co/25" alt="" />
-            <div className="fs-6">{receiver.display_name}</div>
+            <div className="fs-6">{receiver?.display_name}</div>
           </div>
           <div className="d-flex align-items-center gap-2 ms-auto">
             <Popover

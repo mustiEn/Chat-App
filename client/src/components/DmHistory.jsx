@@ -20,11 +20,6 @@ const DmHistory = () => {
     return <div>{icon}</div>;
   };
 
-  //! bak
-  // useEffect(() => {
-  //   navigate("/@me/3");
-  // }, []);
-
   return (
     <>
       <div className="px-2 w-100">

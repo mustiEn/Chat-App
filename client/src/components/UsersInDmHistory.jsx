@@ -4,14 +4,15 @@ import { NavLink } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
 import { useQuery } from "@tanstack/react-query";
 import DmHistorySkeleton from "./DmHistorySkeleton";
-import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore";
+import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { useShallow } from "zustand/shallow";
 // import DmHistorySkeleton from './DmHistorySkeleton'
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
   const setHeader = useContext(HeaderContext);
-  const [dmHistoryUsers, addToDmHistoryUsers] = useDmHistoryUserStore(
-    useShallow((state) => [state.dmHistoryUsers, state.addToDmHistoryUsers])
+  const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
+  const addToDmHistoryUsers = useDmHistoryUserStore(
+    (state) => state.addToDmHistoryUsers
   );
   const getDmHistory = async () => {
     const res = await fetch("/api/dmHistory");

@@ -10,17 +10,14 @@ import MessageInput from "./MessageInput.jsx";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const DmDisplay = ({ receiver, isInitialDataLoading }) => {
+const DmDisplay = ({ isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   return (
     <>
       <div className={`text-white flex-shrink-1 position-relative w-100`}>
-        <DmList
-          receiver={receiver}
-          isInitialDataLoading={isInitialDataLoading}
-        />
+        <DmList key={receiverId} isInitialDataLoading={isInitialDataLoading} />
       </div>
 
       <MessageInput key={receiverId} />

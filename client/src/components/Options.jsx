@@ -7,7 +7,7 @@ import { PiPencilSimple, PiArrowBendUpLeft } from "react-icons/pi";
 import { ImBin } from "react-icons/im";
 import { RxDrawingPin } from "react-icons/rx";
 import { useEffect } from "react";
-import { useMsgToReplyStore } from "../stores/useMsgToReplyStore";
+import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 
 const Options = memo(function Options({
   msg = [],
@@ -22,10 +22,10 @@ const Options = memo(function Options({
       message: msg.message,
     });
     setTimeout(() => {
-      console.log(msg, document.querySelector(`#message-${msg.id}`));
+      // console.log(msg, document.querySelector(`#message-${msg.id}`));
 
       document.querySelector(`#message-${msg.id} textarea`).focus();
-      console.log("focus");
+      // console.log("focus");
     }, 100);
   };
   const options = useCallback(
@@ -61,9 +61,6 @@ const Options = memo(function Options({
     }
   };
 
-  // useEffect(() => {
-  //   console.log("Options");
-  // }, []);
   return (
     <>
       {options().map((option, i) => {

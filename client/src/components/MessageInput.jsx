@@ -18,6 +18,7 @@ import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
+import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -30,13 +31,11 @@ const MessageInput = () => {
   const removeFromOthersRequests = useMsgRequestStore(
     (state) => state.removeFromOthersRequests
   );
-  const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
   const addToDmHistoryUsers = useDmHistoryUserStore(
     (state) => state.addToDmHistoryUsers
   );
   const msgToReply = useMsgToReplyStore((state) => state.msgToReply);
   const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
-
   const receivers = useReceiverStore((state) => state.receivers);
   const addToPendingMsgs = usePendingMsgStore(
     (state) => state.addToPendingMsgs
@@ -44,7 +43,6 @@ const MessageInput = () => {
   const removeFromPendingMsgs = usePendingMsgStore(
     (state) => state.removeFromPendingMsgs
   );
-
   const [message, setMessage] = useState("");
   const fileInpRef = useRef(null);
   const textInpRef = useRef(null);
@@ -68,9 +66,6 @@ const MessageInput = () => {
       if (!isUserInDmHistory) addToDmHistoryUsers([receivers[receiverId]]);
     }
 
-    console.log("prev:", pendingMsgs, res.result);
-    console.log(pendingMsgs[res.result[0].to_id]);
-
     if (pendingMsgs[res.result[0].to_id])
       removeFromPendingMsgs(receiverId, res.result[0].clientOffset);
 
@@ -83,6 +78,8 @@ const MessageInput = () => {
     console.log("Message successful:", res);
   };
   const handleSocketEmit = (time, clientOffset) => {
+    console.log(msgRequests.fromOthers);
+
     const { dms } = queryClient.getQueryData(["initialChatData", receiverId]);
     const emitData = {
       message: message,
@@ -145,10 +142,6 @@ const MessageInput = () => {
       textInpRef.current.focus();
     }
   }, []);
-
-  // useEffect(() => {
-  //   console.log("pending", usePendingMsgStore.getState());
-  // }, [usePendingMsgStore.getState().pendingMsgs]);
 
   return (
     <div className="w-100 px-2 mt-auto mb-4">

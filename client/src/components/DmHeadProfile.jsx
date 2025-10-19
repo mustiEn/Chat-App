@@ -1,13 +1,18 @@
 import React from "react";
 import Button from "react-bootstrap/esm/Button";
 import { LuDot } from "react-icons/lu";
+import { useParams } from "react-router-dom";
+import { useReceiverStore } from "../stores/useReceiverStore.js";
 
-const DmHeadProfile = ({ receiver }) => {
+const DmHeadProfile = () => {
+  const { userId: receiverId } = useParams();
+  const receiver = useReceiverStore((state) => state.receivers[receiverId]);
+
   return (
     <>
       <div className={`m-2`}>
         <img
-          src={receiver.profile ? receiver.profile : "https://placehold.co/80"}
+          src={receiver?.profile ? receiver.profile : "https://placehold.co/80"}
           className="rounded-circle"
           alt=""
         />
@@ -16,14 +21,14 @@ const DmHeadProfile = ({ receiver }) => {
             fontSize: 24,
           }}
         >
-          {receiver.display_name}
+          {receiver?.display_name}
         </div>
         <div
           style={{
             fontSize: 20,
           }}
         >
-          {receiver.username}
+          {receiver?.username}
         </div>
         <div className="d-flex align-items-center gap-2">
           <div>No Mutual Groups</div>

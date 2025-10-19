@@ -14,11 +14,6 @@ dayjs.extend(utc);
 const DmItem = ({ msg, handleDmModalNotifier }) => {
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
 
-  //* document.querySelector iyi mi
-  // useEffect(() => {
-  //   console.log("Dm Item");
-  // }, []);
-
   return (
     <>
       <div

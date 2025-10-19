@@ -2,15 +2,16 @@ import React from "react";
 import Button from "react-bootstrap/esm/Button";
 import { FaUsers } from "react-icons/fa6";
 import { LuDot } from "react-icons/lu";
-import { NavLink } from "react-router-dom";
+
+const btns = [
+  { name: "Online", variant: "dark" },
+  { name: "All", variant: "dark" },
+  { name: "Add friend", variant: "outline-light" },
+];
 
 const FriendsPanelTop = ({ props }) => {
   const [activeCompSetter, activeComp] = props;
-  const btns = [
-    { name: "Online", variant: "dark" },
-    { name: "All", variant: "dark" },
-    { name: "Add friend", variant: "outline-light" },
-  ];
+
   return (
     <>
       <div

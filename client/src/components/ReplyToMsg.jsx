@@ -1,10 +1,11 @@
 import React from "react";
 import { RxCrossCircled } from "react-icons/rx";
 import styles from "../css/reply_to_msg.module.css";
-import { useMsgToReplyStore } from "../stores/useMsgToReplyStore";
+import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 
 const ReplyToMsg = ({ toWho }) => {
   const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
+
   return (
     <div
       id={`${styles["replyToMsg"]}`}

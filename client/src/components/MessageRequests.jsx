@@ -5,18 +5,17 @@ import styles from "../css/dm_panel.module.css";
 import Button from "react-bootstrap/esm/Button";
 import { socket } from "../socket";
 import { useRef } from "react";
-import { useMsgRequestStore } from "../stores/useMsgRequestStore";
+import { useMsgRequestStore } from "../stores/useMsgRequestStore.js";
 import { useShallow } from "zustand/shallow";
 
 const MessageRequests = () => {
-  const [msgRequests, addToOthersRequests, removeFromOthersRequests] =
-    useMsgRequestStore(
-      useShallow((state) => [
-        state.msgRequests,
-        state.addToOthersRequests,
-        state.removeFromOthersRequests,
-      ])
-    );
+  const msgRequests = useMsgRequestStore((state) => state.msgRequests);
+  const addToOthersRequests = useMsgRequestStore(
+    (state) => state.addToOthersRequests
+  );
+  const removeFromOthersRequests = useMsgRequestStore(
+    (state) => state.removeFromOthersRequests
+  );
   const getMessageRequests = async () => {
     try {
       const res = await fetch("/api/message-requests");
@@ -66,7 +65,7 @@ const MessageRequests = () => {
     const anyIdAlreadyExists = msgRequests.fromOthers.some(
       ({ id }) => id == data[0].id
     );
-    console.log(anyIdAlreadyExists);
+    // console.log(anyIdAlreadyExists);
 
     if (anyIdAlreadyExists) return;
     if (msgRequests.fromOthers.length) return;

@@ -3,13 +3,12 @@ import { RxDrawingPin, RxCross2 } from "react-icons/rx";
 import styles from "../css/pinned_msgs_box.module.css";
 import { formatDate } from "../utils";
 import { HiOutlineFaceFrown } from "react-icons/hi2";
-
 import { PulseLoader } from "react-spinners";
 import DmModalNotifier from "./DmModalNotifier";
 import { socket } from "../socket";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore";
+import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 
 const PinnedMsgsBox = ({ ref, isPending }) => {
   const { userId: receiverId } = useParams();
@@ -51,7 +50,7 @@ const PinnedMsgsBox = ({ ref, isPending }) => {
             return filteredData;
           }
         );
-        console.log("Unpinned successfully", res);
+        // console.log("Unpinned successfully", res);
       }
     );
 

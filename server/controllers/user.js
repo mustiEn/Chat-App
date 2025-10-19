@@ -314,7 +314,10 @@ export const getPinnedMessages = async (req, res, next) => {
         sender.display_name, 
         sender.username, 
         sender.profile,
-        dm.clientOffset, 
+        dm.to_id,
+        dm.is_pinned,
+        dm.last_pin_action_by_id,
+        dm.clientOffset,
         dm.message,
         dm.createdAt created_at,
         dm.pin_updated_at

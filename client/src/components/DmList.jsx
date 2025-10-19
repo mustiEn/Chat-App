@@ -26,14 +26,14 @@ import { dmDataQuery } from "../loaders/index.js";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 
-const DmList = ({ receiver, isInitialDataLoading }) => {
+const DmList = ({ isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
-  const addToHasMoreUp = useHasMoreUpStore((state) => state.addToHasMoreUp);
   const queryClient = useQueryClient();
   const { data: cachedQuery } = useQuery(dmDataQuery(receiverId));
+  const addToHasMoreUp = useHasMoreUpStore((state) => state.addToHasMoreUp);
+  const pendingMsgs = usePendingMsgStore((state) => state.pendingMsgs);
   const currentChat = cachedQuery?.dms ?? [];
   const typeRef = useRef(null);
-  const pendingMsgs = usePendingMsgStore((state) => state.pendingMsgs);
   const { scrollElementRef, dmChatRef } = useOutletContext();
 
   const {
@@ -152,10 +152,6 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
   //   console.log(error.message);
   // }
 
-  // useEffect(() => {
-  //   console.log("Dm list");
-  // }, []);
-
   useEffect(() => {
     const el = scrollElementRef.current;
     if (!el) return;
@@ -224,11 +220,7 @@ const DmList = ({ receiver, isInitialDataLoading }) => {
       {isInitialDataLoading ? (
         <ChatSkeleton />
       ) : (
-        <MyLoader
-          next={fetchNextPage}
-          loader={<PulseLoader color={"white"} />}
-          receiver={receiver}
-        >
+        <MyLoader next={fetchNextPage} loader={<PulseLoader color={"white"} />}>
           <div
             style={{
               height: rowVirtualizer.getTotalSize(),

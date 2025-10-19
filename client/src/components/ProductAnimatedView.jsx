@@ -2,19 +2,20 @@ import React from "react";
 import ProductAnimatedViewSkeleton from "./ProductAnimatedViewSkeleton";
 import Card from "react-bootstrap/Card";
 
+const animatedViews = [
+  "atomic.gif",
+  "circles.gif",
+  "data-grid.gif",
+  "fire.gif",
+  "green-galaxy.gif",
+  "matrix.gif",
+  "network.gif",
+  "organic-lines.gif",
+  "particles.gif",
+  "silky-blue.gif",
+];
+
 const ProductAnimatedView = ({ styles }) => {
-  const animatedViews = [
-    "atomic.gif",
-    "circles.gif",
-    "data-grid.gif",
-    "fire.gif",
-    "green-galaxy.gif",
-    "matrix.gif",
-    "network.gif",
-    "organic-lines.gif",
-    "particles.gif",
-    "silky-blue.gif",
-  ];
   return (
     <>
       {animatedViews.map((view, i) => (

@@ -1,22 +1,14 @@
-import React, {
-  useRef,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+import React, { useEffect } from "react";
 
-import ChatSkeleton from "./ChatSkeleton";
 import { useOutletContext, useParams } from "react-router-dom";
 import DmHeadProfile from "./DmHeadProfile";
 import { useInView } from "react-intersection-observer";
 import { useQueryClient } from "@tanstack/react-query";
-import { useHasMoreUpStore } from "../stores/useHasMoreUpStore";
+import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 
-const InfiniteLoader = ({ next, loader, children, receiver }) => {
+const InfiniteLoader = ({ next, loader, children }) => {
   const { userId: receiverId } = useParams();
   const hasMoreUp = useHasMoreUpStore((state) => state.hasMoreUp);
-
   const queryClient = useQueryClient();
   const queryData = queryClient.getQueryData(["initialChatData", receiverId]);
   const currentChat = queryData?.dms ?? [];
@@ -44,13 +36,13 @@ const InfiniteLoader = ({ next, loader, children, receiver }) => {
       >
         {!currentChat.length ? (
           <>
-            <DmHeadProfile receiver={receiver} />
+            <DmHeadProfile />
             <div className="empty-state">
               No messages yet. Start the conversation!
             </div>
           </>
         ) : !hasMoreUp[receiverId] ? (
-          <DmHeadProfile receiver={receiver} />
+          <DmHeadProfile />
         ) : (
           ""
         )}
