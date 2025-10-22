@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
-import "../css/main_panel.css";
 import Sidebar from "./Sidebar";
 import { socket } from "../socket";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,6 +8,7 @@ import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
+import { Flex } from "@mantine/core";
 
 const MainPanel = () => {
   const queryClient = useQueryClient();
@@ -58,7 +58,7 @@ const MainPanel = () => {
 
       result.forEach((editedMsg) => {
         const { dms } = queryClient.getQueryData([
-          "initialChatData",
+          "chatMessages",
           String(editedMsg.from_id),
         ]);
 
@@ -73,7 +73,7 @@ const MainPanel = () => {
         );
 
         queryClient.setQueryData(
-          ["initialChatData", String(editedMsg.from_id)],
+          ["chatMessages", String(editedMsg.from_id)],
           (olderData) => ({
             ...olderData,
             dms: mappedDms,
@@ -86,7 +86,7 @@ const MainPanel = () => {
 
       result.forEach((newMsg) => {
         queryClient.setQueryData(
-          ["initialChatData", String(newMsg.from_id)],
+          ["chatMessages", String(newMsg.from_id)],
           (oldData) => ({
             ...oldData,
             dms: [...oldData.dms, newMsg],
@@ -210,13 +210,13 @@ const MainPanel = () => {
         console.log("reqAcceptance", reqAcceptance);
 
         const state = queryClient.getQueryState([
-          "initialChatData",
+          "chatMessages",
           String(reqAcceptance.from_id),
         ]);
         //^ This is to keep cache empty if undefined cuz on dmpanel mount,its already gonna comeup
         if (state && reqAcceptance.id) {
           queryClient.setQueryData(
-            ["initialChatData", String(reqAcceptance.from_id)],
+            ["chatMessages", String(reqAcceptance.from_id)],
             (olderData) => ({
               ...olderData,
               dms: [...(olderData?.dms ?? []), reqAcceptance],
@@ -251,7 +251,7 @@ const MainPanel = () => {
         };
 
         queryClient.setQueryData(
-          ["initialChatData", String(req.from_id)],
+          ["chatMessages", String(req.from_id)],
           (olderData) => ({
             ...olderData,
             dms: [req],
@@ -282,9 +282,16 @@ const MainPanel = () => {
 
   return (
     <>
-      <div id="mainPanel" className="d-flex w-100">
+      <Flex w={"100%"}>
         <Sidebar />
-        <div className="d-flex flex-column border border-white border-opacity-25 border-start-0 border-end-0 w-100">
+        <Flex
+          direction={"column"}
+          w={"100%"}
+          style={{
+            borderLeft: "none",
+            borderRight: "none",
+          }}
+        >
           <Outlet
             context={{
               groupChat,
@@ -293,8 +300,8 @@ const MainPanel = () => {
               dmChatRef,
             }}
           />
-        </div>
-      </div>
+        </Flex>
+      </Flex>
     </>
   );
 };

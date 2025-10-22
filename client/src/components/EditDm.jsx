@@ -34,7 +34,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
     }
 
     if (!socket.connected) {
-      const { dms } = queryClient.getQueryData(["initialChatData", receiverId]);
+      const { dms } = queryClient.getQueryData(["chatMessages", receiverId]);
       const mappedDms = dms.map((m) =>
         m.id == msg.id
           ? {
@@ -46,13 +46,10 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
           : m
       );
 
-      queryClient.setQueryData(
-        ["initialChatData", receiverId],
-        (olderData) => ({
-          ...olderData,
-          dms: mappedDms,
-        })
-      );
+      queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
+        ...olderData,
+        dms: mappedDms,
+      }));
     }
 
     setEditedMessage({
@@ -73,10 +70,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
           return;
         }
 
-        const { dms } = queryClient.getQueryData([
-          "initialChatData",
-          receiverId,
-        ]);
+        const { dms } = queryClient.getQueryData(["chatMessages", receiverId]);
         const mappedDms = dms.map((m) =>
           m.id == msg.id
             ? {
@@ -87,13 +81,10 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
               }
             : m
         );
-        queryClient.setQueryData(
-          ["initialChatData", receiverId],
-          (olderData) => ({
-            ...olderData,
-            dms: mappedDms,
-          })
-        );
+        queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
+          ...olderData,
+          dms: mappedDms,
+        }));
 
         console.log("Edited Message successfull: ", res);
       }

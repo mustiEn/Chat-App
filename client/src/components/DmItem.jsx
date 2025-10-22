@@ -11,8 +11,17 @@ import { useEffect } from "react";
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const DmItem = ({ msg, handleDmModalNotifier }) => {
+const DmItem = ({ msg }) => {
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
+  const handleEditableMsg = (msg) => {
+    setEditedMessage({
+      id: msg.id,
+      message: msg.message,
+    });
+    setTimeout(() => {
+      document.querySelector(`#message-${msg.id} textarea`).focus();
+    }, 100);
+  };
 
   return (
     <>
@@ -36,12 +45,7 @@ const DmItem = ({ msg, handleDmModalNotifier }) => {
         <div
           className={`${styles["options-tab"]} position-absolute align-items-center bg-dark border border-dark rounded-3 end-0 bottom-100 me-3`}
         >
-          <Options
-            msg={msg}
-            handleDmModalNotifier={handleDmModalNotifier}
-            editedMessage={editedMessage}
-            setEditedMessage={setEditedMessage}
-          />
+          <Options msg={msg} handleEditableMsg={handleEditableMsg} />
         </div>
       </div>
     </>

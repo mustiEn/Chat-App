@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect } from "react";
 import { formatDate } from "../utils";
-import styles from "../css/dm_panel.module.css";
-import Button from "react-bootstrap/esm/Button";
 import { socket } from "../socket";
-import { useRef } from "react";
+import { IoCheckmarkOutline } from "react-icons/io5";
+import { RxCross1 } from "react-icons/rx";
 import { useMsgRequestStore } from "../stores/useMsgRequestStore.js";
-import { useShallow } from "zustand/shallow";
+import MessageRequestsTop from "./MessageRequestsTop.jsx";
+import { Box, Flex, Text, Button, Stack, Image } from "@mantine/core";
+import styles from "../css/message_requests.module.css";
 
 const MessageRequests = () => {
   const msgRequests = useMsgRequestStore((state) => state.msgRequests);
@@ -65,7 +66,8 @@ const MessageRequests = () => {
     const anyIdAlreadyExists = msgRequests.fromOthers.some(
       ({ id }) => id == data[0].id
     );
-    // console.log(anyIdAlreadyExists);
+    console.log(anyIdAlreadyExists);
+    console.log(msgRequests.fromOthers.length);
 
     if (anyIdAlreadyExists) return;
     if (msgRequests.fromOthers.length) return;
@@ -75,54 +77,80 @@ const MessageRequests = () => {
 
   return (
     <>
-      <h3 className="text-white">Requests</h3>
-      <br />
-      <br />
-      {isLoading ? (
-        <div>Loading...</div>
-      ) : !msgRequests.fromOthers?.length ? (
-        <div>No data</div>
-      ) : (
-        msgRequests.fromOthers.map((msg) => (
-          <div
-            className={`${styles["aa"]} d-flex align-items-center gap-2 w-100 `}
-            key={msg.id}
-          >
-            <img
-              src={msg.profile ?? "https://placehold.co/40"}
-              className="align-self-baseline rounded-circle"
-              width={40}
-              height={40}
-              alt=""
-            />
-            <div className="d-flex flex-column w-100">
-              <div className="d-flex align-items-center gap-2">
-                <div className="fw-bold text-white">{msg.display_name}</div>
-                <span className={`${styles["timestamp"]} text-muted`}>
-                  {formatDate(msg.created_at)}
-                </span>
-              </div>
+      <MessageRequestsTop />
+      <Box p={"sm"}>
+        <Text mb={"lg"} fw={"lighter"}>
+          Message Requests
+        </Text>
+        {isLoading ? (
+          <div>Loading...</div>
+        ) : !msgRequests.fromOthers?.length ? (
+          <div>No data</div>
+        ) : (
+          <Stack gap={"sm"}>
+            {msgRequests.fromOthers.map((msg) => (
+              <Flex
+                className={styles["msg-request"]}
+                align={"center"}
+                gap={"xs"}
+                pb={"sm"}
+                key={msg.id}
+              >
+                <Image
+                  src={msg.profile ?? "https://placehold.co/40"}
+                  radius={"xl"}
+                  w={40}
+                  h={40}
+                  style={{
+                    alignSelf: "baseline",
+                  }}
+                />
+                <Flex direction={"column"} w={"100%"}>
+                  <Flex align={"center"} gap={"xs"}>
+                    <Text c={"white"} fw={"bold"}>
+                      {msg.display_name}
+                    </Text>
+                    <span className={`timestamp text-muted`}>
+                      {formatDate(msg.created_at)}
+                    </span>
+                  </Flex>
 
-              <div className={`${styles["message-content"]} text-white`}>
-                {msg.message}
-              </div>
-            </div>
-            <Button
-              variant="outline-info"
-              className="ms-auto"
-              onClick={() => handleMessageRequestAcceptance("accepted", msg)}
-            >
-              Accept
-            </Button>
-            <Button
-              variant="outline-info"
-              onClick={() => handleMessageRequestAcceptance("rejected", msg)}
-            >
-              Reject
-            </Button>
-          </div>
-        ))
-      )}
+                  <Text className={`message-content`} c={"white"}>
+                    {msg.message}
+                  </Text>
+                </Flex>
+                <Flex
+                  className={[styles.btn, styles.accept].join(" ")}
+                  align={"center"}
+                  justify={"center"}
+                  w={50}
+                  h={50}
+                  bdrs={"xl"}
+                  ms={"auto"}
+                  onClick={() =>
+                    handleMessageRequestAcceptance("accepted", msg)
+                  }
+                >
+                  <IoCheckmarkOutline className={styles.icon} />
+                </Flex>
+                <Flex
+                  className={[styles.btn, styles.reject].join(" ")}
+                  w={50}
+                  h={50}
+                  align={"center"}
+                  justify={"center"}
+                  bdrs={"xl"}
+                  onClick={() =>
+                    handleMessageRequestAcceptance("rejected", msg)
+                  }
+                >
+                  <RxCross1 className={styles.icon} />
+                </Flex>
+              </Flex>
+            ))}
+          </Stack>
+        )}
+      </Box>
     </>
   );
 };

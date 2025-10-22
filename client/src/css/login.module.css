@@ -1,0 +1,13 @@
+.form-bottom-line {
+  position: relative;
+}
+
+.form-bottom-line-content {
+  position: absolute;
+  z-index: 3;
+  transform: translateY(-13px);
+}
+
+.auth {
+  background-image: radial-gradient(#1a0e29 2% 5%, #151515 100%);
+}

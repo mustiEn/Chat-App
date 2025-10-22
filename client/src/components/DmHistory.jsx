@@ -1,13 +1,10 @@
 import React, { useEffect } from "react";
-import Popover from "./Popover";
+import PopoverComponent from "./PopoverComponent";
 import { IoAdd } from "react-icons/io5";
-import Button from "react-bootstrap/esm/Button";
-import { NavLink, useNavigate } from "react-router-dom";
-import DmHistorySkeleton from "./DmHistorySkeleton";
-import "../css/friends.css";
+
 import UsersInDmHistory from "./UsersInDmHistory";
 import { socket } from "../socket";
-
+import "../css/friends.css";
 const DmHistory = () => {
   const popOverContent = (content) => {
     return (
@@ -25,7 +22,7 @@ const DmHistory = () => {
       <div className="px-2 w-100">
         <div className="d-flex justify-content-between mb-1 text-white">
           <div>Direct Messages</div>
-          <Popover
+          <PopoverComponent
             trigger={popOverTrigger(<IoAdd />)}
             content={popOverContent("Create DM")}
           />

@@ -1,3 +1,10 @@
+.dm-panel-top {
+  border: 1px solid rgb(255, 255, 255, 25%);
+  border-left: none;
+  border-right: none;
+  position: relative;
+}
+
 .dm-panel-top-icon {
   color: rgba(255, 255, 255, 0.6);
 }
@@ -8,4 +15,14 @@
 
 .dm-panel-top-icon.active {
   color: rgba(255, 255, 255);
+}
+
+.custom-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 5;
 }

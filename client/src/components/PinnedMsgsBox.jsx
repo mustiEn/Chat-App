@@ -1,151 +1,122 @@
 import React, { useContext, useState } from "react";
 import { RxDrawingPin, RxCross2 } from "react-icons/rx";
-import styles from "../css/pinned_msgs_box.module.css";
 import { formatDate } from "../utils";
-import { HiOutlineFaceFrown } from "react-icons/hi2";
+import { TbHeartBroken } from "react-icons/tb";
 import { PulseLoader } from "react-spinners";
 import DmModalNotifier from "./DmModalNotifier";
 import { socket } from "../socket";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
+import { useDisclosure } from "@mantine/hooks";
+import {
+  Box,
+  Center,
+  Flex,
+  Image,
+  Paper,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import styles from "../css/pinned_msgs_box.module.css";
+import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
-const PinnedMsgsBox = ({ ref, isPending }) => {
+const PinnedMsgsBox = ({ customOverlayRef, ref, isPending }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
   const pinnedMsgs = queryClient.getQueryData(["pinnedMsgs", receiverId]);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore(
     (state) => state.showPinnedMsgBox
   );
-  const [modal, setModal] = useState({
-    activeMsg: null,
-    show: false,
-  });
-
-  const unPinMessage = async () => {
-    if (!socket.connected) {
-      toast.error("We couldn't unpin the message");
-      return;
-    }
-
-    socket.emit(
-      "send pinned msgs",
-      {
-        id: modal.activeMsg.id,
-        isPinned: false,
-        toId: receiverId,
-      },
-      (err, res) => {
-        if (err) {
-          console.log("Error: ", err);
-        }
-
-        queryClient.setQueryData(
-          ["pinnedMsgs", String(receiverId)],
-          (olderData) => {
-            const filteredData = olderData.filter(
-              ({ id }) => id != modal.activeMsg.id
-            );
-
-            return filteredData;
-          }
-        );
-        // console.log("Unpinned successfully", res);
-      }
-    );
-
-    setModal({
-      activeMsg: null,
-      show: false,
-    });
+  const { setActiveMsg, open } = useContext(DmPanelContext);
+  const handleDmModalNotifier = (msg, type) => {
+    setActiveMsg({ msg, type });
+    open();
+    customOverlayRef.current.display = "none";
   };
 
   return (
     <>
-      <div
-        id={styles["pinnedMsgsBox"]}
+      <Paper
         ref={ref}
-        className={
-          showPinnedMsgBox[receiverId]
-            ? "border border-white border-opacity-25 rounded-3 position-absolute z-3 text-white"
-            : "d-none"
-        }
+        withBorder
+        shadow="xl"
+        radius={"lg"}
+        pb={"1rem"}
+        className={showPinnedMsgBox[receiverId] ? `${styles.paper}` : "d-none"}
       >
-        <div className="d-flex align-items-center gap-2 my-2">
-          <RxDrawingPin className="ms-2 fs-5" />
-          <div className="fs-5">Pinned Messages</div>
-        </div>
-        <hr className="my-0" />
+        <Flex
+          align={"center"}
+          gap={"xs"}
+          my={"sm"}
+          pb={"sm"}
+          className={styles["modal-header"]}
+        >
+          <RxDrawingPin className={styles["header-icon"]} />
+          <Title order={3} fw={"600"}>
+            Pinned Messages
+          </Title>
+        </Flex>
         {isPending ? (
           <PulseLoader color="white" />
         ) : !pinnedMsgs?.length ? (
           <>
-            <HiOutlineFaceFrown
-              className="w-100 mt-5"
-              style={{
-                fontSize: "7rem",
-              }}
-            />
-            <div className="mt-3 text-center">
-              This chat doesnt have any pinned messages yet.
-            </div>
+            <TbHeartBroken className={styles["no-data"]} />
+            <Center mb={"xl"}>
+              <Text mt={"lg"}>
+                This chat doesnt have any pinned messages yet.
+              </Text>
+            </Center>
           </>
         ) : (
-          <ul
-            className="d-flex flex-column gap-2 py-2 overflow-auto custom-scrollbar"
-            style={{
-              height: 330,
-            }}
+          <Stack
+            gap={"xs"}
+            py={"xs"}
+            className={`${styles["stack"]} custom-scrollbar`}
           >
             {pinnedMsgs.map((msg, i) => (
-              <li
+              <Flex
+                align={"center"}
+                gap={"xs"}
+                p={"xs"}
+                bd={"1px solid rgb(255,255,255,25%)"}
+                bdrs={"sm"}
+                mx={"xs"}
                 key={msg.id}
-                className={`${styles["pinned-msg"]} d-flex align-items-center gap-2 p-2 border border-white border-opacity-25 rounded-3 position-relative mx-1`}
+                className={`${styles["pinned-msg"]}`}
               >
-                <img
+                <Image
                   src="https://placehold.co/40"
-                  className="align-self-baseline rounded-circle"
-                  width={40}
+                  radius={"xl"}
                   height={40}
-                  alt=""
+                  styles={{
+                    root: {
+                      width: 40,
+                      alignSelf: "baseline",
+                    },
+                  }}
                 />
-                <div className="d-flex flex-column">
-                  <div className="d-flex align-items-center gap-2">
-                    <div className="fw-bold">{msg.display_name}</div>
-                    <span className={`${styles["timestamp"]} text-muted`}>
+                <Flex direction={"column"}>
+                  <Flex align={"center"} gap={"xs"}>
+                    <Text fw={"bold"}>{msg.display_name}</Text>
+                    <span className={`timestamp text-muted`}>
                       {formatDate(msg.created_at)}
                       {/* 12/05/2023, 10:03 */}
                     </span>
-                  </div>
-                  <div className={`${styles["message-content"]}`}>
-                    {msg.message}
-                  </div>
-                </div>
-                <div
-                  className={`gap-1 ${styles["modal-icons"]} position-absolute translate-middle end-0`}
-                >
+                  </Flex>
+                  <Text className={`message-content`}>{msg.message}</Text>
+                </Flex>
+                <Box className={styles.cross}>
                   <RxCross2
-                    className={`${styles["modal-icon"]}`}
-                    onClick={() =>
-                      setModal({
-                        activeMsg: msg,
-                        show: true,
-                      })
-                    }
+                    onClick={() => handleDmModalNotifier(msg, "Unpin")}
                   />
-                </div>
-              </li>
+                </Box>
+              </Flex>
             ))}
-          </ul>
+          </Stack>
         )}
-      </div>
-      <DmModalNotifier
-        type={"Delete"}
-        func={unPinMessage}
-        activeMsg={modal.activeMsg}
-        show={modal.show}
-        setModal={setModal}
-      />
+      </Paper>
     </>
   );
 };

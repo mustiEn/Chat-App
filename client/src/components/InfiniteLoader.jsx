@@ -10,7 +10,7 @@ const InfiniteLoader = ({ next, loader, children }) => {
   const { userId: receiverId } = useParams();
   const hasMoreUp = useHasMoreUpStore((state) => state.hasMoreUp);
   const queryClient = useQueryClient();
-  const queryData = queryClient.getQueryData(["initialChatData", receiverId]);
+  const queryData = queryClient.getQueryData(["chatMessages", receiverId]);
   const currentChat = queryData?.dms ?? [];
   const { ref, inView } = useInView({
     threshold: 1,

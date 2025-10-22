@@ -1,0 +1,7 @@
+.sidebar {
+  border: 1px solid rgb(255, 255, 255, 25%);
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: var(--mantine-radius-md);
+  border-bottom-left-radius: var(--mantine-radius-md);
+}

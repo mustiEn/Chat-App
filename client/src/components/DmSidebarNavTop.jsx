@@ -1,16 +1,18 @@
 import React, { useContext } from "react";
-import Button from "react-bootstrap/esm/Button";
 import { FaUsers } from "react-icons/fa6";
 import { IoMdStarOutline } from "react-icons/io";
 import { AiOutlineShop } from "react-icons/ai";
+import { FaRegEnvelope } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
+import { Stack, Button, Flex, Text, Box } from "@mantine/core";
+import styles from "../css/dm_sidebar_nav_top.module.css";
 
 const links = [
   { content: "Friends", icon: <FaUsers />, link: "/@me" },
   { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
   { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
-  { content: "Requests", icon: <AiOutlineShop />, link: "requests" },
+  { content: "Requests", icon: <FaRegEnvelope />, link: "requests" },
 ];
 
 const DmSidebarNavTop = () => {
@@ -18,32 +20,45 @@ const DmSidebarNavTop = () => {
 
   return (
     <>
-      <div className="mt-2 w-100">
-        <div className="d-flex justify-content-center border-bottom border-opacity-25 border-white">
-          <Button variant={"dark"} className="mb-1 mx-2 w-100">
-            Find or start a conversation
-          </Button>
-        </div>
-        <ul className="d-flex flex-column gap-1 mt-3 mx-2">
-          {links.map((link, i) => (
-            <li key={i}>
-              <Button
-                variant={"dark"}
+      <Box w={"100%"}>
+        <Button
+          mt={10}
+          mb={10}
+          mr={10}
+          ml={10}
+          variant={"filled"}
+          radius={"sm"}
+          color="dark"
+        >
+          Find or start a conversation
+        </Button>
+        <Box className={styles["div-border"]}>
+          <Stack gap={"xs"} mt={"xs"} mb={"xs"} mr={"sm"} ml={"sm"}>
+            {links.map((link, i) => (
+              <NavLink
                 key={i}
-                as={NavLink}
                 to={link.link}
-                className="d-flex w-100"
                 onClick={() => setHeader(link.content)}
                 end
               >
-                <div>{link.icon}</div>
-                <div>{link.content}</div>
-              </Button>
-            </li>
-          ))}
-        </ul>
-        <hr className="text-white mx-2" />
-      </div>
+                <Button
+                  variant={"filled"}
+                  color="dark"
+                  justify="flex-start"
+                  radius={"sm"}
+                  w={"100%"}
+                >
+                  <Flex align={"center"} gap={3}>
+                    <Box fz={"h5"}>{link.icon}</Box>
+                    <Text>{link.content}</Text>
+                  </Flex>
+                </Button>
+              </NavLink>
+            ))}
+          </Stack>
+        </Box>
+        {/* <hr className="text-white mx-2" /> */}
+      </Box>
     </>
   );
 };

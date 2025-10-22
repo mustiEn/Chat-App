@@ -14,6 +14,7 @@ import * as Loader from "./loaders/index.js";
 import Logout from "./views/Logout.jsx";
 import MessageRequests from "./components/MessageRequests.jsx";
 import { QueryClient } from "@tanstack/react-query";
+import Register from "./views/Register.jsx";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,10 @@ function App() {
     {
       path: "/login",
       element: <Login />,
+    },
+    {
+      path: "/register",
+      element: <Register />,
     },
     {
       path: "/logout",

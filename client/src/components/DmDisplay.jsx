@@ -6,6 +6,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import DmList from "./DmList.jsx";
 import MessageInput from "./MessageInput.jsx";
+import { Box } from "@mantine/core";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -16,9 +17,16 @@ const DmDisplay = ({ isInitialDataLoading }) => {
 
   return (
     <>
-      <div className={`text-white flex-shrink-1 position-relative w-100`}>
+      <Box
+        c={"white"}
+        w={"100%"}
+        style={{
+          flexShrink: 1,
+          position: "relative",
+        }}
+      >
         <DmList key={receiverId} isInitialDataLoading={isInitialDataLoading} />
-      </div>
+      </Box>
 
       <MessageInput key={receiverId} />
     </>

@@ -69,7 +69,7 @@ const MessageInput = () => {
     if (pendingMsgs[res.result[0].to_id])
       removeFromPendingMsgs(receiverId, res.result[0].clientOffset);
 
-    queryClient.setQueryData(["initialChatData", receiverId], (olderData) => ({
+    queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
       ...olderData,
       dms: [...olderData.dms, res.result[0]],
     }));
@@ -80,7 +80,7 @@ const MessageInput = () => {
   const handleSocketEmit = (time, clientOffset) => {
     console.log(msgRequests.fromOthers);
 
-    const { dms } = queryClient.getQueryData(["initialChatData", receiverId]);
+    const { dms } = queryClient.getQueryData(["chatMessages", receiverId]);
     const emitData = {
       message: message,
       from_id: socket.auth.user.id,

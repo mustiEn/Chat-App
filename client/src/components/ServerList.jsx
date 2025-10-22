@@ -4,11 +4,12 @@ import { TbActivity } from "react-icons/tb";
 import { IoAddCircleSharp } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
 import Button from "react-bootstrap/Button";
-import Popover from "./Popover";
+import PopoverComponent from "./PopoverComponent";
 import "../css/server_list.css";
 import AppsModal from "./AppsModal";
 import AddServerModal from "./AddServerModal";
 import HeaderContext from "../contexts/HeaderContext";
+import { Flex } from "@mantine/core";
 
 const ServerList = memo(function Serverlist() {
   // const servers = useLoaderData();
@@ -79,17 +80,24 @@ const ServerList = memo(function Serverlist() {
   };
   return (
     <>
-      <div id="serverList" className="d-flex flex-column gap-2 px-2">
-        <Popover
+      <Flex
+        id="serverList"
+        direction={"column"}
+        gap={"xs"}
+        mr={"auto"}
+        ps={"xs"}
+        pl={"xs"}
+      >
+        <PopoverComponent
           content={popOverContent("Direct Messages")}
           trigger={popOverTrigger("/@me", undefined, <TbActivity />)}
         />
-        <Popover
+        <PopoverComponent
           content={popOverContent("Direct Messages")}
           trigger={popOverTrigger("/logout", undefined, <TbActivity />)}
         />
         {Array.from({ length: 5 }, (_, server) => (
-          <Popover
+          <PopoverComponent
             key={server}
             content={popOverContent(server + 1)}
             trigger={popOverTrigger(
@@ -100,15 +108,15 @@ const ServerList = memo(function Serverlist() {
             )}
           />
         ))}
-        <Popover
+        <PopoverComponent
           content={popOverContent("Add a server")}
           trigger={popOverModalTrigger(<IoAddCircleSharp />)}
         />
-        <Popover
+        <PopoverComponent
           content={popOverContent("Download Apps")}
           trigger={popOverModalTrigger(<LiaDownloadSolid />)}
         />
-      </div>
+      </Flex>
       <AppsModal show={showAppsModal} onHide={() => setShowAppsModal(false)} />
       <AddServerModal
         show={showAddServerModal}

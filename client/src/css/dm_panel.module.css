@@ -76,11 +76,6 @@
   max-height: 600px;
 }
 
-.message-content {
-  font-size: 14px;
-  word-break: break-all;
-}
-
 #fileIcon:hover {
   cursor: pointer;
   color: rgba(255, 255, 255, 0.697);
@@ -100,10 +95,6 @@
 
 #msg-input::placeholder {
   color: white;
-}
-
-.timestamp {
-  font-size: 11px;
 }
 
 @keyframes highlight {

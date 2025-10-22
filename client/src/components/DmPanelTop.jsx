@@ -1,22 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
-import Button from "react-bootstrap/esm/Button";
+// import Button from "react-bootstrap/esm/Button";
 import Form from "react-bootstrap/Form";
 import { RxCross2, RxDrawingPin } from "react-icons/rx";
 import { CgProfile } from "react-icons/cg";
-import stylesPanelTop from "../css/dm_panel_top.module.css";
 import PinnedMsgsBox from "./PinnedMsgsBox";
-import Popover from "./Popover";
+import PopoverComponent from "./PopoverComponent";
 import { useParams } from "react-router-dom";
-import styles from "../css/dm_panel.module.css";
 import { useQuery } from "@tanstack/react-query";
-import toast from "react-hot-toast";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
+import { Box, Popover, Text, Button, Flex } from "@mantine/core";
+import stylesPanelTop from "../css/dm_panel_top.module.css";
+import styles from "../css/dm_panel.module.css";
 
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { userId: receiverId } = useParams();
+  const customOverlayRef = useRef();
   const receiver = useReceiverStore((state) => state.receivers[receiverId]);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore(
     (state) => state.showPinnedMsgBox
@@ -59,21 +60,24 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   // if (isError) toast.error(error.message);
 
   useEffect(() => {
+    if (showPinnedMsgBox[receiverId])
+      customOverlayRef.current.style.display = "block";
     const closePinnedMsgsBox = (event) => {
-      const isAnyModalShown = document.querySelector(".fade.modal.show");
-      const isTargetModalBtn = event.target.closest(".modal");
+      const isTargetOverlay = event.target.classList.contains(
+        customOverlayRef.current.className
+      );
+      // console.log(event.target);
+      // console.log("box is closing...");
+      // console.log(
+      //   isTargetOverlay,
+      //   event.target.classList,
+      //   customOverlayRef.current.className
+      // );
 
-      if (isAnyModalShown) return;
-      if (isTargetModalBtn) return;
-      if (!showPinnedMsgBox[receiverId]) return;
-      if (
-        pinnedMsgsBoxRef.current &&
-        !pinnedMsgsBoxRef.current.contains(event.target)
-      ) {
-        console.log("box is closing...");
+      if (!isTargetOverlay) return;
 
-        addToShowPinnedMsgBox(receiverId, false);
-      }
+      customOverlayRef.current.style.display = "none";
+      addToShowPinnedMsgBox(receiverId, false);
     };
 
     document.addEventListener("click", closePinnedMsgsBox);
@@ -85,17 +89,18 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
 
   return (
     <>
-      <div className="border-bottom border-opacity-25 border-white w-100 position-relative">
-        <div
-          className="d-flex px-2 w-100 text-white mt-2 mb-1"
-          style={{ height: 38 }}
-        >
+      <div
+        className={stylesPanelTop["custom-overlay"]}
+        ref={customOverlayRef}
+      ></div>
+      <Box className={"panel-top"}>
+        <Flex h={"100%"} w={"100%"} c={"white"} pr={10} pl={10}>
           <div className="d-flex align-items-center gap-2">
             <img src="https://placehold.co/25" alt="" />
             <div className="fs-6">{receiver?.display_name}</div>
           </div>
           <div className="d-flex align-items-center gap-2 ms-auto">
-            <Popover
+            <PopoverComponent
               content={
                 <div className="fw-bold popover-content">Pinned Messages</div>
               }
@@ -130,9 +135,9 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                   )}
                 </div>
               }
-              placement="bottom"
+              position="bottom"
             />
-            <Popover
+            <PopoverComponent
               content={
                 <div className="fw-bold popover-content">
                   {showOffset ? "Hide" : "Show"} User Profile
@@ -146,7 +151,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                   onClick={handleOffsetToggle}
                 />
               }
-              placement="bottom"
+              position="bottom"
             />
             <div className="position-relative">
               <Form.Control
@@ -175,9 +180,13 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
               />
             </div>
           </div>
-        </div>
-        <PinnedMsgsBox ref={pinnedMsgsBoxRef} isPending={isLoading} />
-      </div>
+        </Flex>
+        <PinnedMsgsBox
+          customOverlayRef={customOverlayRef}
+          ref={pinnedMsgsBoxRef}
+          isPending={isLoading}
+        />
+      </Box>
     </>
   );
 };

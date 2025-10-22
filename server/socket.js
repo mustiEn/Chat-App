@@ -431,12 +431,11 @@ export const setUpSocket = (io) => {
     if (!socket.recovered) {
       const userLastDisconnect = lastDisconnect.get(userId);
       logger.log("socket recovered");
-      logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
-      logger.log(lastDisconnect.get(userId));
+      // logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
+      // logger.log(lastDisconnect.get(userId));
 
       try {
         const obj = socket.handshake.auth.serverOffset;
-        console.log("Obj:", obj);
 
         if (userLastDisconnect && Object.keys(obj).length) {
           for (const receiverId in obj) {
@@ -634,7 +633,6 @@ export const setUpSocket = (io) => {
               sender,
               result: msgRequests,
             });
-          logger.log(msgRequests);
         }
       } catch (e) {
         logger.log("recovery error", e);

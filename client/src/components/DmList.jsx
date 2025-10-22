@@ -25,17 +25,19 @@ import ChatSkeleton from "./ChatSkeleton.jsx";
 import { dmDataQuery } from "../loaders/index.js";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
+import { Box, Modal, Button } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
 const DmList = ({ isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
+  const { activeMsg } = useContext(DmPanelContext);
   const queryClient = useQueryClient();
   const { data: cachedQuery } = useQuery(dmDataQuery(receiverId));
   const addToHasMoreUp = useHasMoreUpStore((state) => state.addToHasMoreUp);
   const pendingMsgs = usePendingMsgStore((state) => state.pendingMsgs);
   const currentChat = cachedQuery?.dms ?? [];
-  const typeRef = useRef(null);
   const { scrollElementRef, dmChatRef } = useOutletContext();
-
   const {
     scrollPosition,
     initialPageParam,
@@ -79,62 +81,7 @@ const DmList = ({ isInitialDataLoading }) => {
     },
     enabled: false,
   });
-  const [modal, setModal] = useState({
-    activeMsg: null,
-    show: false,
-  });
-  const handleDmModalNotifier = (msg, type) => {
-    setModal({ activeMsg: msg, show: true });
-    typeRef.current = type;
-  };
-  const pinMessage = () => {
-    if (!socket.connected) {
-      toast.error("We couldn't pin the message");
-      return;
-    }
-    socket.emit(
-      "send pinned msgs",
-      {
-        id: modal.activeMsg.id,
-        isPinned: true,
-        toId: receiverId,
-      },
-      (err, res) => {
-        if (err) {
-          console.log("Error: ", err);
-        }
 
-        queryClient.setQueryData(["pinnedMsgs", receiverId], (olderData) => [
-          modal.activeMsg,
-          ...(olderData ?? []),
-        ]);
-        console.log("Pinned message successfully", res);
-      }
-    );
-    setModal({
-      activeMsg: null,
-      show: false,
-    });
-  };
-  const deleteMessage = () => {
-    if (!socket.connected) {
-      toast.error("We couldn't delete the message");
-      return;
-    }
-    socket.emit(
-      "deleted msgs",
-      {
-        id: modal.activeMsg.id,
-      },
-      (err, res) => {
-        if (err) {
-          console.log("err", err);
-        } else {
-          console.log("res", res);
-        }
-      }
-    );
-  };
   const itemsContainerRef = useRef(null);
   const rowVirtualizer = useVirtualizer({
     count: (currentChat?.length ?? 0) + (pendingMsgs[receiverId]?.length ?? 0),
@@ -205,7 +152,7 @@ const DmList = ({ isInitialDataLoading }) => {
     if (!dms.length) return;
     if (!isDataNew) return;
 
-    queryClient.setQueryData(["initialChatData", receiverId], (oldData) => ({
+    queryClient.setQueryData(["chatMessages", receiverId], (oldData) => ({
       ...oldData,
       dms: [...dms, ...oldData.dms],
     }));
@@ -221,47 +168,46 @@ const DmList = ({ isInitialDataLoading }) => {
         <ChatSkeleton />
       ) : (
         <MyLoader next={fetchNextPage} loader={<PulseLoader color={"white"} />}>
-          <div
+          <Box
+            h={rowVirtualizer.getTotalSize()}
             style={{
-              height: rowVirtualizer.getTotalSize(),
               position: "relative",
             }}
-            className="p-2"
+            p={"xs"}
             ref={itemsContainerRef}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const item = items[virtualRow.index];
               return (
-                <div
+                <Box
                   key={virtualRow.key}
+                  w={"100%"}
+                  top={0}
+                  left={0}
                   style={{
                     position: "absolute",
-                    width: "100%",
-                    top: 0,
-                    left: 0,
+
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                   data-index={virtualRow.index}
                   ref={rowVirtualizer.measureElement}
                 >
-                  <DmItem
-                    msg={item}
-                    handleDmModalNotifier={handleDmModalNotifier}
-                  />
-                </div>
+                  <DmItem msg={item} activeMsg={activeMsg} />
+                </Box>
               );
             })}
-          </div>
+          </Box>
         </MyLoader>
       )}
 
-      <DmModalNotifier
+      {/* <DmModalNotifier
         type={typeRef.current}
-        activeMsg={modal.activeMsg}
+        activeMsg={activeMsg}
+        setActiveMsg={setActiveMsg}
         func={typeRef.current == "Pin" ? pinMessage : deleteMessage}
-        show={modal.show}
-        setModal={setModal}
-      />
+        show={opened}
+        close={close}
+      /> */}
     </>
   );
 };

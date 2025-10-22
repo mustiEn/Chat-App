@@ -1,37 +1,52 @@
-#pinnedMsgsBox {
-  width: 420px;
-  height: 380px;
+.paper {
+  width: rem(420px);
+  /* height: rem(175px); */
+  max-height: rem(450px);
   background-color: rgb(27 26 26);
   border-color: rgb(27 26 26);
-  right: 215px;
+  right: rem(215px);
+  position: absolute;
+  z-index: 6;
 }
 
-.message-content {
-  font-size: 14px;
-  word-break: break-all;
+.header-icon {
+  font-size: var(--mantine-h3-font-size);
+  margin-left: var(--mantine-spacing-xs);
 }
 
-.timestamp {
-  font-size: 11px;
+.modal-header {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-width: 0 0 1px 0;
+}
+
+.cross {
+  display: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  position: absolute;
+  right: rem(10px);
+  top: rem(10px);
 }
 
 .pinned-msg {
-  background-color: rgb(37 37 37);
+  position: relative;
 }
 
-.modal-icons {
-  display: none;
-}
-
-.modal-icon {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.pinned-msg:hover .modal-icons {
+.pinned-msg:hover .cross {
   display: flex;
 }
 
-.modal-icon:hover {
+.cross:hover {
   color: white;
-  cursor: pointer;
+}
+
+.no-data {
+  width: 100%;
+  margin-top: var(--mantine-spacing-xl);
+  font-size: 5rem;
+}
+
+.stack {
+  overflow: auto;
+  max-height: rem(370px);
 }

@@ -24,7 +24,7 @@ const getDmData = async (receiverId) => {
 };
 
 export const dmDataQuery = (receiverId) => ({
-  queryKey: ["initialChatData", receiverId],
+  queryKey: ["chatMessages", receiverId],
   queryFn: () => getDmData(receiverId),
   staleTime: Infinity,
 });

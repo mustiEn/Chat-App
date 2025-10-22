@@ -10,6 +10,7 @@ html {
 
 #root {
   height: 100vh;
+  overflow: hidden;
 }
 
 body {
@@ -31,25 +32,20 @@ a {
   color: #afafaf !important;
 }
 
-.popover {
-  position: absolute !important;
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.15s ease-in-out;
-}
-
-.popover.show {
-  visibility: visible;
-  opacity: 1;
+.panel-top {
+  border: 1px solid rgb(255, 255, 255, 25%);
+  border-right: none;
+  border-left: none;
+  height: rem(58px);
 }
 
 .popover-content {
-  font-size: 13px;
+  font-size: rem(13px);
   color: #bdbbbb;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: rem(6px);
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -58,10 +54,19 @@ a {
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(64, 229, 194, 0.862) transparent;
-  border-radius: 10px;
+  border-radius: rem(10px);
 }
 
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(64, 229, 194, 0.862) transparent;
+}
+
+.message-content {
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.timestamp {
+  font-size: 11px;
 }

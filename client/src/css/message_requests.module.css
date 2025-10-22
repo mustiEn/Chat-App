@@ -1,0 +1,29 @@
+.btn {
+  flex-shrink: 0;
+}
+
+.msg-request {
+  border: 1px solid rgb(255, 255, 255, 25%);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.icon {
+  font-size: rem(20px);
+}
+
+.accept,
+.reject {
+  border: 1px solid #242323;
+  background-color: #242323;
+}
+
+.accept:hover {
+  color: green;
+  cursor: pointer;
+}
+.reject:hover {
+  color: red;
+  cursor: pointer;
+}

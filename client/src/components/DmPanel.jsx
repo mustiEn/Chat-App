@@ -13,13 +13,18 @@ import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
-import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
+import { Flex } from "@mantine/core";
+import DmModalNotifier from "./DmModalNotifier.jsx";
+import { useDisclosure } from "@mantine/hooks";
+import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
 const DmPanel = () => {
+  const { userId: receiverId } = useParams();
   const addToMyRequests = useMsgRequestStore((state) => state.addToMyRequests);
   const addToOthersRequests = useMsgRequestStore(
     (state) => state.addToOthersRequests
   );
+  const msgRequests = useMsgRequestStore((state) => state.msgRequests);
   const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
   const addToDmHistoryUsers = useDmHistoryUserStore(
     (state) => state.addToDmHistoryUsers
@@ -30,7 +35,7 @@ const DmPanel = () => {
   const addToReceivers = useReceiverStore((state) => state.addToReceivers);
   const { dmChatRef } = useOutletContext();
   const { initialPageParam, prevChatDataUpdatedAtRef } = dmChatRef.current;
-  const { userId: receiverId } = useParams();
+
   const {
     data,
     isSuccess,
@@ -40,8 +45,14 @@ const DmPanel = () => {
     isFetched,
     dataUpdatedAt,
   } = useQuery(dmDataQuery(receiverId));
-  const [showOffset, setShowOffset] = useState(false);
+
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
+  const [showOffset, setShowOffset] = useState(false);
+  const [activeMsg, setActiveMsg] = useState({
+    msg: null,
+    type: null,
+  });
+  const [opened, { open, close }] = useDisclosure(false);
 
   if (isError) {
     toast.error(error.message);
@@ -69,10 +80,14 @@ const DmPanel = () => {
     const isDmsLengthLess = dms.length < 30 ? false : true;
     const isUserInReceiversObj = receivers[receiverId];
     const isUserInDmHistory = dmHistoryUsers.some(({ id }) => id == receiverId);
+    const msgRequestAlreadyExists = msgRequests.fromOthers.some(
+      ({ id }) => id == dms[0].id
+    );
 
     // console.log("dms: ", dms);
 
-    if (dms[0]?.request_state == "pending") setMsgRequest();
+    if (dms[0].request_state == "pending" && !msgRequestAlreadyExists)
+      setMsgRequest();
     if (!isUserInDmHistory) addToDmHistoryUsers([receiver]);
     if (!isUserInReceiversObj) addToReceivers(receiverId, receiver);
 
@@ -87,29 +102,43 @@ const DmPanel = () => {
 
   return (
     <>
-      <DmPanelTop
-        key={receiverId}
-        handleOffsetToggle={handleOffsetToggle}
-        showOffset={showOffset}
-      />
-      <div
-        className="d-flex flex-grow-1 w-100"
-        style={{
-          minHeight: 0,
-        }}
-      >
-        <div
-          id={styles["dmPanelContent"]}
-          className={`w-100 d-flex flex-column position-relative gap-2`}
-        >
-          <DmDisplay key={receiverId} isInitialDataLoading={isLoading} />
-        </div>
-
-        <FriendProfile
-          friend={receivers[receiverId] ?? []}
+      <DmPanelContext value={{ open, setActiveMsg, opened, close, activeMsg }}>
+        <DmPanelTop
+          key={receiverId}
+          handleOffsetToggle={handleOffsetToggle}
           showOffset={showOffset}
         />
-      </div>
+        <Flex
+          w={"100%"}
+          style={{
+            minHeight: 0,
+            flexGrow: 1,
+          }}
+        >
+          <Flex
+            id={styles["dmPanelContent"]}
+            direction={"column"}
+            gap={"xs"}
+            w={"100%"}
+            style={{
+              position: "relative",
+            }}
+          >
+            <DmDisplay key={receiverId} isInitialDataLoading={isLoading} />
+          </Flex>
+
+          <FriendProfile
+            friend={receivers[receiverId] ?? []}
+            showOffset={showOffset}
+          />
+        </Flex>
+      </DmPanelContext>
+      <DmModalNotifier
+        activeMsg={activeMsg}
+        setActiveMsg={setActiveMsg}
+        show={opened}
+        close={close}
+      />
     </>
   );
 };
