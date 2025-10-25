@@ -1,61 +1,53 @@
 import React from "react";
 import { TbDotsVertical, TbMessageCircle } from "react-icons/tb";
 import FriendsPanelTop from "./FriendsPanelTop";
+import { Box, Flex, Image, Stack, Text } from "@mantine/core";
 // import "../css/friends.css";
 const OnlineFriends = () => {
   return (
     <>
       {/* <FriendsPanelTop /> */}
-
-      <div className="position-relative">
-        {/* <img
-          src="icons8-star.gif"
-          width={10}
-          height={10}
-          className="position-absolute top-0"
-          alt=""
-        /> */}
-      </div>
-      {/* <div className="gif-hover">
-        <img
-          className="static"
-          width={300}
-          height={100}
-          src="static.jpg"
-          alt="Static Image"
-        />
-        <img
-          className="animated"
-          width={300}
-          height={100}
-          src="bg.gif"
-          alt="Animated GIF"
-        />
-      </div> */}
-
-      <ul className="text-white mt-5 mx-2">
-        <div className="mb-3">All friends - 9</div>
+      <Text
+        mx={"xs"}
+        pb={"xs"}
+        style={{
+          border: "1px solid rgba(255,255,255,25%)",
+          borderWidth: "0 0 1px 0",
+        }}
+      >
+        All friends - 9
+      </Text>
+      <Stack mx={"xs"} color="white" gap={5}>
         {Array.from({ length: 9 }, (_, i) => (
-          <li
+          <Flex
             key={i}
-            className="online-friends d-flex align-items-center gap-2 p-2"
+            className="online-friends"
+            align={"center"}
+            p={"xs"}
+            gap={"xs"}
+            style={{
+              border: "1px solid rgba(255,255,255,25%)",
+              borderWidth: "0 0 1px 0",
+            }}
           >
-            <img
+            <Image
               src="https://placehold.co/32"
-              className="rounded-circle"
+              w={32}
+              h={32}
+              radius={"xl"}
               alt=""
             />
-            <div className="d-flex flex-column">
-              <div className="fw-bold" style={{ fontSize: 16 }}>
+            <Flex direction={"column"}>
+              <Text fw={"bold"} fz={16}>
                 Jack Micheal
-              </div>
-              <div style={{ fontSize: 14 }}>online</div>
-            </div>
+              </Text>
+              <Text fz={14}>online</Text>
+            </Flex>
             <TbMessageCircle className="ms-auto" style={{ fontSize: 25 }} />
             <TbDotsVertical style={{ fontSize: 25 }} />
-          </li>
+          </Flex>
         ))}
-      </ul>
+      </Stack>
     </>
   );
 };

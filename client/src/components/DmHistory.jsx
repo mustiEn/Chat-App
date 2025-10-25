@@ -1,33 +1,39 @@
-import React, { useEffect } from "react";
 import PopoverComponent from "./PopoverComponent";
 import { IoAdd } from "react-icons/io5";
-
 import UsersInDmHistory from "./UsersInDmHistory";
 import { socket } from "../socket";
-import "../css/friends.css";
+import { Box, Flex, Space, Text } from "@mantine/core";
+
 const DmHistory = () => {
-  const popOverContent = (content) => {
+  const popOverContent = () => {
     return (
-      <div className="d-flex flex-column">
-        <div className="fw-bold popover-content">{content}</div>
-      </div>
+      <Flex direction={"column"}>
+        <Text fw={"bold"} className="popover-content">
+          Create DM
+        </Text>
+      </Flex>
     );
   };
-  const popOverTrigger = (icon) => {
-    return <div>{icon}</div>;
+  const popOverTrigger = () => {
+    return (
+      <div>
+        <IoAdd />
+      </div>
+    );
   };
 
   return (
     <>
-      <div className="px-2 w-100">
-        <div className="d-flex justify-content-between mb-1 text-white">
-          <div>Direct Messages</div>
+      <Box px={"sm"} w={"100%"}>
+        <Flex justify={"space-between"} mb={"xs"} c={"white"}>
+          <Text>Direct Messages</Text>
           <PopoverComponent
-            trigger={popOverTrigger(<IoAdd />)}
-            content={popOverContent("Create DM")}
+            trigger={popOverTrigger()}
+            content={popOverContent()}
           />
-        </div>
+        </Flex>
         <UsersInDmHistory />
+        <Space h={"lg"}></Space>
         <button
           onClick={() => {
             socket.disconnect();
@@ -36,7 +42,7 @@ const DmHistory = () => {
           close
         </button>
         <button onClick={() => socket.connect()}>connect</button>
-      </div>
+      </Box>
     </>
   );
 };

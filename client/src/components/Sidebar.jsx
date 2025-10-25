@@ -27,20 +27,6 @@ const Sidebar = () => {
           </>
         )}
       </Flex>
-      {/* <div
-        id="sidebar"
-        className="text-white align-items-center flex-shrink-0 border border-opacity-25 border-white border-end-0 d-flex flex-column rounded-start-4"
-        style={{ backgroundColor: "#121214", width: 300 }}
-      >
-        {location.pathname.includes("group-chat") ? (
-          <GroupChatSidebarNav />
-        ) : (
-          <>
-            <DmSidebarNavTop />
-            <DmHistory />
-          </>
-        )}
-      </div> */}
     </>
   );
 };

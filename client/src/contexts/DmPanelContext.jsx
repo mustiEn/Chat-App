@@ -1,5 +1,9 @@
 import { createContext } from "react";
 
 export const DmPanelContext = createContext({
-  val: "",
+  open: () => {},
+  setActiveMsg: () => {},
+  opened: false,
+  close: () => {},
+  activeMsg: null,
 });

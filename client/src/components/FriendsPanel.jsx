@@ -3,6 +3,7 @@ import FriendsPanelTop from "./FriendsPanelTop";
 import OnlineFriends from "./OnlineFriends";
 import AllFriends from "./AllFriends";
 import AddFriend from "./AddFriend";
+import { Box, Text, Title } from "@mantine/core";
 
 const FriendsPanel = () => {
   const [activeComp, setActiveComp] = useState(0);
@@ -20,11 +21,14 @@ const FriendsPanel = () => {
 
   return (
     <>
-      <div className="fs-2 text-white">
+      <Box color="white">
         <FriendsPanelTop props={[setActiveComp, activeComp]} />
-        FriendsPanel
+
+        <Text fz={"h1"} mb={"md"}>
+          FriendsPanel
+        </Text>
         {renderComponent()}
-      </div>
+      </Box>
     </>
   );
 };

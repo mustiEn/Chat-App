@@ -5,7 +5,6 @@ import { Modal, Button, Text, Flex, Image } from "@mantine/core";
 import { useParams } from "react-router-dom";
 
 const DmModalNotifier = ({
-  func,
   setActiveMsg,
   activeMsg: { msg, type },
   show,

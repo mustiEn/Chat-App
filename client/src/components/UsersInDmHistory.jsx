@@ -1,11 +1,11 @@
 import React, { memo, useContext, useEffect } from "react";
-import Button from "react-bootstrap/esm/Button";
 import { NavLink } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
 import { useQuery } from "@tanstack/react-query";
 import DmHistorySkeleton from "./DmHistorySkeleton";
 import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { useShallow } from "zustand/shallow";
+import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 // import DmHistorySkeleton from './DmHistorySkeleton'
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
@@ -39,55 +39,73 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
 
   return (
     <>
-      <ul className="d-flex flex-column gap-1">
+      <Stack gap={"xs"}>
         {isLoading ? (
           <DmHistorySkeleton />
         ) : !dmHistoryUsers.length ? (
           <DmHistorySkeleton />
         ) : (
           dmHistoryUsers.map((e, i) => (
-            <li
+            <Box
               key={e.id}
               // className="position-relative"
-              style={{ width: "100%", height: 45 }}
+              w={"100%"}
+              h={45}
               onClick={() => setHeader(e.display_name)}
             >
-              <Button
-                variant={"dark"}
-                as={NavLink}
-                to={`${e.id}`}
-                className={"position-relative w-100 h-100"}
-              >
-                <div
-                  className="position-absolute w-100 h-100 top-0 start-0 z-0"
+              <NavLink to={`${e.id}`}>
+                <Button
+                  color={"dark"}
+                  w={"100%"}
+                  h={"100%"}
+                  justify="flex-start"
                   style={{
-                    // backgroundImage: "url(/atomic.gif)",
-                    backgroundRepeat: "no-repeat",
-                    backgroundSize: "cover",
-                    backgroundPosition: "100% 30%",
-                    maskImage:
-                      "linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0))",
-                    WebkitMaskImage:
-                      "linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0))",
+                    position: "relative",
                   }}
-                ></div>
-                <div className="d-flex align-items-center gap-3 position-absolute z-1">
-                  <img
-                    src={e.profile ?? "https://placehold.co/32"}
-                    className="rounded-circle"
-                    alt=""
-                  />
-                  <div>
-                    {e.display_name?.length > 15
-                      ? e.display_name.slice(15).concat("...")
-                      : e.display_name}
-                  </div>
-                </div>
-              </Button>
-            </li>
+                >
+                  <Box
+                    w={"100%"}
+                    h={"100%"}
+                    style={{
+                      // backgroundImage: "url(/atomic.gif)",
+                      zIndex: 0,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      backgroundRepeat: "no-repeat",
+                      backgroundSize: "cover",
+                      backgroundPosition: "100% 30%",
+                      maskImage:
+                        "linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0))",
+                      WebkitMaskImage:
+                        "linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0))",
+                    }}
+                  ></Box>
+                  <Flex
+                    align={"center"}
+                    gap={"xs"}
+                    style={{
+                      position: "absolute",
+                      zIndex: 1,
+                    }}
+                  >
+                    <Image
+                      src={e.profile ?? "https://placehold.co/32"}
+                      radius={"xl"}
+                      alt=""
+                    />
+                    <Text>
+                      {e.display_name?.length > 15
+                        ? e.display_name.slice(15).concat("...")
+                        : e.display_name}
+                    </Text>
+                  </Flex>
+                </Button>
+              </NavLink>
+            </Box>
           ))
         )}
-      </ul>
+      </Stack>
     </>
   );
 });

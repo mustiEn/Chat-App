@@ -1,4 +1,4 @@
-import { Box, Button, Flex } from "@mantine/core";
+import { Box, Button, Flex, Text } from "@mantine/core";
 import React from "react";
 import { FaUsers } from "react-icons/fa6";
 import { LuDot } from "react-icons/lu";
@@ -21,7 +21,7 @@ const FriendsPanelTop = ({ props }) => {
         >
           <Flex align={"center"} gap={"sm"}>
             <FaUsers className="fs-5" />
-            <div className="fs-6">Friends</div>
+            <Text fs={6}>Friends</Text>
           </Flex>
           <LuDot />
           {btns.map((btn, i) => (

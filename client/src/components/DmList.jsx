@@ -10,9 +10,6 @@ import DmItem from "./DmItem.jsx";
 import { PulseLoader } from "react-spinners";
 import { useOutletContext, useParams } from "react-router-dom";
 import MyLoader from "./InfiniteLoader.jsx";
-import toast from "react-hot-toast";
-import DmModalNotifier from "./DmModalNotifier.jsx";
-import { socket } from "../socket.js";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   QueryClient,
@@ -25,8 +22,7 @@ import ChatSkeleton from "./ChatSkeleton.jsx";
 import { dmDataQuery } from "../loaders/index.js";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
-import { Box, Modal, Button } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Box } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
 const DmList = ({ isInitialDataLoading }) => {
@@ -199,15 +195,6 @@ const DmList = ({ isInitialDataLoading }) => {
           </Box>
         </MyLoader>
       )}
-
-      {/* <DmModalNotifier
-        type={typeRef.current}
-        activeMsg={activeMsg}
-        setActiveMsg={setActiveMsg}
-        func={typeRef.current == "Pin" ? pinMessage : deleteMessage}
-        show={opened}
-        close={close}
-      /> */}
     </>
   );
 };

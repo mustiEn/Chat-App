@@ -9,6 +9,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
+import { Flex } from "@mantine/core";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -93,14 +94,17 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
 
   return (
     <>
-      <Form
-        className={`d-flex align-items-center ${styles["message-form"]} ${
+      <Flex
+        align={"center"}
+        p={"sm"}
+        gap={"sm"}
+        className={`${styles["message-form"]} ${
           editedMessage.id != null
             ? editedMessage.id != msg.id
               ? "d-none"
               : ""
             : "d-none"
-        } rounded-3 p-3 gap-3 custom-scrollbar`}
+        } rounded-3 custom-scrollbar`}
       >
         <TextareaAutosize
           maxRows={20}
@@ -126,7 +130,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
             }
           }}
         />
-      </Form>
+      </Flex>
     </>
   );
 };

@@ -79,7 +79,15 @@ const MessageRequests = () => {
     <>
       <MessageRequestsTop />
       <Box p={"sm"}>
-        <Text mb={"lg"} fw={"lighter"}>
+        <Text
+          mb={"sm"}
+          pb={"xs"}
+          fw={"lighter"}
+          style={{
+            border: "1px solid rgba(255,255,255,25%)",
+            borderWidth: "0 0 1px 0",
+          }}
+        >
           Message Requests
         </Text>
         {isLoading ? (

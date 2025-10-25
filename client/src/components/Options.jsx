@@ -9,19 +9,16 @@ import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import styles from "../css/dm_panel.module.css";
 import { useContext } from "react";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
+import { Flex, Text } from "@mantine/core";
 
-const Options = ({
-  msg,
-  handleEditableMsg,
-}) => {
+const Options = ({ msg, handleEditableMsg }) => {
   const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
-  const {activeMsg,setActiveMsg,open} = useContext(DmPanelContext)
-  const handleDmModalNotifier = (msg,type) => {
-    setActiveMsg({msg,type})
-    open()
-  }
+  const { activeMsg, setActiveMsg, open } = useContext(DmPanelContext);
+  const handleDmModalNotifier = (msg, type) => {
+    setActiveMsg({ msg, type });
+    open();
+  };
 
-  
   const options = useCallback(
     () => [
       {
@@ -65,16 +62,24 @@ const Options = ({
           <PopoverComponent
             key={i}
             content={
-              <div className="fw-bold popover-content">{option.name}</div>
+              <Text fw={"bold"} className="popover-content">
+                {option.name}
+              </Text>
             }
             trigger={
-              <div
+              <Flex
                 id={option.name + "-" + msg.id}
-                className={`${styles["option"]} d-flex align-items-center justify-content-center p-1 rounded-3`}
+                align={"center"}
+                justify={"center"}
+                p={5}
+                className={`${styles["option"]}`}
                 onClick={() => option.func(msg)}
+                style={{
+                  borderRadius: 10,
+                }}
               >
                 {option.icon}
-              </div>
+              </Flex>
             }
             position="top"
           />
