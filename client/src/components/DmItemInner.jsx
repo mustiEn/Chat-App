@@ -2,23 +2,27 @@ import React from "react";
 import EditDm from "./EditDm";
 import { formatDate } from "../utils";
 import MsgRepliedDiv from "../components/MsgRepliedDiv";
-import { useEffect } from "react";
+import { Flex, Image, Text } from "@mantine/core";
 
 const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
   return (
     <>
-      {msg.reply_to_msg_sender && <MsgRepliedDiv msg={msg} />}
-      <div className={`d-flex align-items-center gap-2 w-100 `}>
-        <img
+      {msg.replied_msg_sender && <MsgRepliedDiv msg={msg} />}
+      <Flex align={"center"} gap={"xs"} w={"100%"}>
+        <Image
           src={msg.profile ?? "https://placehold.co/40"}
-          className="align-self-baseline rounded-circle"
-          width={40}
-          height={40}
-          alt=""
+          radius={"xl"}
+          w={40}
+          h={40}
+          style={{
+            alignSelf: "baseline",
+          }}
         />
-        <div className="d-flex flex-column w-100">
-          <div className="d-flex align-items-center gap-2">
-            <div className="fw-bold text-white">{msg.display_name}</div>
+        <Flex w={"100%"} direction={"column"}>
+          <Flex gap={"xs"} align={"center"}>
+            <Text fw={"bold"} c={"white"}>
+              {msg.display_name}
+            </Text>
             <span className={`timestamp text-muted`}>
               {formatDate(msg.created_at)}
               {msg?.is_edited
@@ -29,21 +33,23 @@ const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
                 ? "sending"
                 : "Sent!"}
             </span>
-          </div>
+          </Flex>
           <EditDm
             msg={msg}
             editedMessage={editedMessage}
             setEditedMessage={setEditedMessage}
           />
-          <div
-            className={`message-content ${
-              editedMessage.id ? "d-none" : ""
-            } text-white`}
+          <Text
+            c={"white"}
+            className={`message-content`}
+            style={{
+              display: editedMessage.id ? "none" : "block",
+            }}
           >
             {msg.message}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Flex>
+      </Flex>
     </>
   );
 };

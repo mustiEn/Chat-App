@@ -24,9 +24,6 @@ const FriendsPanel = () => {
       <Box color="white">
         <FriendsPanelTop props={[setActiveComp, activeComp]} />
 
-        <Text fz={"h1"} mb={"md"}>
-          FriendsPanel
-        </Text>
         {renderComponent()}
       </Box>
     </>

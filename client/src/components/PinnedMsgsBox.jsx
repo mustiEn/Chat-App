@@ -25,7 +25,7 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 const PinnedMsgsBox = ({ customOverlayRef, ref, isPending }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
-  const pinnedMsgs = queryClient.getQueryData(["pinnedMsgs", receiverId]);
+  const pinnedMsgs = queryClient.getQueryData(["pinnedMessages", receiverId]);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore(
     (state) => state.showPinnedMsgBox
   );

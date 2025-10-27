@@ -11,7 +11,7 @@ const Sidebar = () => {
   return (
     <>
       <Flex
-        w={300}
+        // w={150}
         c={"white"}
         bg={"#121214"}
         direction={"column"}

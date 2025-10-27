@@ -10,13 +10,30 @@ import AppsModal from "./AppsModal";
 import AddServerModal from "./AddServerModal";
 import HeaderContext from "../contexts/HeaderContext";
 import { Flex } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 
 const ServerList = memo(function Serverlist() {
   // const servers = useLoaderData();
   // const servers = Array.from({length:5})
   const setHeader = useContext(HeaderContext);
-  const [showAppsModal, setShowAppsModal] = useState(false);
-  const [showAddServerModal, setShowAddServerModal] = useState(false);
+  const [isAppModalOpened, { open: openAppModal, close: closeAppModal }] =
+    useDisclosure(false);
+  const [
+    isServerModalOpened,
+    { open: openServerModal, close: closeServerModal },
+  ] = useDisclosure(false);
+  const modals = [
+    {
+      content: "Add a server",
+      icon: <IoAddCircleSharp />,
+      modalToggler: openServerModal,
+    },
+    {
+      content: "Download Apps",
+      icon: <LiaDownloadSolid />,
+      modalToggler: openAppModal,
+    },
+  ];
   const concatFirstLetters = (name) => {
     const splitName = name.split(" ");
     const result = splitName.reduce((acc, curr) => {
@@ -66,13 +83,13 @@ const ServerList = memo(function Serverlist() {
       </Button>
     );
   };
-  const popOverModalTrigger = (icon) => {
+  const popOverModalTrigger = (icon, toggler) => {
     return (
       <Button
         variant={"dark"}
         className={"d-flex justify-content-center align-items-center mx-1 p-0"}
         style={{ width: 40, height: 35, fontSize: 20 }}
-        onClick={() => setShowAppsModal(true)}
+        onClick={toggler}
       >
         {icon}
       </Button>
@@ -108,19 +125,30 @@ const ServerList = memo(function Serverlist() {
             )}
           />
         ))}
-        <PopoverComponent
+        {modals.map(({ content, icon, modalToggler }) => (
+          <PopoverComponent
+            content={popOverContent(content)}
+            trigger={popOverModalTrigger(icon, modalToggler)}
+          />
+        ))}
+        {/* <PopoverComponent
           content={popOverContent("Add a server")}
           trigger={popOverModalTrigger(<IoAddCircleSharp />)}
         />
         <PopoverComponent
           content={popOverContent("Download Apps")}
           trigger={popOverModalTrigger(<LiaDownloadSolid />)}
-        />
+        /> */}
       </Flex>
-      <AppsModal show={showAppsModal} onHide={() => setShowAppsModal(false)} />
+      <AppsModal
+        show={openAppModal}
+        close={closeAppModal}
+        opened={isAppModalOpened}
+      />
       <AddServerModal
-        show={showAddServerModal}
-        onHide={() => setShowAddServerModal(false)}
+        show={openServerModal}
+        close={closeServerModal}
+        opened={isServerModalOpened}
       />
     </>
   );

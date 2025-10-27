@@ -27,10 +27,10 @@ const InfiniteLoader = ({ next, loader, children }) => {
     <>
       <div
         style={{
-          height: 700,
+          height: "100%",
           overflowY: "auto",
         }}
-        id={"scrollableref"}
+        id={"scrollableRef"}
         ref={scrollElementRef}
         className="custom-scrollbar px-2"
       >

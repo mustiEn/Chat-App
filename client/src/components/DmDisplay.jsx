@@ -21,8 +21,7 @@ const DmDisplay = ({ isInitialDataLoading }) => {
         c={"white"}
         w={"100%"}
         style={{
-          flexShrink: 1,
-          position: "relative",
+          minHeight: 350,
         }}
       >
         <DmList key={receiverId} isInitialDataLoading={isInitialDataLoading} />

@@ -168,6 +168,7 @@ const DmList = ({ isInitialDataLoading }) => {
             h={rowVirtualizer.getTotalSize()}
             style={{
               position: "relative",
+              minHeight: 355,
             }}
             p={"xs"}
             ref={itemsContainerRef}

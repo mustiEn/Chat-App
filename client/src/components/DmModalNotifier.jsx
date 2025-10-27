@@ -3,6 +3,7 @@ import { socket } from "../socket";
 import { formatDate } from "../utils";
 import { Modal, Button, Text, Flex, Image } from "@mantine/core";
 import { useParams } from "react-router-dom";
+import { useCallback } from "react";
 
 const DmModalNotifier = ({
   setActiveMsg,
@@ -29,10 +30,10 @@ const DmModalNotifier = ({
           console.log("Error: ", err);
         }
 
-        queryClient.setQueryData(["pinnedMsgs", receiverId], (olderData) => [
-          msg,
-          ...(olderData ?? []),
-        ]);
+        queryClient.setQueryData(
+          ["pinnedMessages", receiverId],
+          (olderData) => [msg, ...(olderData ?? [])]
+        );
         queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
           const index = olderData.dms.findIndex(({ id }) => id == msg.id);
           const currDms = [...olderData.dms];
@@ -48,23 +49,80 @@ const DmModalNotifier = ({
     );
   };
   const deleteMessage = () => {
+    const pinnedMsgData = queryClient.getQueryData([
+      "pinnedMessages",
+      String(receiverId),
+    ]);
+    const isMsgPinned =
+      pinnedMsgData?.findIndex(({ id }) => id == msg.id) ?? -1;
+
     if (!socket.connected) {
       toast.error("We couldn't delete the message");
       return;
     }
-    socket.emit(
-      "deleted msgs",
-      {
-        id: msg.id,
-      },
-      (err, res) => {
-        if (err) {
-          console.log("err", err);
-        } else {
-          console.log("res", res);
-        }
+
+    socket.emit("send deleted msgs", msg, (err, res) => {
+      if (err) {
+        console.log("err", err);
+        return;
       }
-    );
+
+      queryClient.setQueryData(
+        ["chatMessages", String(receiverId)],
+        (olderData) => {
+          const { dms } = olderData;
+          const currDms = [...dms];
+          const index = currDms.findIndex(({ id }) => id == msg.id);
+          const msgsRepliedToIndex = currDms.reduce((acc, curr, i) => {
+            if (curr.replied_msg_id == msg.id) acc.push(i);
+            return acc;
+          }, []);
+
+          console.log(msgsRepliedToIndex);
+
+          if (msgsRepliedToIndex.length)
+            msgsRepliedToIndex.forEach((e) => {
+              console.log(currDms[e]);
+              currDms[e].is_replied_msg_deleted = true;
+            });
+          currDms.splice(index, 1);
+
+          return {
+            ...olderData,
+            dms: currDms,
+          };
+        }
+      );
+      console.log("Deleted message successfully", res);
+    });
+
+    if (isMsgPinned !== -1) {
+      socket.emit(
+        "send pinned msgs",
+        {
+          id: msg.id,
+          isPinned: false,
+          toId: receiverId,
+        },
+        (err, res) => {
+          if (err) {
+            console.log("err", err);
+            return;
+          }
+
+          queryClient.setQueryData(
+            ["pinnedMessages", receiverId],
+            (olderData) => {
+              const filteredData = [...olderData].filter(
+                ({ id }) => id != msg.id
+              );
+
+              return filteredData;
+            }
+          );
+        }
+      );
+    }
   };
   const unPinMessage = () => {
     if (!socket.connected) {
@@ -85,9 +143,11 @@ const DmModalNotifier = ({
         }
 
         queryClient.setQueryData(
-          ["pinnedMsgs", String(receiverId)],
+          ["pinnedMessages", receiverId],
           (olderData) => {
-            const filteredData = olderData.filter(({ id }) => id != msg.id);
+            const filteredData = [...olderData].filter(
+              ({ id }) => id != msg.id
+            );
 
             return filteredData;
           }
@@ -106,11 +166,14 @@ const DmModalNotifier = ({
       }
     );
   };
-  const functions = {
-    Unpin: unPinMessage,
-    Delete: deleteMessage,
-    Pin: pinMessage,
-  };
+  const functions = useCallback(
+    {
+      Unpin: unPinMessage,
+      Delete: deleteMessage,
+      Pin: pinMessage,
+    },
+    [msg]
+  );
 
   return (
     <>

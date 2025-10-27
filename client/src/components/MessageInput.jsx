@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import Form from "react-bootstrap/Form";
 import { GoPlusCircle } from "react-icons/go";
 import { useRef } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import styles from "../css/dm_panel.module.css";
 import ReplyToMsg from "./ReplyToMsg.jsx";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -13,12 +11,12 @@ import { useParams } from "react-router-dom";
 import { socket } from "../socket.js";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMsgRequestStore } from "../stores/useMsgRequestStore.js";
-import { useShallow } from "zustand/shallow";
 import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
-import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
+import { Box, Flex } from "@mantine/core";
+import styles from "../css/dm_panel.module.css";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -77,9 +75,7 @@ const MessageInput = () => {
 
     console.log("Message successful:", res);
   };
-  const handleSocketEmit = (time, clientOffset) => {
-    console.log(msgRequests.fromOthers);
-
+  const handleSocketEmit = (clientOffset) => {
     const { dms } = queryClient.getQueryData(["chatMessages", receiverId]);
     const emitData = {
       message: message,
@@ -87,12 +83,9 @@ const MessageInput = () => {
       to_id: Number(receiverId),
       clientOffset,
       reply_to_msg: msgToReply ?? null,
-      createdAt: time,
     };
 
     if (msgRequests.fromOthers.some(({ from_id }) => from_id == receiverId)) {
-      console.log("acceptance if");
-
       const acceptance = {
         reqMsg: msgRequests.fromOthers.find(
           ({ from_id }) => from_id == receiverId
@@ -107,26 +100,16 @@ const MessageInput = () => {
         (err, res) => handleEmitCallback(err, res, "acceptance")
       );
     } else if (!dms.length && receivers[receiverId].with_in_no_contact) {
-      console.log("not in contact if");
-
       socket.emit("send msg requests", emitData, (err, res) =>
         handleEmitCallback(err, res, "request")
       );
     } else {
-      console.log("dms if");
-
       socket.emit("send dms", emitData, (err, res) =>
         handleEmitCallback(err, res, "dm")
       );
     }
   };
   const handleSubmit = (msgPayload) => {
-    if (textInpRef.current != document.activeElement) {
-      return;
-    } else if (!message.trim()) {
-      return;
-    }
-
     if (!socket.connected) {
       console.log("socket not connected and set dmchat pending msgs");
       addToPendingMsgs(receiverId, { ...msgPayload, isPending: true });
@@ -144,7 +127,7 @@ const MessageInput = () => {
   }, []);
 
   return (
-    <div className="w-100 px-2 mt-auto mb-4">
+    <Box w={"100%"} px={"xs"} mt={"auto"} mb={"sm"}>
       {receivers[receiverId]?.is_blocked ? (
         <div>You blocked this user</div>
       ) : msgRequests.fromMe.some(({ to_id }) => to_id == receiverId) ? (
@@ -152,20 +135,23 @@ const MessageInput = () => {
       ) : (
         <>
           {msgToReply && <ReplyToMsg toWho={msgToReply?.display_name} />}
-          <Form
+          <Flex
+            p={"xs"}
+            align={"center"}
             className={`${styles["message-form"]} ${
-              msgToReply && "rounded-top-0"
-            } rounded-3 p-3 custom-scrollbar border border-secondary border-opacity-50`}
+              msgToReply && "msg-to-reply-active"
+            } custom-scrollbar`}
           >
-            <div className="d-flex align-items-center gap-3">
-              <div
-                className="d-flex align-items-center justify-content-center align-self-baseline text-white"
+            <Flex w={"100%"} gap={"xs"}>
+              <Flex
+                justify={"center"}
+                align={"center"}
                 style={{
                   width: 30,
                   height: 30,
                 }}
               >
-                <Form.Control
+                <input
                   type="file"
                   hidden
                   ref={fileInpRef}
@@ -176,11 +162,11 @@ const MessageInput = () => {
                   className="fs-5"
                   onClick={() => fileInpRef.current.click()}
                 />
-              </div>
+              </Flex>
               <TextareaAutosize
                 autoFocus
                 ref={textInpRef}
-                maxRows={20}
+                maxRows={40}
                 id={styles["msg-input"]}
                 className="border-0 bg-transparent msg-input text-white w-100"
                 placeholder={`${
@@ -193,8 +179,9 @@ const MessageInput = () => {
                 value={message}
                 style={{
                   whiteSpace: "pre-wrap",
+                  maxBlockSize: 350,
                 }}
-                // onHeightChange={scrollToBottom}
+                // onHeightChange={}
                 onChange={(e) => {
                   setMessage((prev) =>
                     e.nativeEvent.inputType === "insertLineBreak"
@@ -202,9 +189,16 @@ const MessageInput = () => {
                       : e.target.value
                   );
                 }}
-                onKeyUp={(e) => {
-                  if (e.key != "Enter") return;
+                onKeyDown={(e) => {
+                  if (e.key != "Enter") {
+                    return;
+                  } else if (textInpRef.current != document.activeElement) {
+                    return;
+                  } else if (!message.trim()) {
+                    return;
+                  }
                   e.preventDefault();
+
                   const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
                   const clientOffset = uuidv4();
                   const msgPayload = {
@@ -214,19 +208,20 @@ const MessageInput = () => {
                     to_id: Number(receiverId),
                     clientOffset,
                     created_at: time,
-                    reply_to_msg_message: msgToReply?.message ?? null,
-                    reply_to_msg_sender: msgToReply?.display_name ?? null,
-                    reply_to_msg_profile: msgToReply?.profile ?? null,
+                    replied_msg_message: msgToReply?.message ?? null,
+                    replied_msg_sender: msgToReply?.display_name ?? null,
+                    replied_msg_profile: msgToReply?.profile ?? null,
                   };
+
                   handleSubmit(msgPayload);
-                  handleSocketEmit(time, clientOffset, msgPayload);
+                  handleSocketEmit(clientOffset);
                 }}
               />
-            </div>
-          </Form>
+            </Flex>
+          </Flex>
         </>
       )}
-    </div>
+    </Box>
   );
 };
 

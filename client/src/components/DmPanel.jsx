@@ -58,11 +58,9 @@ const DmPanel = () => {
     toast.error(error.message);
   }
 
-  //* get mgss when being off chat,[add friend, block, report spam],add msg requests. Check blocked users, then friends then this. Being friend or msging back auto accepts it - direct_msg_requests.dont allow user to search blocked one up,but show the msgs still.
+  //* dont allow user to search blocked one up,but show the msgs still.
 
-  //^ before fethcing chats,allow socket get msgs and save,then fetch chat and merge then rmeove dups
-
-  //^ actual time of pending msg is when its saved to db not at pending
+  //^ before fethcing chats,allow socket get msgs and save,then fetch chat and merge then rmeove dups - notification
 
   useEffect(() => {
     // console.log(socket.auth.serverOffset);
@@ -120,9 +118,6 @@ const DmPanel = () => {
             direction={"column"}
             gap={"xs"}
             w={"100%"}
-            style={{
-              position: "relative",
-            }}
           >
             <DmDisplay key={receiverId} isInitialDataLoading={isLoading} />
           </Flex>

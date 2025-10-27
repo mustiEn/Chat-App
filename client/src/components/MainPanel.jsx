@@ -98,17 +98,18 @@ const MainPanel = () => {
     };
     const handlePinnedMessages = ({ result, isRecovery }) => {
       const { showPinnedMsgBox } = useShowPinnedMsgBoxStore.getState();
+
       if (!isRecovery) {
         const { last_pin_action_by_id: lastPinActionById, is_pinned } = result;
 
         const queryData = queryClient.getQueryState([
-          "pinnedMsgs",
+          "pinnedMessages",
           String(lastPinActionById),
         ]);
         const isQueryFetched = queryData?.data ?? undefined;
-        // console.log(queryClient.getQueriesData());
 
         //^ here, add a notification and amend if needed.if notification is here,no need to check ispinned, cuz now i cant know whether to notify on mount
+
         if (is_pinned) {
           const val = showPinnedMsgBox[lastPinActionById] ? false : true;
 
@@ -118,7 +119,7 @@ const MainPanel = () => {
         if (!isQueryFetched) return; //* if not already fetch,skip since its gonna fetch it on mount
 
         queryClient.setQueryData(
-          ["pinnedMsgs", String(lastPinActionById)],
+          ["pinnedMessages", String(lastPinActionById)],
           (olderData) => {
             if (is_pinned) {
               return [result, ...(olderData ?? [])];
@@ -149,7 +150,7 @@ const MainPanel = () => {
           if (!isQueryFetched) return; //* if not already fetch,skip since its gonna fetch it on mount
 
           queryClient.setQueryData(
-            ["pinnedMsgs", String(lastPinActionById)],
+            ["pinnedMessages", String(lastPinActionById)],
             (olderData) => {
               if (is_pinned) {
                 const pinnedMsgAlreadyExists = olderData.find(
@@ -173,38 +174,9 @@ const MainPanel = () => {
         });
       }
     };
-
-    socket.connect();
-    socket.on("connect", onConnect);
-    socket.on("connect_error", onConnectErr);
-    socket.on("initial", getInitial);
-    socket.on("receive dms", handleNewMessages);
-    socket.on("receive edited msgs", handleEditedMessages);
-    socket.on("receive pinned msgs", handlePinnedMessages);
-    socket.on("disconnect", onDisconnect);
-    socket.on("connect_error", (err) =>
-      console.error("⚠️ Connect error:", err)
-    );
-
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("connect_error", onConnectErr);
-      socket.off("initial", getInitial);
-      socket.off("receive edited msgs", handleEditedMessages);
-      socket.off("receive dms", handleNewMessages);
-      socket.off("receive pinned msgs", handlePinnedMessages);
-      socket.off("disconnect", onDisconnect);
-      socket.disconnect();
-
-      queryClient.removeQueries();
-      console.log("SOCKET DISCONNECTED layout");
-    };
-  }, []);
-
-  useEffect(() => {
-    const receiveMessageRequestAcceptance = ({ result }) => {
+    const handleMessageRequestAcceptance = ({ result }) => {
       const { dmHistoryUsers } = useDmHistoryUserStore.getState();
-      console.log("receiveMessageRequestAcceptance");
+      console.log("handleMessageRequestAcceptance");
 
       result.forEach((reqAcceptance) => {
         console.log("reqAcceptance", reqAcceptance);
@@ -265,18 +237,100 @@ const MainPanel = () => {
         if (!isUserInDmHistory) addToDmHistoryUsers([dmHistoryUser]);
       });
     };
-    socket.on(
-      "receive msg request acceptance",
-      receiveMessageRequestAcceptance
-    );
+    const handleDeletedMessages = ({ result, userId }) => {
+      result.forEach((deletedMsgId) => {
+        const isPinnedMsgsDataFetched = queryClient.getQueryData([
+          "pinnedMessages",
+          String(userId),
+        ]);
+        const isChatDataFetched = queryClient.getQueryData([
+          "chatMessages",
+          String(userId),
+        ]);
+
+        if (isPinnedMsgsDataFetched) {
+          queryClient.setQueryData(
+            ["pinnedMessages", String(userId)],
+            (olderData) => {
+              const isMsgPinned = olderData.findIndex(
+                ({ id }) => id == deletedMsgId
+              );
+
+              if (isMsgPinned === -1) return olderData;
+
+              const filteredData = [...olderData].filter(
+                ({ id }) => id != deletedMsgId
+              );
+              return filteredData;
+            }
+          );
+        }
+        if (isChatDataFetched) {
+          queryClient.setQueryData(
+            ["chatMessages", String(userId)],
+            (olderData) => {
+              const { dms } = olderData;
+              const currDms = [...dms];
+              const index = currDms.findIndex(({ id }) => id == deletedMsgId);
+              const msgsRepliedToIndex = currDms.reduce((acc, curr, i) => {
+                if (curr.replied_msg_id === deletedMsgId) acc.push(i);
+
+                return acc;
+              }, []);
+
+              console.log(currDms);
+              console.log(msgsRepliedToIndex);
+
+              if (msgsRepliedToIndex.length)
+                msgsRepliedToIndex.forEach((e) => {
+                  currDms[e].is_replied_msg_deleted = true;
+                });
+
+              currDms.splice(index, 1);
+
+              return {
+                ...olderData,
+                dms: currDms,
+              };
+            }
+          );
+        }
+      });
+    };
+
+    socket.connect();
+    socket.on("connect", onConnect);
+    socket.on("connect_error", onConnectErr);
+    socket.on("initial", getInitial);
+    socket.on("receive dms", handleNewMessages);
+    socket.on("receive msg request acceptance", handleMessageRequestAcceptance);
     socket.on("receive msg requests", handleMessageRequests);
+    socket.on("receive deleted msgs", handleDeletedMessages);
+    socket.on("receive edited msgs", handleEditedMessages);
+    socket.on("receive pinned msgs", handlePinnedMessages);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", (err) =>
+      console.error("⚠️ Connect error:", err)
+    );
 
     return () => {
+      socket.off("connect", onConnect);
+      socket.off("connect_error", onConnectErr);
+      socket.off("initial", getInitial);
+      socket.off("receive edited msgs", handleEditedMessages);
+      socket.off("receive dms", handleNewMessages);
       socket.off(
         "receive msg request acceptance",
-        receiveMessageRequestAcceptance
+        handleMessageRequestAcceptance
       );
+      socket.off("receive deleted msgs", handleDeletedMessages);
       socket.off("receive msg requests", handleMessageRequests);
+      socket.off("receive pinned msgs", handlePinnedMessages);
+      socket.off("disconnect", onDisconnect);
+      socket.disconnect();
+
+      queryClient.removeQueries();
+      console.log("SOCKET DISCONNECTED layout");
     };
   }, []);
 

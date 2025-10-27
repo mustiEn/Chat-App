@@ -1,8 +1,8 @@
 import React from "react";
-import Button from "react-bootstrap/esm/Button";
 import { LuDot } from "react-icons/lu";
 import { useParams } from "react-router-dom";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
+import { Box, Button, Flex, Image, Text } from "@mantine/core";
 
 const DmHeadProfile = () => {
   const { userId: receiverId } = useParams();
@@ -10,37 +10,39 @@ const DmHeadProfile = () => {
 
   return (
     <>
-      <div className={`m-2`}>
-        <img
+      <Box m={"xs"}>
+        <Image
           src={receiver?.profile ? receiver.profile : "https://placehold.co/80"}
-          className="rounded-circle"
+          radius={"100%"}
+          w={80}
+          h={80}
           alt=""
         />
-        <div
+        <Text
           style={{
             fontSize: 24,
           }}
         >
           {receiver?.display_name}
-        </div>
-        <div
+        </Text>
+        <Text
           style={{
             fontSize: 20,
           }}
         >
           {receiver?.username}
-        </div>
-        <div className="d-flex align-items-center gap-2">
-          <div>No Mutual Groups</div>
+        </Text>
+        <Flex align={"center"} gap={"xs"}>
+          <Text>No Mutual Groups</Text>
           <LuDot />
-          <Button variant="primary" size="sm">
+          <Button color="dark" size="sm">
             Add Friend
           </Button>
-          <Button variant="light" size="sm">
+          <Button color="dark" size="sm">
             Block
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Box>
     </>
   );
 };

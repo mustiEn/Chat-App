@@ -1,26 +1,32 @@
 import React from "react";
+import { Box, Flex, Image, Text } from "@mantine/core";
 import styles from "../css/msg_replied_div.module.css";
 
 const MsgRepliedDiv = ({ msg }) => {
   return (
     <>
-      <div className={`${styles["msg-replied"]} d-flex align-items-end`}>
-        <div
-          className={`${styles["line"]} border border-bottom-0 border-end-0 rounded-start-3`}
-        ></div>
-        <div
-          className={`${styles["msg-replied-content"]} d-flex align-items-center gap-2 w-100`}
+      <Flex align={"flex-end"} className={`${styles["msg-replied"]}`}>
+        <Box className={styles.line}></Box>
+        <Flex
+          align={"center"}
+          w={"100%"}
+          gap={"xs"}
+          className={`${styles["msg-replied-content"]}`}
         >
-          <img
-            src={msg.reply_to_msg_profile ?? "https://placehold.co/16"}
-            className="rounded-circle"
-            width={16}
-            height={16}
+          <Image
+            src={msg.replied_msg_profile ?? "https://placehold.co/16"}
+            radius={"xl"}
+            w={16}
+            h={16}
             alt=""
           />
-          <div className="text-muted fst-italic">{msg.reply_to_msg_sender}</div>
-          <div className={`${styles["msg-replied-message"]}`}>
-            {msg.reply_to_msg_message}
+          <Text fs={"italic"} className="text-muted">
+            {msg.replied_msg_sender}
+          </Text>
+          <Text className={`${styles["msg-replied-message"]}`}>
+            {msg.is_replied_msg_deleted
+              ? "This message was deleted"
+              : msg.replied_msg_message}
             {/* tabindex="-1" aria-hidden="true" style='min-height: 0px !important;
             max-height: none !important; height: 0px !important; visibility:
             hidden !important; overflow: hidden !important; position: absolute
@@ -33,9 +39,9 @@ const MsgRepliedDiv = ({ msg }) => {
             normal; font-weight: 400; letter-spacing: normal; line-height: 24px;
             padding: 0px; tab-size: 8; text-indent: 0px; text-rendering: auto;
             text-transform: none; width: 741.688px; word-" */}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Flex>
+      </Flex>
     </>
   );
 };

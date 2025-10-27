@@ -152,9 +152,9 @@ export const setUpSocket = (io) => {
               dm.is_pinned,
               dm.request_state, 
               dm.createdAt created_at, 
-              replied_msg.message reply_to_msg_message, 
-              replied_msg_sender.display_name reply_to_msg_sender, 
-              replied_msg_sender.profile reply_to_msg_profile 
+              replied_msg.message replied_msg_message, 
+              replied_msg_sender.display_name replied_msg_sender, 
+              replied_msg_sender.profile replied_msg_profile 
             FROM 
               direct_messages dm 
               INNER JOIN users u ON dm.from_id = u.id 
@@ -236,9 +236,9 @@ export const setUpSocket = (io) => {
             dm.is_edited,
             dm.is_pinned,
             dm.createdAt created_at,
-            replied_msg.message reply_to_msg_message,
-            replied_msg_sender.display_name reply_to_msg_sender,
-            replied_msg_sender.profile reply_to_msg_profile
+            replied_msg.message replied_msg_message,
+            replied_msg_sender.display_name replied_msg_sender,
+            replied_msg_sender.profile replied_msg_profile
           FROM
             direct_messages dm
             INNER JOIN users u ON dm.from_id = u.id
@@ -293,9 +293,9 @@ export const setUpSocket = (io) => {
             dm.is_pinned,
             dm.request_state, 
             dm.createdAt created_at, 
-            replied_msg.message reply_to_msg_message, 
-            replied_msg_sender.display_name reply_to_msg_sender, 
-            replied_msg_sender.profile reply_to_msg_profile 
+            replied_msg.message replied_msg_message, 
+            replied_msg_sender.display_name replied_msg_sender, 
+            replied_msg_sender.profile replied_msg_profile 
           FROM 
             direct_messages dm 
             INNER JOIN users u ON dm.from_id = u.id 
@@ -402,30 +402,39 @@ export const setUpSocket = (io) => {
         result: pinnedMessage,
       });
     });
-    socket.on("deleted msgs", async (id, done) => {
+    socket.on("send deleted msgs", async (msg, done) => {
+      const key = [userId, Number(msg.to_id)];
+      const room = key.sort((a, b) => a - b).join("_");
+      ("");
+
       try {
-        let message = (await DirectMessage.findByPk(msg.id)).toJSON();
+        let message = await DirectMessage.findByPk(msg.id, { raw: true });
+        logger.log("message state", message);
+        if (!message) return done({ status: "not found" });
 
-        if (!message) {
-          return done({ status: "not found" });
-        }
-
-        await DirectMessage.destroy({
-          where: {
-            id: msg.id,
-          },
-        });
-
-        io.emit("deleted msgs", { result: [msg.id] });
-        return done({
-          status: "ok",
-        });
+        // await DirectMessage.update(
+        //   { is_deleted: true },
+        //   {
+        //     where: {
+        //       id: msg.id,
+        //     },
+        //   }
+        // );
       } catch (error) {
         logger.log(error);
         return done({
           status: "error",
         });
       }
+
+      socket.to(room).emit("receive deleted msgs", {
+        result: [msg.id],
+        userId,
+      });
+      logger.log("Deleted dm:", msg.id);
+      return done({
+        status: "ok",
+      });
     });
 
     if (!socket.recovered) {
@@ -454,9 +463,9 @@ export const setUpSocket = (io) => {
                 dm.is_pinned,
                 dm.request_state, 
                 dm.createdAt created_at, 
-                replied_msg.message reply_to_msg_message, 
-                replied_msg_sender.display_name reply_to_msg_sender, 
-                replied_msg_sender.profile reply_to_msg_profile 
+                replied_msg.message replied_msg_message, 
+                replied_msg_sender.display_name replied_msg_sender, 
+                replied_msg_sender.profile replied_msg_profile 
               FROM direct_messages dm
               INNER JOIN users u ON dm.from_id = u.id
               LEFT JOIN direct_messages replied_msg 
@@ -494,12 +503,24 @@ export const setUpSocket = (io) => {
                   OR
                   dm.from_id = :userId
                 )
+                AND dm.is_deleted = 0 # deletedMsgsSql already covers unpinned msgs on frontend
                 AND dm.last_pin_action_by_id = :receiverId
                 AND dm.pin_updated_at >= :lastDisconnect
               ORDER BY
                 dm.pin_updated_at DESC
             `;
-            const [messages, editedMessages, pinnedMessages] =
+            const deletedMessagesSql = `
+              SELECT 
+                dm.id, 
+                dm.from_id 
+              FROM 
+                direct_messages dm 
+              WHERE 
+                dm.to_id = :userId 
+                AND dm.from_id = :receiverId 
+                AND dm.updatedAt >= :lastDisconnect
+            `;
+            const [messages, editedMessages, pinnedMessages, deletedMessages] =
               await Promise.all([
                 sequelize.query(messagesSql, {
                   type: QueryTypes.SELECT,
@@ -530,6 +551,14 @@ export const setUpSocket = (io) => {
                     lastDisconnect: userLastDisconnect,
                   },
                 }),
+                sequelize.query(deletedMessagesSql, {
+                  type: QueryTypes.SELECT,
+                  replacements: {
+                    userId,
+                    receiverId,
+                    lastDisconnect: userLastDisconnect,
+                  },
+                }),
               ]);
 
             if (messages.length)
@@ -540,6 +569,10 @@ export const setUpSocket = (io) => {
               socket.emit("receive pinned msgs", {
                 result: pinnedMessages,
                 isRecovery: true,
+              });
+            if (deletedMessages.length)
+              socket.emit("receive deleted msgs", {
+                result: deletedMessages,
               });
 
             // logger.log(`ReceiverId: ${receiverId}`);

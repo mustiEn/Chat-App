@@ -16,7 +16,6 @@ export const getInitialDmData = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
-    const userLastDisconnect = lastDisconnect.get(userId);
     let dms;
     let receiver = {};
 
@@ -104,9 +103,11 @@ export const getInitialDmData = async (req, res, next) => {
         dm.is_pinned,
         dm.request_state, 
         dm.createdAt created_at, 
-        replied_msg.message reply_to_msg_message, 
-        replied_msg_sender.display_name reply_to_msg_sender,
-				replied_msg_sender.profile reply_to_msg_profile
+        replied_msg.id replied_msg_id,
+        replied_msg.message replied_msg_message,
+        replied_msg.is_deleted is_replied_msg_deleted, 
+        replied_msg_sender.display_name replied_msg_sender,
+				replied_msg_sender.profile replied_msg_profile
       FROM 
         direct_messages dm 
         INNER JOIN users sender 
@@ -214,10 +215,12 @@ export const getDmData = async (req, res, next) => {
         dm.message,
         dm.is_edited,
         dm.is_pinned, 
-        dm.createdAt created_at, 
-        replied_msg.message reply_to_msg_message, 
-        replied_msg_sender.display_name reply_to_msg_sender,
-				replied_msg_sender.profile reply_to_msg_profile
+        dm.createdAt created_at,
+        replied_msg.id replied_msg_id, 
+        replied_msg.message replied_msg_message,
+        replied_msg.is_deleted is_replied_msg_deleted, 
+        replied_msg_sender.display_name replied_msg_sender,
+				replied_msg_sender.profile replied_msg_profile
       FROM 
         direct_messages dm 
         INNER JOIN users sender 
@@ -455,6 +458,47 @@ export const getMessageRequested = async (req, res, next) => {
     });
 
     res.status(200).json(messageRequests);
+  } catch (error) {
+    next(error);
+  }
+};
+export const getAllFriends = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    const result = validationResult(req);
+
+    if (!result.isEmpty()) {
+      logger.log(result);
+      throw new Error("Validation error");
+    }
+
+    let { offset } = matchedData(req);
+    offset = Number(offset);
+    logger.log(offset);
+    const friendsSql = `
+      SELECT 
+        u.id, 
+        u.username, 
+        u.display_name, 
+        u.profile 
+      FROM 
+        friends f
+        INNER JOIN users u ON u.id = f.friend_id
+        WHERE f.user_id = :userId
+        ORDER BY u.display_name ASC
+        LIMIT 50
+        OFFSET :offset   
+    `;
+    const friends = await sequelize.query(friendsSql, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        userId,
+        offset: offset,
+      },
+    });
+    const next = friends.length ?? undefined;
+
+    res.status(200).json({ friends, next });
   } catch (error) {
     next(error);
   }

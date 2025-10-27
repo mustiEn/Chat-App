@@ -1,8 +1,4 @@
-.btn {
-  flex-shrink: 0;
-}
-
-.msg-request {
+.friend {
   border: 1px solid;
   border-color: rgb(255, 255, 255, 25%);
   border-bottom: none;
@@ -11,25 +7,36 @@
   transition: 0.3s;
 }
 
+.username {
+  display: none;
+}
+
 .icon {
   font-size: rem(20px);
 }
 
-.msg-request:hover {
+.friend:hover {
   background-color: #2d2d2e;
   border-color: rgb(255, 255, 255, 0%);
   border-radius: rem(7);
 }
 
-.msg-request:hover:first-of-type + .msg-request {
+.friend:hover:first-of-type + .friend {
   border-top: 1px solid rgba(255, 255, 255, 0);
 }
 
-.msg-request:hover :is(.accept, .reject) {
+.friend:hover .username {
+  display: block;
+}
+
+.friend:hover :is(.accept, .reject) {
   border: 1px solid #242323;
   background-color: #242323;
 }
 
+.btn {
+  flex-shrink: 0;
+}
 .accept:hover {
   color: green;
   cursor: pointer;

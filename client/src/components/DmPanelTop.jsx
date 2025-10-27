@@ -51,7 +51,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
     refetch,
     dataUpdatedAt,
   } = useQuery({
-    queryKey: ["pinnedMsgs", receiverId],
+    queryKey: ["pinnedMessages", receiverId],
     queryFn: getPinnedMessages,
     staleTime: Infinity,
     enabled: false,

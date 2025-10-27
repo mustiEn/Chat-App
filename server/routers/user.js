@@ -38,5 +38,10 @@ router.get(
   isAuthenticated,
   userController.getMessageRequests
 );
+router.get(
+  "/get-all-friends/:offset",
+  [isAuthenticated, param("offset").notEmpty().isInt()],
+  userController.getAllFriends
+);
 
 export default router;

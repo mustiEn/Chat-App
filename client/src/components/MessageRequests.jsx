@@ -53,12 +53,12 @@ const MessageRequests = () => {
       handleEmitCallback(err, res)
     );
   };
-
   const { data, error, isError, isLoading, isSuccess } = useQuery({
     queryKey: ["messageRequests"],
     queryFn: getMessageRequests,
     staleTime: Infinity,
   });
+
   useEffect(() => {
     if (!isSuccess) return;
     if (!data.length) return;
@@ -79,15 +79,7 @@ const MessageRequests = () => {
     <>
       <MessageRequestsTop />
       <Box p={"sm"}>
-        <Text
-          mb={"sm"}
-          pb={"xs"}
-          fw={"lighter"}
-          style={{
-            border: "1px solid rgba(255,255,255,25%)",
-            borderWidth: "0 0 1px 0",
-          }}
-        >
+        <Text mb={"sm"} fw={"lighter"}>
           Message Requests
         </Text>
         {isLoading ? (
@@ -95,13 +87,13 @@ const MessageRequests = () => {
         ) : !msgRequests.fromOthers?.length ? (
           <div>No data</div>
         ) : (
-          <Stack gap={"sm"}>
+          <Stack gap={0}>
             {msgRequests.fromOthers.map((msg) => (
               <Flex
                 className={styles["msg-request"]}
                 align={"center"}
                 gap={"xs"}
-                pb={"sm"}
+                p={7}
                 key={msg.id}
               >
                 <Image

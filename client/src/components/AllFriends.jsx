@@ -1,72 +1,131 @@
 import React from "react";
-import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
-import Badge from "react-bootstrap/Badge";
-import FriendsPanelTop from "./FriendsPanelTop";
+import { FaRegComment } from "react-icons/fa";
+import { Box, Flex, Image, Stack, Text } from "@mantine/core";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+import { useInView } from "react-intersection-observer";
+import { useEffect } from "react";
+import { RxCross1 } from "react-icons/rx";
+import { PulseLoader } from "react-spinners";
+
+import styles from "../css/all_friends.module.css";
 
 const AllFriends = () => {
+  const { inView, ref } = useInView({
+    threshold: 1,
+  });
+  const getAllFriends = async ({ pageParam }) => {
+    try {
+      const res = await fetch(`/api/get-all-friends/${pageParam}`);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      return data;
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+  const { data, isLoading, hasNextPage, fetchNextPage } = useInfiniteQuery({
+    queryKey: ["allFriends"],
+    queryFn: getAllFriends,
+    initialPageParam: 0,
+    getNextPageParam: (lastData) => lastData.next,
+    staleTime: Infinity,
+  });
+
+  const allFriends = data?.pages.flatMap((e) => e.friends) ?? [];
+
+  useEffect(() => {
+    if (inView) {
+      console.log("fetched");
+
+      // fetchNextPage();
+    }
+  }, [inView]);
+
   return (
     <>
-      {/* <FriendsPanelTop /> */}
-      <div className="text-white">AllFriends</div>
-      <div style={{ width: 300, height: 250 }}>
-        <SkeletonTheme
-          baseColor="#212020e3"
-          enableAnimation={false}
-          borderRadius={20}
-        >
-          <div className="bg-dark w-100" style={{ height: 100 }}></div>
-          <div
-            style={{ width: 55, height: 55, transform: "translateY(-55%)" }}
-            className="position-relative ms-2"
-          >
-            <Skeleton circle width={55} height={55} />
-            <Badge
-              bg="success"
-              className="position-absolute top-100 translate-middle rounded-circle"
-              style={{
-                left: "85%",
-              }}
-            >
-              &nbsp;
-            </Badge>
-            <div className="mt-2">
-              <Skeleton width={125} height={30} />
-              <div className="d-flex gap-2 my-2">
-                <Skeleton width={175} height={30} />
-                <Skeleton width={75} height={30} />
-              </div>
-              <div className="d-flex gap-2">
-                <Skeleton width={45} height={30} />
-                <Skeleton width={45} height={30} />
-                <Skeleton width={125} height={30} />
-              </div>
-            </div>
-          </div>
-        </SkeletonTheme>
-      </div>
-      {/* <SkeletonTheme
-        baseColor="#212020e3"
-        enableAnimation={false}
-        height={20}
-        borderRadius={20}
-      >
-        <div className="d-flex flex-column gap-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div className="d-flex align-items-center gap-2" key={i}>
-              <Skeleton circle width={32} height={32} />
-              <div
-                style={{
-                  width: "150px",
-                  display: "block",
-                }}
-              >
-                <Skeleton />
-              </div>
-            </div>
-          ))}
-        </div>
-      </SkeletonTheme> */}
+      <Box p={"sm"}>
+        <Text c={"white"} mb={"sm"} fw={"lighter"}>
+          AllFriends - {allFriends.length}
+        </Text>
+
+        {isLoading ? (
+          <div>Loading...</div>
+        ) : !allFriends.length ? (
+          <div>No data</div>
+        ) : (
+          <>
+            <Stack gap={0}>
+              {allFriends.map((friend) => (
+                <Flex
+                  className={styles.friend}
+                  align={"center"}
+                  gap={"xs"}
+                  p={7}
+                  key={friend.id}
+                >
+                  <Image
+                    src={friend.profile ?? "https://placehold.co/40"}
+                    radius={"xl"}
+                    w={40}
+                    h={40}
+                    style={{
+                      alignSelf: "baseline",
+                    }}
+                  />
+                  <Flex direction={"column"} w={"100%"}>
+                    <Flex align={"center"} gap={"xs"}>
+                      <Text c={"white"} fw={"bold"}>
+                        {friend.display_name}
+                      </Text>
+                      <span className={styles.username}>{friend.username}</span>
+                    </Flex>
+
+                    <Text fz={13} c={"gray.6"}>
+                      Online
+                      {/* {friend.status} */}
+                    </Text>
+                  </Flex>
+                  <Flex
+                    className={[styles.btn, styles.accept].join(" ")}
+                    align={"center"}
+                    justify={"center"}
+                    w={50}
+                    h={50}
+                    bdrs={"xl"}
+                    ms={"auto"}
+                    onClick={() =>
+                      handleMessageRequestAcceptance("accepted", msg)
+                    }
+                  >
+                    <FaRegComment className={styles.icon} />
+                  </Flex>
+                  <Flex
+                    className={[styles.btn, styles.reject].join(" ")}
+                    w={50}
+                    h={50}
+                    align={"center"}
+                    justify={"center"}
+                    bdrs={"xl"}
+                    onClick={() =>
+                      handleMessageRequestAcceptance("rejected", msg)
+                    }
+                  >
+                    <RxCross1 className={styles.icon} />
+                  </Flex>
+                </Flex>
+              ))}
+            </Stack>
+            {data.pages && hasNextPage && (
+              <Box mt={"xl"} ref={ref}>
+                <PulseLoader color={"white"} />
+              </Box>
+            )}
+          </>
+        )}
+      </Box>
     </>
   );
 };
