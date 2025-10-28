@@ -36,10 +36,6 @@ const MainPanel = () => {
   });
 
   useEffect(() => {
-    console.log("Main panel");
-  }, []);
-
-  useEffect(() => {
     const onConnect = () => {
       console.log("✅ Socket connected");
     };
@@ -297,6 +293,31 @@ const MainPanel = () => {
         }
       });
     };
+    const handleRemovedFriends = ({ result, friendIndex }) => {
+      result.forEach((id) => {
+        const isQueryFetched = queryClient.getQueryData(["allFriends"]);
+
+        if (!isQueryFetched) return;
+
+        const friendIndexInCache = Math.floor(friendIndex / 15);
+
+        queryClient.setQueryData(["allFriends"], (olderData) => {
+          const newPagesArr = [...olderData.pages];
+          const friendsFiltered = newPagesArr[
+            friendIndexInCache
+          ].friends.filter((e) => e.id !== id);
+
+          newPagesArr[friendIndexInCache] = {
+            ...newPagesArr[friendIndexInCache],
+            friends: friendsFiltered,
+          };
+          return {
+            ...olderData,
+            pages: newPagesArr,
+          };
+        });
+      });
+    };
 
     socket.connect();
     socket.on("connect", onConnect);
@@ -308,6 +329,7 @@ const MainPanel = () => {
     socket.on("receive deleted msgs", handleDeletedMessages);
     socket.on("receive edited msgs", handleEditedMessages);
     socket.on("receive pinned msgs", handlePinnedMessages);
+    socket.on("receive removed friends", handleRemovedFriends);
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", (err) =>
       console.error("⚠️ Connect error:", err)
@@ -326,6 +348,7 @@ const MainPanel = () => {
       socket.off("receive deleted msgs", handleDeletedMessages);
       socket.off("receive msg requests", handleMessageRequests);
       socket.off("receive pinned msgs", handlePinnedMessages);
+      socket.off("receive removed friends", handleRemovedFriends);
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
 
@@ -340,10 +363,11 @@ const MainPanel = () => {
         <Sidebar />
         <Flex
           direction={"column"}
-          w={"100%"}
+          // w={"100%"}
           style={{
             borderLeft: "none",
             borderRight: "none",
+            flex: "1 0 auto",
           }}
         >
           <Outlet

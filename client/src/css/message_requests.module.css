@@ -21,7 +21,7 @@
   border-radius: rem(7);
 }
 
-.msg-request:hover:first-of-type + .msg-request {
+.msg-request:hover + .msg-request {
   border-top: 1px solid rgba(255, 255, 255, 0);
 }
 

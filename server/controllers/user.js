@@ -466,15 +466,14 @@ export const getAllFriends = async (req, res, next) => {
   try {
     const userId = req.session.passport.user;
     const result = validationResult(req);
+    const limit = 15;
 
     if (!result.isEmpty()) {
       logger.log(result);
       throw new Error("Validation error");
     }
 
-    let { offset } = matchedData(req);
-    offset = Number(offset);
-    logger.log(offset);
+    const { offset } = matchedData(req);
     const friendsSql = `
       SELECT 
         u.id, 
@@ -486,17 +485,19 @@ export const getAllFriends = async (req, res, next) => {
         INNER JOIN users u ON u.id = f.friend_id
         WHERE f.user_id = :userId
         ORDER BY u.display_name ASC
-        LIMIT 50
+        LIMIT :limit
         OFFSET :offset   
     `;
     const friends = await sequelize.query(friendsSql, {
       type: QueryTypes.SELECT,
       replacements: {
         userId,
-        offset: offset,
+        limit,
+        offset: Number(offset),
       },
     });
-    const next = friends.length ?? undefined;
+    const next =
+      friends.length < limit ? undefined : friends.length + Number(offset);
 
     res.status(200).json({ friends, next });
   } catch (error) {

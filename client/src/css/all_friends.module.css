@@ -21,7 +21,7 @@
   border-radius: rem(7);
 }
 
-.friend:hover:first-of-type + .friend {
+.friend:hover + .friend {
   border-top: 1px solid rgba(255, 255, 255, 0);
 }
 
@@ -37,6 +37,7 @@
 .btn {
   flex-shrink: 0;
 }
+
 .accept:hover {
   color: green;
   cursor: pointer;

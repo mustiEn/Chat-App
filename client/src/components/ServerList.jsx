@@ -125,8 +125,9 @@ const ServerList = memo(function Serverlist() {
             )}
           />
         ))}
-        {modals.map(({ content, icon, modalToggler }) => (
+        {modals.map(({ content, icon, modalToggler }, i) => (
           <PopoverComponent
+            key={i}
             content={popOverContent(content)}
             trigger={popOverModalTrigger(icon, modalToggler)}
           />
