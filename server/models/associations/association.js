@@ -1,6 +1,7 @@
 import { Group } from "../Group.js";
 import { DirectMessage } from "../DirectMessage.js";
 import { User } from "../User.js";
+import { Friend } from "../Friend.js";
 
 export const setUpAssociation = () => {
   DirectMessage.belongsTo(User, {
@@ -32,7 +33,7 @@ export const setUpAssociation = () => {
   });
 
   User.belongsToMany(User, {
-    through: "friends",
+    through: Friend,
     as: "userFriends",
     foreignKey: "user_id",
     otherKey: "friend_id",

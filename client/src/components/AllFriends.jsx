@@ -15,9 +15,12 @@ import { useNavigate } from "react-router-dom";
 import { socket } from "../socket.js";
 import styles from "../css/all_friends.module.css";
 import PopoverComponent from "./PopoverComponent";
+import { useFriendStore } from "../stores/useFriendStore.js";
 
 const AllFriends = () => {
   const queryClient = useQueryClient();
+  const allFriends = useFriendStore((s) => s.friends);
+  const addToFriends = useFriendStore((s) => s.addToFriends);
   const navigate = useNavigate();
   const { inView, ref } = useInView({
     threshold: 1,
@@ -71,7 +74,17 @@ const AllFriends = () => {
       toast.success("Friend removed");
     });
   };
-  const allFriends = data?.pages.flatMap((e) => e.friends) ?? [];
+
+  useEffect(() => {
+    if (!data) return;
+
+    const friendsData = data.pages.at(-1).friends;
+    const lastItemId = friendsData.at(-1).id;
+
+    if (allFriends.at(-1)?.id === lastItemId) return;
+
+    addToFriends(friendsData);
+  }, [data]);
 
   useEffect(() => {
     if (inView) fetchNextPage();

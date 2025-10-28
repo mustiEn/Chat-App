@@ -50,7 +50,7 @@ const Login = () => {
       toast.error(data.error);
     }
 
-    navigate("/@me");
+    navigate("/@me/friends");
   };
   const handleErrors = (errors) => {
     if (errors.username) toast.error("Please fill in your username");

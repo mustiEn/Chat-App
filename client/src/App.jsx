@@ -15,6 +15,10 @@ import Logout from "./views/Logout.jsx";
 import MessageRequests from "./components/MessageRequests.jsx";
 import { QueryClient } from "@tanstack/react-query";
 import Register from "./views/Register.jsx";
+import OnlineFriends from "./components/OnlineFriends.jsx";
+import AllFriends from "./components/AllFriends.jsx";
+import AddFriend from "./components/AddFriend.jsx";
+import FriendRequests from "./components/FriendRequests.jsx";
 
 const queryClient = new QueryClient();
 
@@ -29,8 +33,14 @@ function App() {
           element: <MainPanel />,
           children: [
             {
-              index: true,
+              path: "friends",
               element: <FriendsPanel />,
+              children: [
+                { index: true, element: <AllFriends /> },
+                { path: "online", element: <OnlineFriends /> },
+                { path: "requests", element: <FriendRequests /> },
+                { path: "add", element: <AddFriend /> },
+              ],
             },
             {
               path: ":userId",

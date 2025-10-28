@@ -2,8 +2,14 @@ import { Box, Button, Flex, Text } from "@mantine/core";
 import React from "react";
 import { FaUsers } from "react-icons/fa6";
 import { LuDot } from "react-icons/lu";
+import { NavLink } from "react-router-dom";
 
-const btns = [{ name: "Online" }, { name: "All" }, { name: "Add friend" }];
+const btns = [
+  { to: "/@me/friends", name: "All" },
+  { to: "online", name: "Online" },
+  { to: "requests", name: "Requests" },
+  { to: "add", name: "Add friend" },
+];
 
 const FriendsPanelTop = ({ props }) => {
   const [activeCompSetter, activeComp] = props;
@@ -24,17 +30,18 @@ const FriendsPanelTop = ({ props }) => {
             <Text fs={6}>Friends</Text>
           </Flex>
           <LuDot />
-          {btns.map((btn, i) => (
-            <Button
-              key={i}
-              variant={activeComp == i ? "filled" : "outline"}
-              color={"gray"}
-              size="sm"
-              // className={activeComp == i ? "active" : ""}
-              onClick={() => activeCompSetter(i)}
-            >
-              {btn.name}
-            </Button>
+          {btns.map((e, i) => (
+            <NavLink to={e.to} key={i} end>
+              {({ isActive }) => (
+                <Button
+                  variant={isActive ? "filled" : "outline"}
+                  color="gray"
+                  size="sm"
+                >
+                  {e.name}
+                </Button>
+              )}
+            </NavLink>
           ))}
         </Flex>
       </Box>

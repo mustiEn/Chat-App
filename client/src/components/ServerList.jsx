@@ -107,7 +107,7 @@ const ServerList = memo(function Serverlist() {
       >
         <PopoverComponent
           content={popOverContent("Direct Messages")}
-          trigger={popOverTrigger("/@me", undefined, <TbActivity />)}
+          trigger={popOverTrigger("/@me/friends", undefined, <TbActivity />)}
         />
         <PopoverComponent
           content={popOverContent("Direct Messages")}

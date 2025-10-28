@@ -1,12 +1,10 @@
 import React from "react";
 import { TbDotsVertical, TbMessageCircle } from "react-icons/tb";
-import FriendsPanelTop from "./FriendsPanelTop";
 import { Box, Flex, Image, Stack, Text } from "@mantine/core";
-// import "../css/friends.css";
+
 const OnlineFriends = () => {
   return (
     <>
-      {/* <FriendsPanelTop /> */}
       <Text
         mx={"xs"}
         pb={"xs"}
