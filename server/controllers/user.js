@@ -393,7 +393,7 @@ export const getGroup = async (req, res, next) => {
 export const getMessageRequests = async (req, res, next) => {
   try {
     const userId = req.session.passport.user;
-    const messageRequestsFromOthersSql = `
+    const receivedMessageRequests = `
       SELECT 
         dm.id, 
         sender.id from_id,
@@ -413,15 +413,12 @@ export const getMessageRequests = async (req, res, next) => {
         AND dm.is_deleted = 0 
         AND dm.to_id = :userId
     `;
-    const messageRequests = await sequelize.query(
-      messageRequestsFromOthersSql,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          userId,
-        },
-      }
-    );
+    const messageRequests = await sequelize.query(receivedMessageRequests, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        userId,
+      },
+    });
 
     res.status(200).json(messageRequests);
   } catch (error) {
@@ -500,6 +497,54 @@ export const getAllFriends = async (req, res, next) => {
       friends.length < limit ? undefined : friends.length + Number(offset);
 
     res.status(200).json({ friends, next });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getOnlineFriends = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    const limit = 15;
+    //? REDIS ONLINE FRIENDS
+    // const next =
+    //   friends.length < limit ? undefined : friends.length + Number(offset);
+
+    res.status(200).json({ friends: [], next: 1 });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getFriendRequests = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    const receivedMessageRequests = `
+      SELECT 
+        dm.id, 
+        sender.id from_id,
+        sender.display_name, 
+        sender.username, 
+        sender.profile, 
+        dm.to_id,
+        dm.clientOffset, 
+        dm.message, 
+        dm.request_state, 
+        dm.createdAt created_at 
+      FROM 
+        direct_messages dm 
+        INNER JOIN users sender ON sender.id = dm.from_id 
+      WHERE 
+        dm.request_state = "pending" 
+        AND dm.is_deleted = 0 
+        AND dm.to_id = :userId
+    `;
+    const messageRequests = await sequelize.query(receivedMessageRequests, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        userId,
+      },
+    });
+
+    res.status(200).json(messageRequests);
   } catch (error) {
     next(error);
   }

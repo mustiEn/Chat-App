@@ -11,11 +11,11 @@ import styles from "../css/message_requests.module.css";
 
 const MessageRequests = () => {
   const msgRequests = useMsgRequestStore((state) => state.msgRequests);
-  const addToOthersRequests = useMsgRequestStore(
-    (state) => state.addToOthersRequests
+  const addReceivedRequest = useMsgRequestStore(
+    (state) => state.addReceivedRequest
   );
-  const removeFromOthersRequests = useMsgRequestStore(
-    (state) => state.removeFromOthersRequests
+  const removeReceivedRequest = useMsgRequestStore(
+    (state) => state.removeReceivedRequest
   );
   const getMessageRequests = async () => {
     try {
@@ -43,7 +43,7 @@ const MessageRequests = () => {
         return;
       }
 
-      removeFromOthersRequests(msg.from_id);
+      removeReceivedRequest(msg.from_id);
       socket.auth.serverOffset[msg.from_id] = msg.id;
 
       console.log("Message succesfull: ", res);
@@ -60,19 +60,11 @@ const MessageRequests = () => {
   });
 
   useEffect(() => {
+    if (msgRequests.receivedRequests.length) return;
     if (!isSuccess) return;
     if (!data.length) return;
 
-    const anyIdAlreadyExists = msgRequests.fromOthers.some(
-      ({ id }) => id == data[0].id
-    );
-    console.log(anyIdAlreadyExists);
-    console.log(msgRequests.fromOthers.length);
-
-    if (anyIdAlreadyExists) return;
-    if (msgRequests.fromOthers.length) return;
-
-    addToOthersRequests(data);
+    addReceivedRequest(data);
   }, [data]);
 
   return (
@@ -84,11 +76,11 @@ const MessageRequests = () => {
         </Text>
         {isLoading ? (
           <div>Loading...</div>
-        ) : !msgRequests.fromOthers?.length ? (
+        ) : !msgRequests.receivedRequests?.length ? (
           <div>No data</div>
         ) : (
           <Stack gap={0}>
-            {msgRequests.fromOthers.map((msg) => (
+            {msgRequests.receivedRequests.map((msg) => (
               <Flex
                 className={styles["msg-request"]}
                 align={"center"}

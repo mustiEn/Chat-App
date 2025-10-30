@@ -25,9 +25,9 @@ const MessageInput = () => {
   const queryClient = useQueryClient();
   const { userId: receiverId } = useParams();
   const msgRequests = useMsgRequestStore((state) => state.msgRequests);
-  const addToMyRequests = useMsgRequestStore((state) => state.addToMyRequests);
-  const removeFromOthersRequests = useMsgRequestStore(
-    (state) => state.removeFromOthersRequests
+  const addSentRequest = useMsgRequestStore((state) => state.addSentRequest);
+  const removeReceivedRequest = useMsgRequestStore(
+    (state) => state.removeReceivedRequest
   );
   const addToDmHistoryUsers = useDmHistoryUserStore(
     (state) => state.addToDmHistoryUsers
@@ -54,12 +54,12 @@ const MessageInput = () => {
     }
 
     if (key == "acceptance") {
-      removeFromOthersRequests(receiverId);
+      removeReceivedRequest(receiverId);
     } else if (key == "request") {
       const isUserInDmHistory = useDmHistoryUserStore
         .getState()
         .dmHistoryUsers.some(({ id }) => id == receiverId);
-      addToMyRequests(res.result);
+      addSentRequest(res.result);
 
       if (!isUserInDmHistory) addToDmHistoryUsers([receivers[receiverId]]);
     }
@@ -85,9 +85,11 @@ const MessageInput = () => {
       reply_to_msg: msgToReply ?? null,
     };
 
-    if (msgRequests.fromOthers.some(({ from_id }) => from_id == receiverId)) {
+    if (
+      msgRequests.receivedRequests.some(({ from_id }) => from_id == receiverId)
+    ) {
       const acceptance = {
-        reqMsg: msgRequests.fromOthers.find(
+        reqMsg: msgRequests.receivedRequests.find(
           ({ from_id }) => from_id == receiverId
         ),
         status: "accepted",
@@ -130,7 +132,7 @@ const MessageInput = () => {
     <Box w={"100%"} px={"xs"} mt={"auto"} mb={"sm"}>
       {receivers[receiverId]?.is_blocked ? (
         <div>You blocked this user</div>
-      ) : msgRequests.fromMe.some(({ to_id }) => to_id == receiverId) ? (
+      ) : msgRequests.sentRequests.some(({ to_id }) => to_id == receiverId) ? (
         <h4>Your msg been sent waiting for acceptance</h4>
       ) : (
         <>
@@ -170,7 +172,7 @@ const MessageInput = () => {
                 id={styles["msg-input"]}
                 className="border-0 bg-transparent msg-input text-white w-100"
                 placeholder={`${
-                  msgRequests.fromOthers.find(
+                  msgRequests.receivedRequests.find(
                     ({ from_id }) => from_id == receiverId
                   )
                     ? "Any message will be considered as acceptance"

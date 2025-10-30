@@ -200,7 +200,7 @@ const DmModalNotifier = ({
         }}
         centered
       >
-        <Text mb={"xs"} mt={"xs"}>
+        <Text my={"xs"}>
           You sure you want to {type?.toLowerCase()} this message ?
         </Text>
         <Flex

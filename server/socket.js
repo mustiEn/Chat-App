@@ -45,6 +45,8 @@ export const setUpSocket = (io) => {
       },
     });
 
+    //? REDIS GET ONLINE FRIENDS
+
     // if (userLastDisconnect) lastDisconnect.delete(userId);
 
     logger.log(`User with id => ${userId} connected`);
@@ -440,46 +442,33 @@ export const setUpSocket = (io) => {
     socket.on("send removed friends", async (friendId, done) => {
       const key = [userId, Number(friendId)];
       const room = key.sort((a, b) => a - b).join("_");
-      let friendIndex;
 
       try {
         const user = await User.findByPk(friendId, { raw: true });
         const friendSql = `
           DELETE FROM friends 
-          WHERE user_id = :userId
-          AND friend_id = :friendId
-        `;
-        const friendsSql = `
-          SELECT 
-            u.id, 
-            u.username, 
-            u.display_name, 
-            u.profile 
-          FROM 
-            friends f
-            INNER JOIN users u ON u.id = f.friend_id
-            WHERE f.user_id = :friendId
-            ORDER BY u.display_name ASC
+          WHERE 
+            (
+              userId = :userId
+              AND 
+              friend_id = :friendId
+            )
+            OR
+            (
+              userId = :friendId
+              AND 
+              friend_id = :userId
+            )
         `;
 
         if (!user) throw new Error("Friend not found");
 
-        const [friends] = await Promise.all([
-          // sequelize.query(friendSql, {
-          //   replacements: {
-          //     userId,
-          //     friendId,
-          //   },
-          // }),
-          sequelize.query(friendsSql, {
-            type: QueryTypes.SELECT,
-            replacements: {
-              friendId,
-            },
-          }),
-        ]);
-
-        friendIndex = friends.findIndex(({ id }) => userId === id);
+        await sequelize.query(friendSql, {
+          replacements: {
+            userId,
+            friendId,
+          },
+        });
       } catch (error) {
         return done({
           status: "error",
@@ -491,9 +480,50 @@ export const setUpSocket = (io) => {
       });
       socket.to(room).emit("receive removed friends", {
         result: [userId],
-        friendIndex,
       });
       logger.log("Deleted friend:", friendId);
+    });
+    socket.on("send friend requests", async (friendId, done) => {
+      const receiverId = Number(friendId);
+      try {
+        const user = await User.findByPk(friendId, { raw: true });
+        const friendSql = `
+          DELETE FROM friends 
+          WHERE 
+            (
+              userId = :userId
+              AND 
+              friend_id = :friendId
+            )
+            OR
+            (
+              userId = :friendId
+              AND 
+              friend_id = :userId
+            )
+        `;
+
+        if (!user) throw new Error("Friend not found");
+
+        await sequelize.query(friendSql, {
+          replacements: {
+            userId,
+            friendId,
+          },
+        });
+      } catch (error) {
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+      done({
+        status: "ok",
+      });
+      io.to(receiverId).emit("receive friend requests", {
+        result: sender,
+      });
+      logger.log("friend req sent");
     });
 
     if (!socket.recovered) {

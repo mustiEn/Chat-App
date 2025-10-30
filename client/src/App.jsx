@@ -35,6 +35,7 @@ function App() {
             {
               path: "friends",
               element: <FriendsPanel />,
+              loader: Loader.loadFriends(queryClient),
               children: [
                 { index: true, element: <AllFriends /> },
                 { path: "online", element: <OnlineFriends /> },

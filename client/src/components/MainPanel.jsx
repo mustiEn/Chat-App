@@ -9,22 +9,28 @@ import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js"
 import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Flex } from "@mantine/core";
+import { useFriendStore } from "../stores/useFriendStore.js";
+import { useFriendRequestStore } from "../stores/useFriendRequestStore.js";
 
 const MainPanel = () => {
   const queryClient = useQueryClient();
-  const removeFromMyRequests = useMsgRequestStore(
-    (state) => state.removeFromMyRequests
+  const removeSentRequest = useMsgRequestStore(
+    (state) => state.removeSentRequest
   );
-  const addToOthersRequests = useMsgRequestStore(
-    (state) => state.addToOthersRequests
+  const addReceivedRequest = useMsgRequestStore(
+    (state) => state.addReceivedRequest
   );
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (state) => state.addToNewPinnedMsgExists
   );
-  const receivers = useReceiverStore((state) => state.receivers);
   const addToDmHistoryUsers = useDmHistoryUserStore(
     (state) => state.addToDmHistoryUsers
   );
+  const removeFromFriends = useFriendStore((s) => s.removeFromFriends);
+  const addReceivedFriendRequest = useFriendRequestStore(
+    (state) => state.addReceivedRequest
+  );
+  const friends = useFriendStore((s) => s.friends);
   const addToReceivers = useReceiverStore((state) => state.addToReceivers);
   const [groupChat, setGroupChat] = useState({});
   const scrollElementRef = useRef(null);
@@ -192,7 +198,7 @@ const MainPanel = () => {
           );
         }
 
-        removeFromMyRequests(reqAcceptance.from_id);
+        removeSentRequest(reqAcceptance.from_id);
 
         const isUserInDmHistory = dmHistoryUsers.some(
           (i) => i.id == reqAcceptance.from_id
@@ -204,10 +210,8 @@ const MainPanel = () => {
     };
     const handleMessageRequests = ({ result }) => {
       const { dmHistoryUsers } = useDmHistoryUserStore.getState();
-      console.log(result);
 
       result.forEach((req) => {
-        console.log(req);
         const isUserInDmHistory = dmHistoryUsers.some(
           ({ id }) => id == req.from_id
         );
@@ -226,9 +230,8 @@ const MainPanel = () => {
           })
         );
 
-        addToOthersRequests([req]);
+        addReceivedRequest([req]);
         addToReceivers(req.from_id, dmHistoryUser);
-        console.log(receivers);
 
         if (!isUserInDmHistory) addToDmHistoryUsers([dmHistoryUser]);
       });
@@ -293,30 +296,13 @@ const MainPanel = () => {
         }
       });
     };
-    const handleRemovedFriends = ({ result, friendIndex }) => {
-      result.forEach((id) => {
-        const isQueryFetched = queryClient.getQueryData(["allFriends"]);
+    const handleRemovedFriends = ({ result }) => {
+      if (!friends.length) return;
 
-        if (!isQueryFetched) return;
-
-        const friendIndexInCache = Math.floor(friendIndex / 15);
-
-        queryClient.setQueryData(["allFriends"], (olderData) => {
-          const newPagesArr = [...olderData.pages];
-          const friendsFiltered = newPagesArr[
-            friendIndexInCache
-          ].friends.filter((e) => e.id !== id);
-
-          newPagesArr[friendIndexInCache] = {
-            ...newPagesArr[friendIndexInCache],
-            friends: friendsFiltered,
-          };
-          return {
-            ...olderData,
-            pages: newPagesArr,
-          };
-        });
-      });
+      result.forEach((id) => removeFromFriends(id));
+    };
+    const handleFriendRequests = ({ result }) => {
+      addReceivedFriendRequest(result);
     };
 
     socket.connect();
@@ -330,6 +316,7 @@ const MainPanel = () => {
     socket.on("receive edited msgs", handleEditedMessages);
     socket.on("receive pinned msgs", handlePinnedMessages);
     socket.on("receive removed friends", handleRemovedFriends);
+    socket.on("receive friend requests", handleFriendRequests);
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", (err) =>
       console.error("⚠️ Connect error:", err)
@@ -349,6 +336,7 @@ const MainPanel = () => {
       socket.off("receive msg requests", handleMessageRequests);
       socket.off("receive pinned msgs", handlePinnedMessages);
       socket.off("receive removed friends", handleRemovedFriends);
+      socket.off("receive friend requests", handleFriendRequests);
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
 

@@ -15,17 +15,22 @@ import { useFriendStore } from "../stores/useFriendStore.js";
 import { useDisclosure } from "@mantine/hooks";
 import stylesPanelTop from "../css/dm_panel_top.module.css";
 import styles from "../css/dm_panel.module.css";
+import { socket } from "../socket.js";
+import toast from "react-hot-toast";
+import { useFriendRequestStore } from "../stores/useFriendRequestStore.js";
 
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { userId: receiverId } = useParams();
   const [opened, { open, close }] = useDisclosure(false);
   const allFriends = useFriendStore((s) => s.friends);
-  const friend = allFriends.find(({ id }) => id === receiverId);
+  const isFriend = allFriends.find(({ id }) => id === receiverId);
   const customOverlayRef = useRef();
   const receiver = useReceiverStore((state) => state.receivers[receiverId]);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore(
     (state) => state.showPinnedMsgBox
   );
+  const addSentFriendRequest = useFriendRequestStore((s) => s.addSentRequest);
+  const removeFromFriends = useFriendStore((s) => s.removeFromFriends);
   const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
     (state) => state.addToShowPinnedMsgBox
   );
@@ -37,6 +42,28 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   );
   const [search, setSearch] = useState("");
   const pinnedMsgsBoxRef = useRef(null);
+  const removeFriend = (friendId) => {
+    socket.emit("send removed friends", friendId, (err, res) => {
+      if (err) {
+        toast.error(err.message);
+        return;
+      }
+
+      removeFromFriends(friendId);
+      toast.success("Friend removed");
+    });
+  };
+  const sendFriendRequest = (friendId) => {
+    socket.emit("send friend requests", friendId, (err, res) => {
+      if (err) {
+        toast.error(err.message);
+        return;
+      }
+
+      addSentFriendRequest(friendId);
+      toast.success("Friend request sent");
+    });
+  };
 
   useEffect(() => {
     if (showPinnedMsgBox[receiverId])
@@ -130,7 +157,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
             <PopoverComponent
               content={
                 <div className="fw-bold popover-content">
-                  {friend ? "Remove Friend" : "Add friend"}
+                  {isFriend ? "Remove Friend" : "Add friend"}
                 </div>
               }
               trigger={
@@ -173,14 +200,13 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         <PinnedMsgsBox
           customOverlayRef={customOverlayRef}
           ref={pinnedMsgsBoxRef}
-          isPending={isLoading}
         />
       </Box>
       <Modal
         opened={opened}
         onClose={close}
         radius={"md"}
-        title={friend ? "Remove Friend" : "Remove Friend"}
+        title={isFriend ? "Remove Friend" : "Add Friend"}
         styles={{
           title: {
             fontSize: "var(--mantine-h3-font-size)",
@@ -193,18 +219,44 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         }}
         centered
       >
-        <Text my={"xl"}>
-          You sure you want to send friend request to this user ?
+        <Text my={"xs"}>
+          You sure you want to
+          {isFriend
+            ? " remove this user from your friends"
+            : " send friend request to this user"}
+          ?
         </Text>
-        <Flex direction={"column"} justify={"center"}>
+        <Flex
+          direction={"column"}
+          align={"center"}
+          gap={"xs"}
+          p={"xs"}
+          // bd={"1px solid #1b1b1d"}
+          // bdrs={"md"}
+        >
           <Image
-            src={friend.profile ?? "https://placehold.co/80"}
+            src={receiver?.profile ?? "https://placehold.co/80"}
+            w={80}
+            h={80}
             radius={"100%"}
           />
           <Text fw={"bold"} fz={"h3"}>
-            {friend.display_name}
+            {receiver?.display_name}
           </Text>
-          <Text>{friend.username}</Text>
+          <Text>{receiver?.username}</Text>
+        </Flex>
+        <Flex>
+          <Button
+            mt={"sm"}
+            ml={"auto"}
+            variant={"filled"}
+            color={isFriend ? "red" : "blue"}
+            onClick={() => {
+              isFriend ? removeFriend() : sendFriendRequest(receiver);
+            }}
+          >
+            {isFriend ? "Remove friend" : "Send friend request"}
+          </Button>
         </Flex>
       </Modal>
     </>

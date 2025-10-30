@@ -43,5 +43,15 @@ router.get(
   [isAuthenticated, param("offset").notEmpty().isInt()],
   userController.getAllFriends
 );
+router.get(
+  "/get-online-friends/:lastFriendId",
+  [isAuthenticated, param("lastFriendId").notEmpty().isInt()],
+  userController.getOnlineFriends
+);
+router.get(
+  "/friend-requests",
+  isAuthenticated,
+  userController.getFriendRequests
+);
 
 export default router;

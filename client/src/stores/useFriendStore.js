@@ -7,11 +7,14 @@ export const useFriendStore = create(
     addToFriends: (users) =>
       set((state) => {
         state.friends.push(...users);
-        state.friends.sort((a, b) => a - b);
+        state.friends.sort(
+          (a, b) => a.display_name.toUpperCase() - b.display_name.toUpperCase()
+        );
       }),
-    removeFromFriends: (user) =>
+    removeFromFriends: (userId) =>
       set((state) => {
-        state.friends.filter(({ id }) => id != user.id);
+        const filtered = state.friends.filter(({ id }) => id != userId);
+        return filtered;
       }),
   }))
 );

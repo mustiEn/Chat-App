@@ -22,7 +22,7 @@ import {
 import styles from "../css/pinned_msgs_box.module.css";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
-const PinnedMsgsBox = ({ customOverlayRef, ref, isPending }) => {
+const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
   const pinnedMsgs = queryClient.getQueryData(["pinnedMessages", receiverId]);
@@ -58,9 +58,7 @@ const PinnedMsgsBox = ({ customOverlayRef, ref, isPending }) => {
             Pinned Messages
           </Title>
         </Flex>
-        {isPending ? (
-          <PulseLoader color="white" />
-        ) : !pinnedMsgs?.length ? (
+        {!pinnedMsgs?.length ? (
           <>
             <TbHeartBroken className={styles["no-data"]} />
             <Center mb={"xl"}>

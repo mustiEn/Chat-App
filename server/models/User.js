@@ -30,4 +30,9 @@ export const User = sequelize.define("User", {
     type: DataTypes.STRING(190),
     allowNull: true,
   },
+  status: {
+    type: DataTypes.ENUM,
+    values: ["Online", "Idle", "Invisible"],
+    defaultValue: "Online",
+  },
 });

@@ -20,9 +20,9 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
 const DmPanel = () => {
   const { userId: receiverId } = useParams();
-  const addToMyRequests = useMsgRequestStore((state) => state.addToMyRequests);
-  const addToOthersRequests = useMsgRequestStore(
-    (state) => state.addToOthersRequests
+  const addSentRequest = useMsgRequestStore((state) => state.addSentRequest);
+  const addReceivedRequest = useMsgRequestStore(
+    (state) => state.addReceivedRequest
   );
   const msgRequests = useMsgRequestStore((state) => state.msgRequests);
   const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
@@ -72,13 +72,13 @@ const DmPanel = () => {
       const isReqFromReceiver = dms[0].from_id == receiverId;
 
       isReqFromReceiver
-        ? addToOthersRequests([dms[0]])
-        : addToMyRequests([dms[0]]);
+        ? addReceivedRequest([dms[0]])
+        : addSentRequest([dms[0]]);
     };
     const isDmsLengthLess = dms.length < 30 ? false : true;
     const isUserInReceiversObj = receivers[receiverId];
     const isUserInDmHistory = dmHistoryUsers.some(({ id }) => id == receiverId);
-    const msgRequestAlreadyExists = msgRequests.fromOthers.some(
+    const msgRequestAlreadyExists = msgRequests.receivedRequests.some(
       ({ id }) => id == dms[0].id
     );
 
