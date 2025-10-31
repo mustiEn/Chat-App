@@ -13,9 +13,9 @@ import { RxCross1 } from "react-icons/rx";
 import { PulseLoader } from "react-spinners";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket.js";
-import styles from "../css/all_friends.module.css";
 import PopoverComponent from "./PopoverComponent";
 import { useFriendStore } from "../stores/useFriendStore.js";
+import styles from "../css/all_friends.module.css";
 
 const AllFriends = () => {
   const queryClient = useQueryClient();
@@ -79,8 +79,9 @@ const AllFriends = () => {
     if (!data) return;
 
     const friendsData = data.pages.at(-1).friends;
-    const lastItemId = friendsData.at(-1).id;
+    const lastItemId = friendsData.at(-1)?.id;
 
+    if (!lastItemId) return;
     if (allFriends.at(-1)?.id === lastItemId) return;
 
     addToFriends(friendsData);

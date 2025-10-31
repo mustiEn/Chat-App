@@ -7,13 +7,13 @@ export const useFriendRequestStore = create(
       sentRequests: [],
       receivedRequests: [],
     },
-    addSentRequest: (newMsgRequest) =>
+    addSentRequest: (userId) =>
       set((state) => {
-        state.friendRequests.sentRequests.push(newMsgRequest);
+        state.friendRequests.sentRequests.push(userId);
       }),
-    addReceivedRequest: (newMsgRequest) =>
+    addReceivedRequest: (users) =>
       set((state) => {
-        state.friendRequests.receivedRequests.unshift(...newMsgRequest);
+        state.friendRequests.receivedRequests.unshift(...users);
       }),
     removeSentRequest: (userId) =>
       set((state) => {

@@ -8,7 +8,7 @@ import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 
 const InfiniteLoader = ({ next, loader, children }) => {
   const { userId: receiverId } = useParams();
-  const hasMoreUp = useHasMoreUpStore((state) => state.hasMoreUp);
+  const hasMoreUp = useHasMoreUpStore((s) => s.hasMoreUp);
   const queryClient = useQueryClient();
   const queryData = queryClient.getQueryData(["chatMessages", receiverId]);
   const currentChat = queryData?.dms ?? [];

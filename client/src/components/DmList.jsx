@@ -30,8 +30,8 @@ const DmList = ({ isInitialDataLoading }) => {
   const { activeMsg } = useContext(DmPanelContext);
   const queryClient = useQueryClient();
   const { data: cachedQuery } = useQuery(dmDataQuery(receiverId));
-  const addToHasMoreUp = useHasMoreUpStore((state) => state.addToHasMoreUp);
-  const pendingMsgs = usePendingMsgStore((state) => state.pendingMsgs);
+  const addToHasMoreUp = useHasMoreUpStore((s) => s.addToHasMoreUp);
+  const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs);
   const currentChat = cachedQuery?.dms ?? [];
   const { scrollElementRef, dmChatRef } = useOutletContext();
   const {

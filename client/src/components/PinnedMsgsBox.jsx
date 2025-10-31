@@ -26,9 +26,7 @@ const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
   const pinnedMsgs = queryClient.getQueryData(["pinnedMessages", receiverId]);
-  const showPinnedMsgBox = useShowPinnedMsgBoxStore(
-    (state) => state.showPinnedMsgBox
-  );
+  const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
   const { setActiveMsg, open } = useContext(DmPanelContext);
   const handleDmModalNotifier = (msg, type) => {
     setActiveMsg({ msg, type });

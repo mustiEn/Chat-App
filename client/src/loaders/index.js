@@ -22,7 +22,7 @@ const getDmData = async (receiverId) => {
     throw new Error("loadDmData failed");
   }
 };
-const getFriendRequests = async () => {
+const getReceivedFriendRequests = async () => {
   try {
     const res = await fetch(`/api/get-friend-requests`);
     const data = await res.json();
@@ -34,7 +34,7 @@ const getFriendRequests = async () => {
     return data;
   } catch (error) {
     console.log(error);
-    throw new Error("getFriendRequests failed");
+    throw new Error("getReceivedFriendRequests failed");
   }
 };
 
@@ -45,7 +45,7 @@ export const dmDataQuery = (receiverId) => ({
 });
 export const friendRequestsQuery = () => ({
   queryKey: ["friendRequests"],
-  queryFn: getFriendRequests,
+  queryFn: getReceivedFriendRequests,
   staleTime: Infinity,
 });
 

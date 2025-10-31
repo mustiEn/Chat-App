@@ -24,22 +24,20 @@ dayjs.extend(timezone);
 const MessageInput = () => {
   const queryClient = useQueryClient();
   const { userId: receiverId } = useParams();
-  const msgRequests = useMsgRequestStore((state) => state.msgRequests);
-  const addSentRequest = useMsgRequestStore((state) => state.addSentRequest);
+  const msgRequests = useMsgRequestStore((s) => s.msgRequests);
+  const addSentRequest = useMsgRequestStore((s) => s.addSentRequest);
   const removeReceivedRequest = useMsgRequestStore(
-    (state) => state.removeReceivedRequest
+    (s) => s.removeReceivedRequest
   );
   const addToDmHistoryUsers = useDmHistoryUserStore(
-    (state) => state.addToDmHistoryUsers
+    (s) => s.addToDmHistoryUsers
   );
-  const msgToReply = useMsgToReplyStore((state) => state.msgToReply);
-  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
-  const receivers = useReceiverStore((state) => state.receivers);
-  const addToPendingMsgs = usePendingMsgStore(
-    (state) => state.addToPendingMsgs
-  );
+  const msgToReply = useMsgToReplyStore((s) => s.msgToReply);
+  const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
+  const receivers = useReceiverStore((s) => s.receivers);
+  const addToPendingMsgs = usePendingMsgStore((s) => s.addToPendingMsgs);
   const removeFromPendingMsgs = usePendingMsgStore(
-    (state) => state.removeFromPendingMsgs
+    (s) => s.removeFromPendingMsgs
   );
   const [message, setMessage] = useState("");
   const fileInpRef = useRef(null);

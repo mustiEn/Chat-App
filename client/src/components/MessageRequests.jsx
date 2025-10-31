@@ -10,12 +10,10 @@ import { Box, Flex, Text, Button, Stack, Image } from "@mantine/core";
 import styles from "../css/message_requests.module.css";
 
 const MessageRequests = () => {
-  const msgRequests = useMsgRequestStore((state) => state.msgRequests);
-  const addReceivedRequest = useMsgRequestStore(
-    (state) => state.addReceivedRequest
-  );
+  const msgRequests = useMsgRequestStore((s) => s.msgRequests);
+  const addReceivedRequest = useMsgRequestStore((s) => s.addReceivedRequest);
   const removeReceivedRequest = useMsgRequestStore(
-    (state) => state.removeReceivedRequest
+    (s) => s.removeReceivedRequest
   );
   const getMessageRequests = async () => {
     try {

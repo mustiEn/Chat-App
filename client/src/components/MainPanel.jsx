@@ -14,24 +14,24 @@ import { useFriendRequestStore } from "../stores/useFriendRequestStore.js";
 
 const MainPanel = () => {
   const queryClient = useQueryClient();
-  const removeSentRequest = useMsgRequestStore(
-    (state) => state.removeSentRequest
-  );
-  const addReceivedRequest = useMsgRequestStore(
-    (state) => state.addReceivedRequest
-  );
+  const removeSentRequest = useMsgRequestStore((s) => s.removeSentRequest);
+  const addReceivedRequest = useMsgRequestStore((s) => s.addReceivedRequest);
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (state) => state.addToNewPinnedMsgExists
+    (s) => s.addToNewPinnedMsgExists
   );
   const addToDmHistoryUsers = useDmHistoryUserStore(
-    (state) => state.addToDmHistoryUsers
+    (s) => s.addToDmHistoryUsers
   );
   const removeFromFriends = useFriendStore((s) => s.removeFromFriends);
+  const addToFriends = useFriendStore((s) => s.addToFriends);
   const addReceivedFriendRequest = useFriendRequestStore(
-    (state) => state.addReceivedRequest
+    (s) => s.addReceivedRequest
+  );
+  const removeSentFriendRequest = useFriendRequestStore(
+    (s) => s.removeSentRequest
   );
   const friends = useFriendStore((s) => s.friends);
-  const addToReceivers = useReceiverStore((state) => state.addToReceivers);
+  const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const [groupChat, setGroupChat] = useState({});
   const scrollElementRef = useRef(null);
   const dmChatRef = useRef({
@@ -297,12 +297,17 @@ const MainPanel = () => {
       });
     };
     const handleRemovedFriends = ({ result }) => {
-      if (!friends.length) return;
-
       result.forEach((id) => removeFromFriends(id));
     };
     const handleFriendRequests = ({ result }) => {
       addReceivedFriendRequest(result);
+    };
+    const handleFriendRequestAcceptance = ({ result }) => {
+      result.forEach(({ sender, status }) => {
+        if (status === "accepted") addToFriends(sender);
+
+        removeSentFriendRequest(sender.id);
+      });
     };
 
     socket.connect();
@@ -310,13 +315,17 @@ const MainPanel = () => {
     socket.on("connect_error", onConnectErr);
     socket.on("initial", getInitial);
     socket.on("receive dms", handleNewMessages);
-    socket.on("receive msg request acceptance", handleMessageRequestAcceptance);
     socket.on("receive msg requests", handleMessageRequests);
+    socket.on("receive msg request acceptance", handleMessageRequestAcceptance);
     socket.on("receive deleted msgs", handleDeletedMessages);
     socket.on("receive edited msgs", handleEditedMessages);
     socket.on("receive pinned msgs", handlePinnedMessages);
     socket.on("receive removed friends", handleRemovedFriends);
     socket.on("receive friend requests", handleFriendRequests);
+    socket.on(
+      "receive friend request acceptance",
+      handleFriendRequestAcceptance
+    );
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", (err) =>
       console.error("⚠️ Connect error:", err)
@@ -328,15 +337,19 @@ const MainPanel = () => {
       socket.off("initial", getInitial);
       socket.off("receive edited msgs", handleEditedMessages);
       socket.off("receive dms", handleNewMessages);
+      socket.off("receive msg requests", handleMessageRequests);
       socket.off(
         "receive msg request acceptance",
         handleMessageRequestAcceptance
       );
       socket.off("receive deleted msgs", handleDeletedMessages);
-      socket.off("receive msg requests", handleMessageRequests);
       socket.off("receive pinned msgs", handlePinnedMessages);
       socket.off("receive removed friends", handleRemovedFriends);
       socket.off("receive friend requests", handleFriendRequests);
+      socket.off(
+        "receive friend request acceptance",
+        handleFriendRequestAcceptance
+      );
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
 

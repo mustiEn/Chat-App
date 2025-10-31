@@ -10,9 +10,9 @@ import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
   const setHeader = useContext(HeaderContext);
-  const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
+  const dmHistoryUsers = useDmHistoryUserStore((s) => s.dmHistoryUsers);
   const addToDmHistoryUsers = useDmHistoryUserStore(
-    (state) => state.addToDmHistoryUsers
+    (s) => s.addToDmHistoryUsers
   );
   const getDmHistory = async () => {
     const res = await fetch("/api/dmHistory");

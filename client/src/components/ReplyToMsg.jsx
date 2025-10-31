@@ -5,7 +5,7 @@ import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import { Flex, Text } from "@mantine/core";
 
 const ReplyToMsg = ({ toWho }) => {
-  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
+  const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
 
   return (
     <Flex

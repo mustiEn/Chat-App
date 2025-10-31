@@ -20,19 +20,17 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
 const DmPanel = () => {
   const { userId: receiverId } = useParams();
-  const addSentRequest = useMsgRequestStore((state) => state.addSentRequest);
-  const addReceivedRequest = useMsgRequestStore(
-    (state) => state.addReceivedRequest
-  );
-  const msgRequests = useMsgRequestStore((state) => state.msgRequests);
-  const dmHistoryUsers = useDmHistoryUserStore((state) => state.dmHistoryUsers);
+  const addSentRequest = useMsgRequestStore((s) => s.addSentRequest);
+  const addReceivedRequest = useMsgRequestStore((s) => s.addReceivedRequest);
+  const msgRequests = useMsgRequestStore((s) => s.msgRequests);
+  const dmHistoryUsers = useDmHistoryUserStore((s) => s.dmHistoryUsers);
   const addToDmHistoryUsers = useDmHistoryUserStore(
-    (state) => state.addToDmHistoryUsers
+    (s) => s.addToDmHistoryUsers
   );
-  const addToHasMoreUp = useHasMoreUpStore((state) => state.addToHasMoreUp);
-  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
-  const receivers = useReceiverStore((state) => state.receivers);
-  const addToReceivers = useReceiverStore((state) => state.addToReceivers);
+  const addToHasMoreUp = useHasMoreUpStore((s) => s.addToHasMoreUp);
+  const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
+  const receivers = useReceiverStore((s) => s.receivers);
+  const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const { dmChatRef } = useOutletContext();
   const { initialPageParam, prevChatDataUpdatedAtRef } = dmChatRef.current;
 

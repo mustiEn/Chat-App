@@ -6,7 +6,7 @@ import { Box, Button, Flex, Image, Text } from "@mantine/core";
 
 const DmHeadProfile = () => {
   const { userId: receiverId } = useParams();
-  const receiver = useReceiverStore((state) => state.receivers[receiverId]);
+  const receiver = useReceiverStore((s) => s.receivers[receiverId]);
 
   return (
     <>

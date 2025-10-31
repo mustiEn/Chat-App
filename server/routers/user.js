@@ -49,7 +49,7 @@ router.get(
   userController.getOnlineFriends
 );
 router.get(
-  "/friend-requests",
+  "/get-friend-requests",
   isAuthenticated,
   userController.getFriendRequests
 );

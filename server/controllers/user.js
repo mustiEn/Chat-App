@@ -478,12 +478,19 @@ export const getAllFriends = async (req, res, next) => {
         u.display_name, 
         u.profile 
       FROM 
-        friends f
-        INNER JOIN users u ON u.id = f.friend_id
-        WHERE f.user_id = :userId
-        ORDER BY u.display_name ASC
-        LIMIT :limit
-        OFFSET :offset   
+        friends f 
+        INNER JOIN users u ON u.id = f.friend_id 
+      WHERE 
+        (
+          f.user_id = :userId 
+          OR 
+          f.friend_id = :userId
+        ) 
+        AND f.request_state = "accepted" 
+      ORDER BY 
+        u.display_name ASC 
+      LIMIT :limit 
+      OFFSET :offset
     `;
     const friends = await sequelize.query(friendsSql, {
       type: QueryTypes.SELECT,
@@ -517,34 +524,48 @@ export const getOnlineFriends = async (req, res, next) => {
 export const getFriendRequests = async (req, res, next) => {
   try {
     const userId = req.session.passport.user;
-    const receivedMessageRequests = `
+    const receivedFriendRequestsSql = `
       SELECT 
-        dm.id, 
-        sender.id from_id,
-        sender.display_name, 
-        sender.username, 
-        sender.profile, 
-        dm.to_id,
-        dm.clientOffset, 
-        dm.message, 
-        dm.request_state, 
-        dm.createdAt created_at 
+        u.id, 
+        u.username, 
+        u.display_name, 
+        u.profile,
+        u.status 
       FROM 
-        direct_messages dm 
-        INNER JOIN users sender ON sender.id = dm.from_id 
-      WHERE 
-        dm.request_state = "pending" 
-        AND dm.is_deleted = 0 
-        AND dm.to_id = :userId
+        friends f
+        INNER JOIN users u ON u.id = f.user_id
+        WHERE f.friend_id = :userId
+        AND request_state = "pending"
     `;
-    const messageRequests = await sequelize.query(receivedMessageRequests, {
-      type: QueryTypes.SELECT,
-      replacements: {
-        userId,
-      },
-    });
+    const sentFriendRequestsSql = `
+      SELECT 
+        u.id, 
+        u.username, 
+        u.display_name, 
+        u.profile,
+        u.status 
+      FROM 
+        friends f
+        INNER JOIN users u ON u.id = f.friend_id
+        WHERE f.user_id = :userId
+        AND request_state = "pending"
+    `;
+    const [receivedFriendRequests, sentFriendRequests] = await Promise.all([
+      sequelize.query(receivedFriendRequestsSql, {
+        type: QueryTypes.SELECT,
+        replacements: {
+          userId,
+        },
+      }),
+      sequelize.query(sentFriendRequestsSql, {
+        type: QueryTypes.SELECT,
+        replacements: {
+          userId,
+        },
+      }),
+    ]);
 
-    res.status(200).json(messageRequests);
+    res.status(200).json({ receivedFriendRequests, sentFriendRequests });
   } catch (error) {
     next(error);
   }

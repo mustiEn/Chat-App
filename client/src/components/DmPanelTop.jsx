@@ -22,26 +22,32 @@ import { useFriendRequestStore } from "../stores/useFriendRequestStore.js";
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { userId: receiverId } = useParams();
   const [opened, { open, close }] = useDisclosure(false);
-  const allFriends = useFriendStore((s) => s.friends);
-  const isFriend = allFriends.find(({ id }) => id === receiverId);
   const customOverlayRef = useRef();
-  const receiver = useReceiverStore((state) => state.receivers[receiverId]);
-  const showPinnedMsgBox = useShowPinnedMsgBoxStore(
-    (state) => state.showPinnedMsgBox
-  );
+  const pinnedMsgsBoxRef = useRef(null);
+  const [search, setSearch] = useState("");
+
+  const allFriends = useFriendStore((s) => s.friends);
+  const receiver = useReceiverStore((s) => s.receivers[receiverId]);
+  const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
   const addSentFriendRequest = useFriendRequestStore((s) => s.addSentRequest);
+  const sentFriendRequest = useFriendRequestStore(
+    (s) => s.friendRequests.sentRequests
+  );
   const removeFromFriends = useFriendStore((s) => s.removeFromFriends);
   const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
-    (state) => state.addToShowPinnedMsgBox
+    (s) => s.addToShowPinnedMsgBox
   );
   const newPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (state) => state.newPinnedMsgExists
+    (s) => s.newPinnedMsgExists
   );
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (state) => state.addToNewPinnedMsgExists
+    (s) => s.addToNewPinnedMsgExists
   );
-  const [search, setSearch] = useState("");
-  const pinnedMsgsBoxRef = useRef(null);
+  const isFriend = allFriends.find(({ id }) => id === receiverId);
+  const isFriendRequestSent = sentFriendRequest.some(
+    ({ id }) => id === Number(receiverId)
+  );
+
   const removeFriend = (friendId) => {
     socket.emit("send removed friends", friendId, (err, res) => {
       if (err) {
@@ -86,6 +92,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       document.removeEventListener("click", closePinnedMsgsBox);
     };
   }, [showPinnedMsgBox]);
+  console.log(isFriendRequestSent);
 
   return (
     <>
@@ -220,11 +227,14 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         centered
       >
         <Text my={"xs"}>
-          You sure you want to
-          {isFriend
-            ? " remove this user from your friends"
-            : " send friend request to this user"}
-          ?
+          {isFriendRequestSent
+            ? "It shouldn't take too long..."
+            : `You sure you want to
+          ${
+            isFriend
+              ? " remove this user from your friends"
+              : " send friend request to this user"
+          }`}
         </Text>
         <Flex
           direction={"column"}
@@ -252,10 +262,16 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
             variant={"filled"}
             color={isFriend ? "red" : "blue"}
             onClick={() => {
+              if (isFriendRequestSent) return;
+
               isFriend ? removeFriend() : sendFriendRequest(receiver);
             }}
           >
-            {isFriend ? "Remove friend" : "Send friend request"}
+            {isFriendRequestSent
+              ? "Friend request sent"
+              : isFriend
+              ? "Remove friend"
+              : "Send friend request"}
           </Button>
         </Flex>
       </Modal>

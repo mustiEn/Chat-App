@@ -5,127 +5,163 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { socket } from "../socket";
 import { friendRequestsQuery } from "../loaders";
+import { RxCross1 } from "react-icons/rx";
+import PopoverComponent from "./PopoverComponent";
+import { PulseLoader } from "react-spinners";
+import { FaRegComment } from "react-icons/fa";
+import { useFriendRequestStore } from "../stores/useFriendRequestStore";
+import { useFriendStore } from "../stores/useFriendStore";
+import styles from "../css/friend_requests.module.css";
+import { IoCheckmarkOutline } from "react-icons/io5";
 
 const FriendRequests = () => {
-  const friendRequests = useMsgRequestStore((state) => state.friendRequests);
-  const addReceivedRequest = useMsgRequestStore(
-    (state) => state.addReceivedRequest
+  const addToFriends = useFriendStore((s) => s.addToFriends);
+  const receivedFriendRequests = useFriendRequestStore(
+    (s) => s.friendRequests.receivedRequests
   );
-  const removeReceivedRequest = useMsgRequestStore(
-    (state) => state.removeReceivedRequest
+  const addReceivedRequest = useFriendRequestStore((s) => s.addReceivedRequest);
+  const addSentRequest = useFriendRequestStore((s) => s.addSentRequest);
+  const removeReceivedRequest = useFriendRequestStore(
+    (s) => s.removeReceivedRequest
   );
 
-  const handleMessageRequestAcceptance = (status, msg) => {
-    console.log(msg);
-
-    const emitData = {
-      reqMsg: msg,
+  const handleMessageRequestAcceptance = (friend, status) => {
+    socket.emit(
+      "send friend request acceptance",
+      friend.id,
       status,
-    };
-    const handleEmitCallback = (err, res) => {
-      if (err || res.status === "duplicated" || res.status === "error") {
-        console.log("Message failed:", err, res.error);
-        return;
+      (err, res) => {
+        if (err || res.status === "duplicated" || res.status === "error") {
+          console.log("Message failed:", err, res.error);
+          return;
+        }
+
+        if (status === "accepted") addToFriends(friend);
+
+        removeReceivedRequest(friend.id);
       }
-
-      removeReceivedRequest(msg.from_id);
-      socket.auth.serverOffset[msg.from_id] = msg.id;
-
-      console.log("Message succesfull: ", res);
-    };
-
-    socket.emit("send msg request acceptance", {}, emitData, (err, res) =>
-      handleEmitCallback(err, res)
     );
   };
+
   const { data, error, isError, isLoading, isSuccess } = useQuery(
     friendRequestsQuery()
   );
 
   useEffect(() => {
-    if (friendRequests.receivedRequests.length) return;
+    if (receivedFriendRequests.length) return;
     if (!isSuccess) return;
-    if (!data.length) return;
+    if (!data) return;
 
-    addReceivedRequest(data);
+    const {
+      receivedFriendRequests: recevied,
+      sentFriendRequests: [sent],
+    } = data;
+
+    addReceivedRequest(recevied);
+    addSentRequest(sent);
   }, [data]);
 
   return (
     <>
-      <FriendRequestsTop />
-      <Box p={"sm"}>
-        <Text mb={"sm"} fw={"lighter"}>
-          Message Requests
+      {/* <FriendRequestsTop /> */}
+      <Flex direction={"column"} p={"sm"} h={"100%"}>
+        <Text c={"white"} mb={"md"} fw={"lighter"}>
+          Received - {receivedFriendRequests.length}
         </Text>
+
         {isLoading ? (
           <div>Loading...</div>
-        ) : !friendRequests.receivedRequests?.length ? (
+        ) : !receivedFriendRequests.length ? (
           <div>No data</div>
         ) : (
-          <Stack gap={0}>
-            {friendRequests.receivedRequests.map((msg) => (
-              <Flex
-                className={styles["msg-request"]}
-                align={"center"}
-                gap={"xs"}
-                p={7}
-                key={msg.id}
-              >
-                <Image
-                  src={msg.profile ?? "https://placehold.co/40"}
-                  radius={"xl"}
-                  w={40}
-                  h={40}
-                  style={{
-                    alignSelf: "baseline",
-                  }}
-                />
-                <Flex direction={"column"} w={"100%"}>
-                  <Flex align={"center"} gap={"xs"}>
-                    <Text c={"white"} fw={"bold"}>
-                      {msg.display_name}
-                    </Text>
-                    <span className={`timestamp text-muted`}>
-                      {formatDate(msg.created_at)}
-                    </span>
+          <>
+            <Box
+              className="custom-scrollbar"
+              h={300}
+              style={{
+                overflow: "auto",
+                flex: "1 0 auto",
+              }}
+            >
+              <Stack gap={0}>
+                {receivedFriendRequests.map((friend, i) => (
+                  <Flex
+                    className={styles.friend}
+                    align={"center"}
+                    gap={"xs"}
+                    p={7}
+                    key={friend.id}
+                  >
+                    <Image
+                      src={friend.profile ?? "https://placehold.co/40"}
+                      radius={"xl"}
+                      w={40}
+                      h={40}
+                      style={{
+                        alignSelf: "baseline",
+                      }}
+                    />
+                    <Flex direction={"column"} w={"100%"}>
+                      <Flex align={"center"} gap={"xs"}>
+                        <Text c={"white"} fw={"bold"}>
+                          {friend.display_name}
+                        </Text>
+                        <span className={styles.username}>
+                          {friend.username}
+                        </span>
+                      </Flex>
+                    </Flex>
+                    <PopoverComponent
+                      content={"Accept"}
+                      trigger={
+                        <Flex
+                          className={[styles.btn, styles.accept].join(" ")}
+                          align={"center"}
+                          justify={"center"}
+                          w={50}
+                          h={50}
+                          bdrs={"xl"}
+                          ms={"auto"}
+                          onClick={() =>
+                            handleMessageRequestAcceptance("accepted", friend)
+                          }
+                        >
+                          <IoCheckmarkOutline className={styles.icon} />
+                        </Flex>
+                      }
+                      position={"top"}
+                    />
+                    <PopoverComponent
+                      content={"Reject"}
+                      trigger={
+                        <Flex
+                          className={[styles.btn, styles.reject].join(" ")}
+                          w={50}
+                          h={50}
+                          align={"center"}
+                          justify={"center"}
+                          bdrs={"xl"}
+                          onClick={() =>
+                            handleMessageRequestAcceptance("rejected", friend)
+                          }
+                        >
+                          <RxCross1 className={styles.icon} />
+                        </Flex>
+                      }
+                      position={"top"}
+                    />
                   </Flex>
-
-                  <Text className={`message-content`} c={"white"}>
-                    {msg.message}
-                  </Text>
-                </Flex>
-                <Flex
-                  className={[styles.btn, styles.accept].join(" ")}
-                  align={"center"}
-                  justify={"center"}
-                  w={50}
-                  h={50}
-                  bdrs={"xl"}
-                  ms={"auto"}
-                  onClick={() =>
-                    handleMessageRequestAcceptance("accepted", msg)
-                  }
-                >
-                  <IoCheckmarkOutline className={styles.icon} />
-                </Flex>
-                <Flex
-                  className={[styles.btn, styles.reject].join(" ")}
-                  w={50}
-                  h={50}
-                  align={"center"}
-                  justify={"center"}
-                  bdrs={"xl"}
-                  onClick={() =>
-                    handleMessageRequestAcceptance("rejected", msg)
-                  }
-                >
-                  <RxCross1 className={styles.icon} />
-                </Flex>
-              </Flex>
-            ))}
-          </Stack>
+                ))}
+              </Stack>
+              {data.pages && hasNextPage && (
+                <Box mt={"xl"} ref={ref}>
+                  <PulseLoader color={"white"} />
+                </Box>
+              )}
+            </Box>
+          </>
         )}
-      </Box>
+      </Flex>
     </>
   );
 };

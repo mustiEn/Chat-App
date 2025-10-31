@@ -12,7 +12,7 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { Flex, Text } from "@mantine/core";
 
 const Options = ({ msg, handleEditableMsg }) => {
-  const setMsgToReply = useMsgToReplyStore((state) => state.setMsgToReply);
+  const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const { activeMsg, setActiveMsg, open } = useContext(DmPanelContext);
   const handleDmModalNotifier = (msg, type) => {
     setActiveMsg({ msg, type });
