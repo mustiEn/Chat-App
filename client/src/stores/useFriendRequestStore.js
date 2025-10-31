@@ -7,9 +7,9 @@ export const useFriendRequestStore = create(
       sentRequests: [],
       receivedRequests: [],
     },
-    addSentRequest: (userId) =>
+    addSentRequest: (userIds) =>
       set((state) => {
-        state.friendRequests.sentRequests.push(userId);
+        state.friendRequests.sentRequests.push(...userIds);
       }),
     addReceivedRequest: (users) =>
       set((state) => {
@@ -18,15 +18,13 @@ export const useFriendRequestStore = create(
     removeSentRequest: (userId) =>
       set((state) => {
         state.friendRequests.sentRequests =
-          state.friendRequests.sentRequests.filter(
-            ({ to_id }) => to_id != userId
-          );
+          state.friendRequests.sentRequests.filter((id) => id != userId);
       }),
     removeReceivedRequest: (userId) =>
       set((state) => {
         state.friendRequests.receivedRequests =
           state.friendRequests.receivedRequests.filter(
-            ({ from_id }) => from_id != userId
+            ({ id }) => id != userId
           );
       }),
   }))

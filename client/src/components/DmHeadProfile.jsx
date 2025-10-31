@@ -36,9 +36,6 @@ const DmHeadProfile = () => {
           <Text>No Mutual Groups</Text>
           <LuDot />
           <Button color="dark" size="sm">
-            Add Friend
-          </Button>
-          <Button color="dark" size="sm">
             Block
           </Button>
         </Flex>

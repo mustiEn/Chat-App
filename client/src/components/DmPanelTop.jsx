@@ -33,6 +33,12 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const sentFriendRequest = useFriendRequestStore(
     (s) => s.friendRequests.sentRequests
   );
+  const receivedFriendRequest = useFriendRequestStore(
+    (s) => s.friendRequests.receivedRequests
+  );
+  const removeReceivedRequest = useFriendRequestStore(
+    (s) => s.removeReceivedRequest
+  );
   const removeFromFriends = useFriendStore((s) => s.removeFromFriends);
   const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
     (s) => s.addToShowPinnedMsgBox
@@ -43,9 +49,12 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.addToNewPinnedMsgExists
   );
-  const isFriend = allFriends.find(({ id }) => id === receiverId);
-  const isFriendRequestSent = sentFriendRequest.some(
-    ({ id }) => id === Number(receiverId)
+  const addToFriends = useFriendStore((s) => s.addToFriends);
+
+  const isFriend = allFriends.some((e) => e.id == receiverId);
+  const isFriendRequestSent = sentFriendRequest.some((id) => id == receiverId);
+  const isFriendRequestReceived = receivedFriendRequest.some(
+    ({ id }) => id == receiverId
   );
 
   const removeFriend = (friendId) => {
@@ -70,6 +79,26 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       toast.success("Friend request sent");
     });
   };
+  const handleMessageRequestAcceptance = (status) => {
+    socket.emit(
+      "send friend request acceptance",
+      receiverId,
+      status,
+      (err, res) => {
+        if (err || res.status === "duplicated" || res.status === "error") {
+          console.log("Message failed:", err, res.error);
+          return;
+        }
+        console.log(receiver);
+
+        if (status === "accepted") addToFriends([receiver]);
+
+        removeReceivedRequest(receiverId);
+      }
+    );
+  };
+  console.log("receivedFriendRequest", receivedFriendRequest);
+  console.log("sentFriendRequest", sentFriendRequest);
 
   useEffect(() => {
     if (showPinnedMsgBox[receiverId])
@@ -92,7 +121,6 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       document.removeEventListener("click", closePinnedMsgsBox);
     };
   }, [showPinnedMsgBox]);
-  console.log(isFriendRequestSent);
 
   return (
     <>
@@ -227,7 +255,9 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         centered
       >
         <Text my={"xs"}>
-          {isFriendRequestSent
+          {isFriendRequestReceived
+            ? "Looks like somebody wants to be friends..."
+            : isFriendRequestSent
             ? "It shouldn't take too long..."
             : `You sure you want to
           ${
@@ -255,24 +285,41 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
           </Text>
           <Text>{receiver?.username}</Text>
         </Flex>
-        <Flex>
+        <Flex gap={"xs"}>
           <Button
             mt={"sm"}
             ml={"auto"}
             variant={"filled"}
             color={isFriend ? "red" : "blue"}
             onClick={() => {
-              if (isFriendRequestSent) return;
-
-              isFriend ? removeFriend() : sendFriendRequest(receiver);
+              if (isFriendRequestSent) {
+                return;
+              } else if (isFriendRequestReceived) {
+                handleMessageRequestAcceptance("accepted");
+                return;
+              }
+              isFriend ? removeFriend() : sendFriendRequest(receiverId);
             }}
+            disabled={isFriendRequestSent}
           >
-            {isFriendRequestSent
+            {isFriendRequestReceived
+              ? "Accept"
+              : isFriendRequestSent
               ? "Friend request sent"
               : isFriend
               ? "Remove friend"
               : "Send friend request"}
           </Button>
+          {isFriendRequestReceived && (
+            <Button
+              mt={"sm"}
+              variant={"filled"}
+              color={"red"}
+              onClick={() => handleMessageRequestAcceptance("rejected")}
+            >
+              Cancel
+            </Button>
+          )}
         </Flex>
       </Modal>
     </>

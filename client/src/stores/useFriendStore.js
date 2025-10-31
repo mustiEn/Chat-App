@@ -6,10 +6,14 @@ export const useFriendStore = create(
     friends: [],
     addToFriends: (users) =>
       set((state) => {
-        state.friends.push(...users);
-        // state.friends.sort(
-        //   (a, b) => a.display_name.toUpperCase() - b.display_name.toUpperCase()
-        // );
+        const existingIds = new Set(state.friends.map(({ id }) => id));
+        const uniqueUsers = users.filter(({ id }) => !existingIds.has(id));
+        state.friends.push(...uniqueUsers);
+        state.friends.sort((a, b) =>
+          a.display_name.localeCompare(b.display_name, undefined, {
+            sensitivity: "base",
+          })
+        );
       }),
     removeFromFriends: (userId) =>
       set((state) => {

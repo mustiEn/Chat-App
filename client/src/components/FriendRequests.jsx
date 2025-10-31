@@ -19,13 +19,11 @@ const FriendRequests = () => {
   const receivedFriendRequests = useFriendRequestStore(
     (s) => s.friendRequests.receivedRequests
   );
-  const addReceivedRequest = useFriendRequestStore((s) => s.addReceivedRequest);
-  const addSentRequest = useFriendRequestStore((s) => s.addSentRequest);
   const removeReceivedRequest = useFriendRequestStore(
     (s) => s.removeReceivedRequest
   );
 
-  const handleMessageRequestAcceptance = (friend, status) => {
+  const handleMessageRequestAcceptance = (status, friend) => {
     socket.emit(
       "send friend request acceptance",
       friend.id,
@@ -35,31 +33,14 @@ const FriendRequests = () => {
           console.log("Message failed:", err, res.error);
           return;
         }
+        console.log(friend);
 
-        if (status === "accepted") addToFriends(friend);
+        if (status === "accepted") addToFriends([friend]);
 
         removeReceivedRequest(friend.id);
       }
     );
   };
-
-  const { data, error, isError, isLoading, isSuccess } = useQuery(
-    friendRequestsQuery()
-  );
-
-  useEffect(() => {
-    if (receivedFriendRequests.length) return;
-    if (!isSuccess) return;
-    if (!data) return;
-
-    const {
-      receivedFriendRequests: recevied,
-      sentFriendRequests: [sent],
-    } = data;
-
-    addReceivedRequest(recevied);
-    addSentRequest(sent);
-  }, [data]);
 
   return (
     <>
@@ -69,9 +50,7 @@ const FriendRequests = () => {
           Received - {receivedFriendRequests.length}
         </Text>
 
-        {isLoading ? (
-          <div>Loading...</div>
-        ) : !receivedFriendRequests.length ? (
+        {!receivedFriendRequests.length ? (
           <div>No data</div>
         ) : (
           <>
@@ -153,11 +132,11 @@ const FriendRequests = () => {
                   </Flex>
                 ))}
               </Stack>
-              {data.pages && hasNextPage && (
+              {/* {data.pages && hasNextPage && (
                 <Box mt={"xl"} ref={ref}>
                   <PulseLoader color={"white"} />
                 </Box>
-              )}
+              )} */}
             </Box>
           </>
         )}

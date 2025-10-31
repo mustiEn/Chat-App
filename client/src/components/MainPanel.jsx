@@ -30,7 +30,9 @@ const MainPanel = () => {
   const removeSentFriendRequest = useFriendRequestStore(
     (s) => s.removeSentRequest
   );
-  const friends = useFriendStore((s) => s.friends);
+  const sentFriendRequest = useFriendRequestStore(
+    (s) => s.friendRequests.sentRequests
+  );
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const [groupChat, setGroupChat] = useState({});
   const scrollElementRef = useRef(null);
@@ -304,9 +306,13 @@ const MainPanel = () => {
     };
     const handleFriendRequestAcceptance = ({ result }) => {
       result.forEach(({ sender, status }) => {
-        if (status === "accepted") addToFriends(sender);
+        if (status === "accepted") addToFriends([sender]);
+        console.log("status:", status);
+        console.log(sender.id);
+        console.log(sentFriendRequest);
 
         removeSentFriendRequest(sender.id);
+        console.log(sentFriendRequest);
       });
     };
 

@@ -61,17 +61,21 @@ export const getInitialDmData = async (req, res, next) => {
       FROM 
         friends 
       WHERE
-        (
-          user_id = :userId 
-          AND
-          friend_id = :receiverId
-        ) 
-        OR
-        (
-          user_id = :receiverId 
-          AND
-          friend_id = :userId
+        (  
+          (
+            user_id = :userId 
+            AND
+            friend_id = :receiverId
+          ) 
+          OR
+          (
+            user_id = :receiverId 
+            AND
+            friend_id = :userId
+          )
         )
+        AND
+        request_state = "accepted"
     `;
     const hasChatHistorySql = `
       SELECT 
@@ -539,11 +543,7 @@ export const getFriendRequests = async (req, res, next) => {
     `;
     const sentFriendRequestsSql = `
       SELECT 
-        u.id, 
-        u.username, 
-        u.display_name, 
-        u.profile,
-        u.status 
+        u.id
       FROM 
         friends f
         INNER JOIN users u ON u.id = f.friend_id
