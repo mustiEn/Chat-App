@@ -13,14 +13,19 @@ import Login from "./views/Login";
 import * as Loader from "./loaders/index.js";
 import Logout from "./views/Logout.jsx";
 import MessageRequests from "./components/MessageRequests.jsx";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryCache, QueryClient } from "@tanstack/react-query";
 import Register from "./views/Register.jsx";
 import OnlineFriends from "./components/OnlineFriends.jsx";
 import AllFriends from "./components/AllFriends.jsx";
 import AddFriend from "./components/AddFriend.jsx";
 import FriendRequests from "./components/FriendRequests.jsx";
+import toast from "react-hot-toast";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (err) => toast.error(err),
+  }),
+});
 
 function App() {
   const router = createBrowserRouter([

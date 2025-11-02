@@ -485,19 +485,52 @@ export const setUpSocket = (io) => {
       });
       logger.log("Deleted friend:", friendId);
     });
-    socket.on("send friend requests", async (friendId, done) => {
-      const receiverId = Number(friendId);
-      try {
-        const user = await User.findByPk(friendId, { raw: true });
+    socket.on("send friend requests", async (friendInfo, done) => {
+      let friend;
 
-        if (!user) throw new Error("Friend not found");
+      try {
+        if (isNaN(friendInfo)) {
+          if (friendInfo === sender.username)
+            throw new Error("Something went wrong");
+
+          friend = await User.findOne({
+            where: {
+              username: friendInfo,
+            },
+            raw: true,
+          });
+        } else {
+          friend = await User.findByPk(friendInfo, { raw: true });
+        }
+
+        if (!friend) throw new Error("Friend not found");
+
+        const isFriend = await Friend.findOne({
+          where: {
+            [Op.or]: [
+              {
+                user_id: userId,
+                friend_id: friend.id,
+              },
+              {
+                user_id: friend.id,
+                friend_id: userId,
+              },
+            ],
+            request_state: "accepted",
+          },
+        });
+
+        if (isFriend) throw new Error("You're already friends with this user");
 
         //& await Friend.create({
         //   user_id:userId,
         //   friend_id:friendId,
         //   request_state:"pending"
         // })
+        console.log(friend);
       } catch (error) {
+        logger.log(error);
         return done({
           status: "error",
           error: error.message,
@@ -505,9 +538,10 @@ export const setUpSocket = (io) => {
       }
       done({
         status: "ok",
+        friend: friend,
       });
 
-      io.to(receiverId).emit("receive friend requests", {
+      io.to(Number(friend.id)).emit("receive friend requests", {
         result: [sender],
       });
       logger.log("friend req sent");

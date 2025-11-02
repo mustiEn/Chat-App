@@ -17,9 +17,17 @@ import { Flex } from "@mantine/core";
 import DmModalNotifier from "./DmModalNotifier.jsx";
 import { useDisclosure } from "@mantine/hooks";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
+import { useFriendRequestStore } from "../stores/useFriendRequestStore.js";
 
 const DmPanel = () => {
   const { userId: receiverId } = useParams();
+  const { dmChatRef } = useOutletContext();
+  const { initialPageParam, prevChatDataUpdatedAtRef } = dmChatRef.current;
+
+  const addSentFriendRequest = useFriendRequestStore((s) => s.addSentRequest);
+  const addReceivedFriendRequest = useFriendRequestStore(
+    (s) => s.addReceivedRequest
+  );
   const addSentRequest = useMsgRequestStore((s) => s.addSentRequest);
   const addReceivedRequest = useMsgRequestStore((s) => s.addReceivedRequest);
   const msgRequests = useMsgRequestStore((s) => s.msgRequests);
@@ -31,18 +39,10 @@ const DmPanel = () => {
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const receivers = useReceiverStore((s) => s.receivers);
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
-  const { dmChatRef } = useOutletContext();
-  const { initialPageParam, prevChatDataUpdatedAtRef } = dmChatRef.current;
 
-  const {
-    data,
-    isSuccess,
-    isError,
-    error,
-    isLoading,
-    isFetched,
-    dataUpdatedAt,
-  } = useQuery(dmDataQuery(receiverId));
+  const { data, isSuccess, isLoading, dataUpdatedAt } = useQuery(
+    dmDataQuery(receiverId)
+  );
 
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
   const [showOffset, setShowOffset] = useState(false);
@@ -52,20 +52,15 @@ const DmPanel = () => {
   });
   const [opened, { open, close }] = useDisclosure(false);
 
-  if (isError) {
-    toast.error(error.message);
-  }
-
   //* dont allow user to search blocked one up,but show the msgs still.
 
   //^ before fethcing chats,allow socket get msgs and save,then fetch chat and merge then rmeove dups - notification
 
   useEffect(() => {
-    // console.log(socket.auth.serverOffset);
     if (!isSuccess) return;
     if (prevChatDataUpdatedAtRef[receiverId] === dataUpdatedAt) return;
 
-    const { dms, receiver, nextId } = data;
+    const { dms, receiver, nextId, friendStatus } = data;
     const setMsgRequest = () => {
       const isReqFromReceiver = dms[0].from_id == receiverId;
 
@@ -80,8 +75,11 @@ const DmPanel = () => {
       ({ id }) => id == dms[0].id
     );
 
-    // console.log("dms: ", dms);
-
+    if (friendStatus?.request_state === "pending") {
+      friendStatus.user_id == receiverId
+        ? addReceivedFriendRequest([receiver])
+        : addSentFriendRequest([receiverId]);
+    }
     if (dms[0].request_state == "pending" && !msgRequestAlreadyExists)
       setMsgRequest();
     if (!isUserInDmHistory) addToDmHistoryUsers([receiver]);

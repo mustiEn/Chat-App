@@ -35,12 +35,17 @@ const MainPanel = () => {
   );
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const [groupChat, setGroupChat] = useState({});
+
   const scrollElementRef = useRef(null);
   const dmChatRef = useRef({
     scrollPosition: {},
     prevScrollHeight: {},
     prevChatDataUpdatedAtRef: {},
     initialPageParam: {},
+  });
+  const prevFriendsPanelUpdatedAt = useRef({
+    allFriends: null,
+    friendRequests: null,
   });
 
   useEffect(() => {
@@ -308,11 +313,8 @@ const MainPanel = () => {
       result.forEach(({ sender, status }) => {
         if (status === "accepted") addToFriends([sender]);
         console.log("status:", status);
-        console.log(sender.id);
-        console.log(sentFriendRequest);
 
         removeSentFriendRequest(sender.id);
-        console.log(sentFriendRequest);
       });
     };
 
@@ -383,6 +385,7 @@ const MainPanel = () => {
               setGroupChat,
               scrollElementRef,
               dmChatRef,
+              prevFriendsPanelUpdatedAt,
             }}
           />
         </Flex>

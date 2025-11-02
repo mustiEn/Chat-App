@@ -11,7 +11,7 @@ import { useInView } from "react-intersection-observer";
 import { useEffect } from "react";
 import { RxCross1 } from "react-icons/rx";
 import { PulseLoader } from "react-spinners";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { socket } from "../socket.js";
 import PopoverComponent from "./PopoverComponent";
 import { useFriendStore } from "../stores/useFriendStore.js";
@@ -21,6 +21,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import styles from "../css/all_friends.module.css";
 
 const AllFriends = () => {
+  const { prevFriendsPanelUpdatedAt } = useOutletContext();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { inView, ref } = useInView({
@@ -30,11 +31,6 @@ const AllFriends = () => {
 
   const allFriends = useFriendStore((s) => s.friends);
   const addToFriends = useFriendStore((s) => s.addToFriends);
-  const addReceivedRequest = useFriendRequestStore((s) => s.addReceivedRequest);
-  const addSentRequest = useFriendRequestStore((s) => s.addSentRequest);
-  const receivedFriendRequests = useFriendRequestStore(
-    (s) => s.friendRequests.receivedRequests
-  );
 
   const getAllFriends = async ({ pageParam }) => {
     try {
@@ -85,11 +81,14 @@ const AllFriends = () => {
       toast.success("Friend removed");
     });
   };
+
   const {
     data: allFriendsData,
+    isSuccess: isAllFriendsDataSuccess,
     isLoading,
     hasNextPage,
     fetchNextPage,
+    dataUpdatedAt: allFriendsUpdatedAt,
   } = useInfiniteQuery({
     queryKey: ["allFriends"],
     queryFn: getAllFriends,
@@ -99,17 +98,13 @@ const AllFriends = () => {
     },
     staleTime: Infinity,
   });
-  const {
-    data: friendRequestsData,
-    error,
-    isError,
-    isSuccess,
-  } = useQuery(friendRequestsQuery());
-
-  // const allRows = allFriendsData?.pages.flatMap((e) => e.users) ?? [];
 
   useEffect(() => {
-    if (!allFriendsData) return;
+    const isFetched =
+      prevFriendsPanelUpdatedAt.current.allFriends === allFriendsUpdatedAt;
+
+    if (isFetched) return;
+    if (!isAllFriendsDataSuccess) return;
 
     const friendsData = allFriendsData.pages.at(-1).users.at(-1);
     const lastItemId = friendsData?.id;
@@ -119,19 +114,9 @@ const AllFriends = () => {
     if (isDataTheSame) return;
 
     addToFriends(allFriendsData.pages.at(-1).users);
+    prevFriendsPanelUpdatedAt.current.allFriends = allFriendsUpdatedAt;
   }, [allFriendsData, allFriends]);
-  useEffect(() => {
-    if (receivedFriendRequests.length) return;
-    if (!isSuccess) return;
-    if (!friendRequestsData) return;
 
-    const { receivedFriendRequests: received, sentFriendRequests: sent } =
-      friendRequestsData;
-    const mappedSent = sent.map(({ id }) => id);
-
-    addReceivedRequest(received);
-    addSentRequest(mappedSent);
-  }, [friendRequestsData, receivedFriendRequests]);
   // useEffect(() => {
   //   if (inView) {
   //     fetchNextPage();

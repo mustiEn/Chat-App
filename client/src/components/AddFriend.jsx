@@ -1,27 +1,127 @@
 import { Box, Button, Flex, Text, TextInput } from "@mantine/core";
+import { IoCompassOutline } from "react-icons/io5";
+import { MdOutlineKeyboardArrowRight } from "react-icons/md";
+import { useState } from "react";
+import { useFriendRequestStore } from "../stores/useFriendRequestStore";
+import { socket } from "../socket";
+import { useFriendStore } from "../stores/useFriendStore";
+import toast from "react-hot-toast";
 
 const AddFriend = () => {
+  const [inp, setInp] = useState("");
+  const addToFriends = useFriendStore((s) => s.addToFriends);
+  const addSentFriendRequest = useFriendRequestStore((s) => s.addSentRequest);
+  const receivedFriendRequest = useFriendRequestStore(
+    (s) => s.friendRequests.receivedRequests
+  );
+  const removeReceivedRequest = useFriendRequestStore(
+    (s) => s.removeReceivedRequest
+  );
+
+  const sendFriendRequest = () => {
+    socket.emit("send friend requests", inp, (err, res) => {
+      if (err && res.status === "error") {
+        toast.error(err.message);
+        return;
+      }
+
+      addSentFriendRequest([res.friend.id]);
+      toast.success("Friend request sent");
+    });
+  };
+  const handleMessageRequestAcceptance = (receiver) => {
+    socket.emit(
+      "send friend request acceptance",
+      receiver.id,
+      "accepted",
+      (err, res) => {
+        if (err || res.status === "duplicated" || res.status === "error") {
+          console.log("Message failed:", err, res.error);
+          return;
+        }
+
+        addToFriends([receiver]);
+        removeReceivedRequest(receiver.id);
+      }
+    );
+  };
+
   return (
     <>
-      <Flex className="d-flex w-100">
+      <Flex direction={"column"} w={"100%"} p={"sm"} gap={"xs"}>
         <Box>
-          <Text fz={"h4"}>Add Friend</Text>
-          <p>You can add friends with their Discord usernames.</p>
-          <Box className="border-bottom border-white border-opacity-25 px-2">
+          <Text fz={"h2"}>Add Friend</Text>
+          <Text>You can add friends with their MyChat usernames.</Text>
+          <Box
+            style={{
+              border: "1px solid rgba(255,255,255,25%)",
+              borderWidth: "0 0 1px 0",
+            }}
+          >
             <TextInput
               type="text"
-              placeholder="Enter your friend's usenrame."
+              my={"sm"}
+              placeholder="Enter your friend's MyChat username."
+              rightSection={
+                <Button
+                  c={inp === "" ? "rgba(255, 255, 255, 0.42)" : "white"}
+                  color={inp === "" ? "blue.6" : "blue"}
+                  my={"md"}
+                  onClick={() => {
+                    if (inp === "") return;
+
+                    const friendRequestReceived = receivedFriendRequest.find(
+                      ({ username }) => username == inp
+                    );
+
+                    friendRequestReceived
+                      ? handleMessageRequestAcceptance(friendRequestReceived)
+                      : sendFriendRequest();
+                    setInp("");
+                  }}
+                >
+                  Send Friend Request
+                </Button>
+              }
+              rightSectionWidth={"auto"}
+              value={inp}
+              onChange={(e) =>
+                setInp((prev) =>
+                  e.target.value.length > 15 ? prev : e.target.value
+                )
+              }
             />
-            <Button variant="dark">Send Friend Request</Button>
           </Box>
         </Box>
         <Box>
-          <Text fz={"h4"}>Other Places to Make Friends</Text>
-          <p>
+          <Text fz={"h2"}>Other Places to Make Friends</Text>
+          <Text>
             Don't have a username ? Cheak out our list of groups you can join
-          </p>
+          </Text>
         </Box>
-        <Button variant="dark">Explore Groups</Button>
+        <Button
+          color="cyan"
+          variant="outline"
+          w={"max-content"}
+          leftSection={
+            <IoCompassOutline
+              style={{
+                width: 24,
+                height: 24,
+              }}
+            />
+          }
+          rightSection={
+            <MdOutlineKeyboardArrowRight
+              style={{
+                width: 16,
+                height: 16,
+              }}
+            />
+          }
+        >
+          Explore Groups
+        </Button>
       </Flex>
     </>
   );

@@ -4,7 +4,6 @@ import HeaderContext from "../contexts/HeaderContext";
 import { useQuery } from "@tanstack/react-query";
 import DmHistorySkeleton from "./DmHistorySkeleton";
 import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
-import { useShallow } from "zustand/shallow";
 import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 // import DmHistorySkeleton from './DmHistorySkeleton'
 
@@ -17,7 +16,6 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
   const getDmHistory = async () => {
     const res = await fetch("/api/dmHistory");
     const { dmHistoryResult } = await res.json();
-    console.log("dmHistoryResult");
 
     if (!res.ok) throw new Error(dmHistoryResult.error);
 

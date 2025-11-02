@@ -75,7 +75,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         return;
       }
 
-      addSentFriendRequest(friendId);
+      addSentFriendRequest([friendId]);
       toast.success("Friend request sent");
     });
   };
@@ -89,7 +89,6 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
           console.log("Message failed:", err, res.error);
           return;
         }
-        console.log(receiver);
 
         if (status === "accepted") addToFriends([receiver]);
 
@@ -97,8 +96,6 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       }
     );
   };
-  console.log("receivedFriendRequest", receivedFriendRequest);
-  console.log("sentFriendRequest", sentFriendRequest);
 
   useEffect(() => {
     if (showPinnedMsgBox[receiverId])

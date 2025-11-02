@@ -8,6 +8,7 @@ import { DirectMessage } from "../models/DirectMessage.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
+import { Friend } from "../models/Friend.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -18,6 +19,7 @@ export const getInitialDmData = async (req, res, next) => {
     const userId = req.session.passport.user;
     let dms;
     let receiver = {};
+    let friendStatus = null;
 
     if (!result.isEmpty()) {
       logger.log(result.array());
@@ -47,7 +49,7 @@ export const getInitialDmData = async (req, res, next) => {
 
     const isReceiverBlockedSql = `
       SELECT 
-        1 
+        COUNT(*) val 
       FROM 
         blocked_users 
       WHERE 
@@ -55,9 +57,10 @@ export const getInitialDmData = async (req, res, next) => {
         AND
         blocked_id = :receiverId
     `;
-    const isFriendSql = `
+    const friendStatusSql = `
       SELECT 
-        COUNT(*) val 
+        user_id,
+        request_state
       FROM 
         friends 
       WHERE
@@ -74,8 +77,6 @@ export const getInitialDmData = async (req, res, next) => {
             friend_id = :userId
           )
         )
-        AND
-        request_state = "accepted"
     `;
     const hasChatHistorySql = `
       SELECT 
@@ -148,10 +149,10 @@ export const getInitialDmData = async (req, res, next) => {
       },
     });
 
-    if (isReceiverBlocked) {
+    if (isReceiverBlocked.val) {
       receiver["is_blocked"] = true;
     } else {
-      const [isFriend] = await sequelize.query(isFriendSql, {
+      [friendStatus] = await sequelize.query(friendStatusSql, {
         type: QueryTypes.SELECT,
         replacements: {
           userId,
@@ -165,9 +166,9 @@ export const getInitialDmData = async (req, res, next) => {
           receiverId,
         },
       });
-      logger.log(hasChatHistory, isFriend);
+      logger.log(hasChatHistory, friendStatus);
 
-      if (!hasChatHistory.val && !isFriend.val) {
+      if (!hasChatHistory.val && !friendStatus?.request_state === "accepted") {
         receiver["with_in_no_contact"] = true;
       }
     }
@@ -183,7 +184,7 @@ export const getInitialDmData = async (req, res, next) => {
     logger.log(receiver);
     const nextId = dms[0]?.id ?? null;
 
-    res.status(200).json({ dms, receiver, nextId });
+    res.status(200).json({ dms, receiver, nextId, friendStatus });
   } catch (error) {
     next(error);
   }

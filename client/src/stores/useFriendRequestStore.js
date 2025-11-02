@@ -9,23 +9,33 @@ export const useFriendRequestStore = create(
     },
     addSentRequest: (userIds) =>
       set((state) => {
-        state.friendRequests.sentRequests.push(...userIds);
+        const vals = state.friendRequests.sentRequests;
+        const uniqueIds = userIds.filter((id) => !vals.some((e) => e == id));
+
+        state.friendRequests.sentRequests.push(...uniqueIds);
       }),
     addReceivedRequest: (users) =>
       set((state) => {
-        state.friendRequests.receivedRequests.unshift(...users);
+        const vals = state.friendRequests.receivedRequests;
+        const uniqueUsers = users.filter(
+          ({ id }) => !vals.some((e) => e.id == id)
+        );
+
+        state.friendRequests.receivedRequests.unshift(...uniqueUsers);
       }),
     removeSentRequest: (userId) =>
       set((state) => {
-        state.friendRequests.sentRequests =
-          state.friendRequests.sentRequests.filter((id) => id != userId);
+        const vals = state.friendRequests.sentRequests;
+
+        state.friendRequests.sentRequests = vals.filter((id) => id != userId);
       }),
     removeReceivedRequest: (userId) =>
       set((state) => {
-        state.friendRequests.receivedRequests =
-          state.friendRequests.receivedRequests.filter(
-            ({ id }) => id != userId
-          );
+        const vals = state.friendRequests.receivedRequests;
+
+        state.friendRequests.receivedRequests = vals.filter(
+          ({ id }) => id != userId
+        );
       }),
   }))
 );

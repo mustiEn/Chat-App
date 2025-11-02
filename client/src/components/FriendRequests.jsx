@@ -13,12 +13,17 @@ import { useFriendRequestStore } from "../stores/useFriendRequestStore";
 import { useFriendStore } from "../stores/useFriendStore";
 import styles from "../css/friend_requests.module.css";
 import { IoCheckmarkOutline } from "react-icons/io5";
+import { useOutletContext } from "react-router-dom";
 
 const FriendRequests = () => {
+  const { prevFriendsPanelUpdatedAt } = useOutletContext();
+
   const addToFriends = useFriendStore((s) => s.addToFriends);
   const receivedFriendRequests = useFriendRequestStore(
     (s) => s.friendRequests.receivedRequests
   );
+  const addReceivedRequest = useFriendRequestStore((s) => s.addReceivedRequest);
+  const addSentRequest = useFriendRequestStore((s) => s.addSentRequest);
   const removeReceivedRequest = useFriendRequestStore(
     (s) => s.removeReceivedRequest
   );
@@ -41,6 +46,23 @@ const FriendRequests = () => {
       }
     );
   };
+
+  const { data, isSuccess, dataUpdatedAt } = useQuery(friendRequestsQuery());
+
+  useEffect(() => {
+    const isFetched =
+      prevFriendsPanelUpdatedAt.current.friendRequests === dataUpdatedAt;
+
+    if (isFetched) return;
+    if (!isSuccess) return;
+
+    const { receivedFriendRequests: received, sentFriendRequests: sent } = data;
+    const mappedSent = sent.map(({ id }) => id);
+
+    addReceivedRequest(received);
+    addSentRequest(mappedSent);
+    prevFriendsPanelUpdatedAt.current.friendRequests = dataUpdatedAt;
+  }, [data, receivedFriendRequests]);
 
   return (
     <>
