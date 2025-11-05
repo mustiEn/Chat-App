@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import { RxDrawingPin, RxCross2 } from "react-icons/rx";
-import { formatDate } from "../utils";
+import { formatDate } from "../utils/index.js";
 import { TbHeartBroken } from "react-icons/tb";
 import { PulseLoader } from "react-spinners";
 import DmModalNotifier from "./DmModalNotifier";

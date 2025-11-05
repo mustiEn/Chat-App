@@ -1,6 +1,4 @@
 import React, { useCallback, useRef } from "react";
-import { useEffect } from "react";
-import Form from "react-bootstrap/Form";
 import TextareaAutosize from "react-textarea-autosize";
 import styles from "../css/dm_panel.module.css";
 import { socket } from "../socket";
@@ -10,7 +8,7 @@ import utc from "dayjs/plugin/utc";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Flex } from "@mantine/core";
-import { editMessage } from "../utils";
+import { editMessage } from "../utils/chatMessages.js";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);

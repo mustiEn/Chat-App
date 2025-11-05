@@ -4,7 +4,7 @@ import HeaderContext from "../contexts/HeaderContext";
 import DmHistorySkeleton from "./DmHistorySkeleton";
 import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 import { useDmHistory } from "../custom-hooks/useDmHistory.js";
-import DmHistorySkeleton from "./DmHistorySkeleton";
+// import DmHistorySkeleton from "./DmHistorySkeleton";
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
   const setHeader = useContext(HeaderContext);

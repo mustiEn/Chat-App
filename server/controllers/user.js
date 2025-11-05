@@ -1,14 +1,12 @@
 import express from "express";
-import { logger, lastDisconnect } from "../utils/chatMessages.js";
+import { logger } from "../utils/index.js";
 import { validationResult, matchedData } from "express-validator";
 import { User } from "../models/User.js";
-import { DataTypes, Op, QueryTypes } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import { sequelize } from "../models/db.js";
-import { DirectMessage } from "../models/DirectMessage.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
-import { Friend } from "../models/Friend.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -75,21 +73,17 @@ export const getInitialDmData = async (req, res, next) => {
     const { receiverId } = matchedData(req);
 
     receiver = (
-      await User.findByPk(
-        receiverId,
-        {
-          attributes: [
-            "id",
-            "display_name",
-            "username",
-            "profile",
-            "background_color",
-            "about_me",
-            "createdAt",
-          ],
-        },
-        { raw }
-      )
+      await User.findByPk(receiverId, {
+        attributes: [
+          "id",
+          "display_name",
+          "username",
+          "profile",
+          "background_color",
+          "about_me",
+          "createdAt",
+        ],
+      })
     ).toJSON();
 
     if (!receiver) throw new Error("Receiver not found");
@@ -140,7 +134,7 @@ export const getDmData = async (req, res, next) => {
     const userId = req.session.passport.user;
     const nextIdSql = "AND dm.id < :nextId";
     const limit = 30;
-    const replacements = {
+    let replacements = {
       userId,
       limit,
     };
@@ -153,6 +147,7 @@ export const getDmData = async (req, res, next) => {
     }
 
     let { receiverId, nextId } = matchedData(req);
+    nextId = Number(nextId);
     const dmsSql = ` 
       SELECT 
         dm.id,
@@ -194,7 +189,7 @@ export const getDmData = async (req, res, next) => {
         )
         AND 
         dm.is_deleted = 0
-        ${nextId ? nextIdSql : ""}
+        ${nextId !== 0 ? nextIdSql : ""}
       ORDER BY 
         dm.createdAt DESC
       LIMIT 
@@ -210,14 +205,13 @@ export const getDmData = async (req, res, next) => {
 
     dms = await sequelize.query(dmsSql, {
       type: QueryTypes.SELECT,
-      replacements: {
-        userId,
-        receiverId,
-        nextId,
-        limit,
-      },
+      replacements,
     });
     dms = dms.reverse();
+    logger.log("RAW SQL:", dmsSql);
+    logger.log("REPLACEMENTS:", replacements);
+
+    logger.log(nextId, nextId ? 1 : 2);
     nextId = dms.length < 30 ? null : dms[0].id;
     logger.log("mora data");
 

@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import session from "express-session";
 import { sequelize } from "./models/db.js";
-import { logger } from "./utils/chatMessages.js";
+import { logger } from "./utils/index.js";
 import SequelizeStore from "connect-session-sequelize";
 import "./strategy/strategy.js";
 import cookieParser from "cookie-parser";

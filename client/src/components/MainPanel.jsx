@@ -187,7 +187,7 @@ const MainPanel = () => {
           const isMsgPinned = olderData.findIndex(
             ({ id }) => id == deletedMsgId
           );
-          s
+          s;
           if (isMsgPinned)
             removePinnedMessage(queryClient, String(userId), deletedMsgId);
         }

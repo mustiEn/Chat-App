@@ -1,7 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
-
-const queryClient = useQueryClient();
-
 export const addOldMessages = (queryClient, receiverId, newMsgs) => {
   queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
     ...olderData,

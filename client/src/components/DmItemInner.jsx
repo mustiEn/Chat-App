@@ -1,6 +1,6 @@
 import React from "react";
 import EditDm from "./EditDm";
-import { formatDate } from "../utils";
+import { formatDate } from "../utils/index.js";
 import MsgRepliedDiv from "../components/MsgRepliedDiv";
 import { Flex, Image, Text } from "@mantine/core";
 

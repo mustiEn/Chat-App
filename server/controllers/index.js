@@ -1,5 +1,5 @@
 import express from "express";
-import { logger, lastDisconnect } from "../utils/chatMessages.js";
+import { logger, lastDisconnect } from "../utils/index.js";
 import { validationResult, matchedData } from "express-validator";
 import { User } from "../models/User.js";
 import { v4 as uuidv4 } from "uuid";

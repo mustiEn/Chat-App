@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { formatDate } from "../utils";
+import { formatDate } from "../utils/index.js";
 import { socket } from "../socket";
 import { IoCheckmarkOutline } from "react-icons/io5";
 import { RxCross1 } from "react-icons/rx";
@@ -34,7 +34,7 @@ const MessageRequests = () => {
     );
   };
   const { data, isLoading } = useMessageRequests();
-  const { receivedRequests } = data ?? [];
+  const { receivedRequests = [] } = data ?? [];
 
   return (
     <>

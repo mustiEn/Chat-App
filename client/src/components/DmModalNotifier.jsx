@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "../socket";
-import { formatDate, setMessageAsPinned, setIsMessagePinned } from "../utils";
+import { formatDate } from "../utils/index.js";
 import { Modal, Button, Text, Flex, Image } from "@mantine/core";
 import { useParams } from "react-router-dom";
 import { useCallback } from "react";
@@ -8,6 +8,7 @@ import {
   addPinnedMessages,
   removePinnedMessage,
 } from "../utils/pinnedMessages";
+import { setIsMessagePinned } from "../utils/chatMessages.js";
 
 const DmModalNotifier = ({
   setActiveMsg,

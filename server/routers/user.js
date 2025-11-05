@@ -5,13 +5,13 @@ import { isAuthenticated } from "../middlewares/check_auth_user.js";
 
 const router = express.Router();
 
-router.post(
+router.get(
   "/dm/initialChatData/:receiverId",
   [isAuthenticated, param("receiverId").notEmpty().isNumeric()],
   userController.getInitialDmData
 );
 
-router.post(
+router.get(
   "/dm/moreData/:receiverId",
   [
     isAuthenticated,

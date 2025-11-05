@@ -39,7 +39,7 @@ const DmList = ({ isInitialDataLoading }) => {
     scrollPosition,
     initialPageParam,
     prevScrollHeight,
-    DmPanel: { chatMessagesUpdatedAt },
+    dmPanel: { chatMessagesUpdatedAt },
   } = dmChatRef.current;
   const fetchMoreData = async ({ pageParam }) => {
     const res = await fetch(`/api/dm/moreData?nextId=${pageParam}`, {
@@ -62,12 +62,10 @@ const DmList = ({ isInitialDataLoading }) => {
   };
   const {
     data,
-    error,
     fetchNextPage,
     isFetched,
     hasNextPage,
     isSuccess,
-    isError,
     dataUpdatedAt,
   } = useInfiniteQuery({
     queryKey: ["moreMessages", receiverId],
@@ -112,9 +110,6 @@ const DmList = ({ isInitialDataLoading }) => {
 
   useLayoutEffect(() => {
     //* If item length FaChampagneGlasses,adjust scrollPosition
-    console.log("dm list");
-    console.log(chatMessagesUpdatedAt, dataUpdatedAt);
-
     if (!items.length) return;
 
     const el = scrollElementRef.current;
@@ -155,7 +150,6 @@ const DmList = ({ isInitialDataLoading }) => {
     addOldMessages(receiverId, dms);
 
     // scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
-    console.log("hasNextPage", hasNextPage);
 
     addToHasMoreUp(receiverId, hasNextPage);
   }, [data]);

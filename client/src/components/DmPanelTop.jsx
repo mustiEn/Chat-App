@@ -37,8 +37,9 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const [search, setSearch] = useState("");
 
   const { data: allFriendsData } = useAllFriends();
-  const allFriends =
-    allFriendsData?.pages.flatMap(({ friends }) => friends) ?? [];
+  // const allFriends =
+  //   allFriendsData?.pages.flatMap(({ friends }) => friends) ?? [];
+  const allFriends = allFriendsData?.pages.flatMap(({ users }) => users) ?? [];
   const receiver = useReceiverStore((s) => s.receivers[receiverId]);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
   const { data } = useFriendRequests();

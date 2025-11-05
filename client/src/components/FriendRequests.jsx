@@ -34,7 +34,7 @@ const FriendRequests = () => {
   };
 
   const { data, isLoading } = useFriendRequests();
-  const { receivedFriendRequests } = data ?? {};
+  const { receivedFriendRequests = [] } = data ?? {};
 
   return (
     <>

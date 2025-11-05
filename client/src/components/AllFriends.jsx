@@ -41,14 +41,17 @@ const AllFriends = () => {
     }
   }, [inView]);
 
-  const allFriendsData = data?.pages.flatMap((e) => e.friends) ?? [];
-  const allFriends = allFriendsData.sort((a, b) =>
+  useEffect(() => console.log(data), [data]);
+
+  const newdata = data?.pages.flatMap(({ users }) => users) ?? [];
+  // const allFriendsData = data?.pages.flatMap((e) => e.friends) ?? [];
+  const allFriends = newdata.sort((a, b) =>
     a.display_name.localeCompare(b.display_name, undefined, {
       sensitivity: "base",
     })
   );
   const rowVirtualizer = useVirtualizer({
-    count: allFriends?.length ?? 0,
+    count: allFriends.length ?? 0,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 65,
     overscan: 5,

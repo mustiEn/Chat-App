@@ -1,7 +1,7 @@
 import { NUMBER, Op, QueryTypes, fn } from "sequelize";
 import { DirectMessage } from "./models/DirectMessage.js";
 import dayjs from "dayjs";
-import { logger, lastDisconnect } from "./utils/chatMessages.js";
+import { logger, lastDisconnect } from "./utils/index.js";
 import { sequelize } from "./models/db.js";
 import { User } from "./models/User.js";
 import { Friend } from "./models/Friend.js";

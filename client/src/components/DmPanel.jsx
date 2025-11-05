@@ -10,7 +10,9 @@ import toast from "react-hot-toast";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
-import { Flex } from "@mantine/core";
+import { Box, Flex } from "@mantine/core";
+import DmList from "./DmList.jsx";
+import MessageInput from "./MessageInput.jsx";
 import DmModalNotifier from "./DmModalNotifier.jsx";
 import { useDisclosure } from "@mantine/hooks";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
@@ -32,7 +34,7 @@ const DmPanel = () => {
   const { dmChatRef } = useOutletContext();
   const {
     initialPageParam,
-    DmPanel: { chatMessagesUpdatedAt },
+    dmPanel: { chatMessagesUpdatedAt },
   } = dmChatRef.current;
 
   const addToHasMoreUp = useHasMoreUpStore((s) => s.addToHasMoreUp);
@@ -40,7 +42,7 @@ const DmPanel = () => {
   const receivers = useReceiverStore((s) => s.receivers);
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const { data } = useMessageRequests();
-  const { receivedMessageRequests } = data ?? [];
+  const { receivedMessageRequests = [] } = data ?? {};
   const { data: initialDmData, isSuccess: isInitialDmDataSuccess } = useQuery(
     dmDataQuery(receiverId)
   );
@@ -67,14 +69,11 @@ const DmPanel = () => {
   //^ before fethcing chats,allow socket get msgs and save,then fetch chat and merge then rmeove dups - notification
 
   useEffect(() => {
-    console.log("dm panel");
-    console.log(chatMessagesQueryUpdatedAt);
-
     if (!isChatMessagesSuccess) return;
     if (chatMessagesUpdatedAt[receiverId]) return;
+    if (!chatMessages) return;
 
-    const { dms } = chatMessages;
-    const firstFetchedMsgs = dms.pages[0].messages;
+    const firstFetchedMsgs = chatMessages.pages[0].messages;
     const setMsgRequest = () => {
       const isReqFromReceiver = firstFetchedMsgs[0].from_id == receiverId;
 
@@ -83,11 +82,12 @@ const DmPanel = () => {
         : addSentMessageRequests(queryClient, firstFetchedMsgs[0]);
     };
     const isDmsLengthLess = firstFetchedMsgs.length < 30 ? false : true;
-    const msgRequestAlreadyExists = receivedMessageRequests.some(
-      ({ id }) => id == firstFetchedMsgs[0].id
-    );
+    const msgRequestAlreadyExists = !firstFetchedMsgs.length
+      ? false
+      : receivedMessageRequests.some((e) => e.id == firstFetchedMsgs[0].id);
 
     if (
+      firstFetchedMsgs.length &&
       firstFetchedMsgs[0].request_state == "pending" &&
       !msgRequestAlreadyExists
     ) {
@@ -107,7 +107,9 @@ const DmPanel = () => {
 
     const { receiver, nextId, friendStatus } = isInitialDmDataSuccess;
     const isUserInReceiversObj = receivers[receiverId];
-    const isUserInDmHistory = dmHistoryUsers.some(({ id }) => id == receiverId);
+    const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
+    const isUserInDmHistory =
+      dmHistoryUsers && dmHistoryUsers.some((e) => e.id == receiverId);
 
     if (!isUserInDmHistory) addDmHistoryUsers(queryClient, [receiver]);
     if (!isUserInReceiversObj) addToReceivers(receiverId, receiver);
