@@ -22,6 +22,9 @@ const InfiniteLoader = ({ next, loader, children }) => {
       next();
     }
   }, [inView]);
+  useEffect(() => {
+    console.log("hasmoreup changed", hasMoreUp);
+  }, [hasMoreUp]);
 
   return (
     <>

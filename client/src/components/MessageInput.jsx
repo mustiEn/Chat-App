@@ -10,13 +10,18 @@ import { v4 as uuidv4 } from "uuid";
 import { useParams } from "react-router-dom";
 import { socket } from "../socket.js";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMsgRequestStore } from "../stores/useMsgRequestStore.js";
-import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box, Flex } from "@mantine/core";
 import styles from "../css/dm_panel.module.css";
+import { addMessage } from "../utils/chatMessages.js";
+import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
+import { useMessageRequests } from "../custom-hooks/useMessageRequests.js";
+import {
+  addSentMessageRequests,
+  removeReceivedMessageRequest,
+} from "../utils/msgRequests.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -24,14 +29,9 @@ dayjs.extend(timezone);
 const MessageInput = () => {
   const queryClient = useQueryClient();
   const { userId: receiverId } = useParams();
-  const msgRequests = useMsgRequestStore((s) => s.msgRequests);
-  const addSentRequest = useMsgRequestStore((s) => s.addSentRequest);
-  const removeReceivedRequest = useMsgRequestStore(
-    (s) => s.removeReceivedRequest
-  );
-  const addToDmHistoryUsers = useDmHistoryUserStore(
-    (s) => s.addToDmHistoryUsers
-  );
+  const { data } = useMessageRequests();
+  const { receivedMessageRequests = [], sentMessageRequests = [] } = data ?? [];
+
   const msgToReply = useMsgToReplyStore((s) => s.msgToReply);
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const receivers = useReceiverStore((s) => s.receivers);
@@ -52,23 +52,22 @@ const MessageInput = () => {
     }
 
     if (key == "acceptance") {
-      removeReceivedRequest(receiverId);
+      removeReceivedMessageRequest(queryClient, receiverId);
     } else if (key == "request") {
-      const isUserInDmHistory = useDmHistoryUserStore
-        .getState()
-        .dmHistoryUsers.some(({ id }) => id == receiverId);
-      addSentRequest(res.result);
+      const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
+      const isUserInDmHistory = dmHistoryUsers.some(
+        ({ id }) => id == receiverId
+      );
+      addSentMessageRequests(queryClient, res.result);
 
-      if (!isUserInDmHistory) addToDmHistoryUsers([receivers[receiverId]]);
+      if (!isUserInDmHistory)
+        addDmHistoryUsers(queryClient, [receivers[receiverId]]);
     }
 
     if (pendingMsgs[res.result[0].to_id])
       removeFromPendingMsgs(receiverId, res.result[0].clientOffset);
 
-    queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
-      ...olderData,
-      dms: [...olderData.dms, res.result[0]],
-    }));
+    addMessage(receiverId, res.result[0]);
     socket.auth.serverOffset[receiverId] = res.result[0].id;
 
     console.log("Message successful:", res);
@@ -83,11 +82,9 @@ const MessageInput = () => {
       reply_to_msg: msgToReply ?? null,
     };
 
-    if (
-      msgRequests.receivedRequests.some(({ from_id }) => from_id == receiverId)
-    ) {
+    if (receivedMessageRequests.some(({ from_id }) => from_id == receiverId)) {
       const acceptance = {
-        reqMsg: msgRequests.receivedRequests.find(
+        reqMsg: receivedMessageRequests.find(
           ({ from_id }) => from_id == receiverId
         ),
         status: "accepted",
@@ -130,7 +127,7 @@ const MessageInput = () => {
     <Box w={"100%"} px={"xs"} mt={"auto"} mb={"sm"}>
       {receivers[receiverId]?.is_blocked ? (
         <div>You blocked this user</div>
-      ) : msgRequests.sentRequests.some(({ to_id }) => to_id == receiverId) ? (
+      ) : sentMessageRequests.some(({ to_id }) => to_id == receiverId) ? (
         <h4>Your msg been sent waiting for acceptance</h4>
       ) : (
         <>
@@ -170,7 +167,7 @@ const MessageInput = () => {
                 id={styles["msg-input"]}
                 className="border-0 bg-transparent msg-input text-white w-100"
                 placeholder={`${
-                  msgRequests.receivedRequests.find(
+                  receivedMessageRequests.find(
                     ({ from_id }) => from_id == receiverId
                   )
                     ? "Any message will be considered as acceptance"

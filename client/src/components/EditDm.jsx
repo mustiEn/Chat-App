@@ -10,6 +10,7 @@ import utc from "dayjs/plugin/utc";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Flex } from "@mantine/core";
+import { editMessage } from "../utils";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -35,28 +36,14 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
     }
 
     if (!socket.connected) {
-      const { dms } = queryClient.getQueryData(["chatMessages", receiverId]);
-      const mappedDms = dms.map((m) =>
-        m.id == msg.id
-          ? {
-              ...m,
-              message: editedMessage.message,
-              isPending: true,
-              is_edited: true,
-            }
-          : m
-      );
-
-      queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
-        ...olderData,
-        dms: mappedDms,
-      }));
+      editMessage(receiverId, msg.id, editedMessage.message, true);
     }
 
     setEditedMessage({
       id: null,
       message: "",
     });
+
     socket.emit(
       "send edited msgs",
       {
@@ -71,21 +58,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
           return;
         }
 
-        const { dms } = queryClient.getQueryData(["chatMessages", receiverId]);
-        const mappedDms = dms.map((m) =>
-          m.id == msg.id
-            ? {
-                ...m,
-                message: editedMessage.message,
-                isPending: false,
-                is_edited: true,
-              }
-            : m
-        );
-        queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
-          ...olderData,
-          dms: mappedDms,
-        }));
+        editMessage(receiverId, msg.id, editedMessage.message, false);
 
         console.log("Edited Message successfull: ", res);
       }

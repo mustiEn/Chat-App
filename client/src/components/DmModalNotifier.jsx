@@ -1,9 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "../socket";
-import { formatDate } from "../utils";
+import { formatDate, setMessageAsPinned, setIsMessagePinned } from "../utils";
 import { Modal, Button, Text, Flex, Image } from "@mantine/core";
 import { useParams } from "react-router-dom";
 import { useCallback } from "react";
+import {
+  addPinnedMessages,
+  removePinnedMessage,
+} from "../utils/pinnedMessages";
 
 const DmModalNotifier = ({
   setActiveMsg,
@@ -30,20 +34,8 @@ const DmModalNotifier = ({
           console.log("Error: ", err);
         }
 
-        queryClient.setQueryData(
-          ["pinnedMessages", receiverId],
-          (olderData) => [msg, ...(olderData ?? [])]
-        );
-        queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
-          const index = olderData.dms.findIndex(({ id }) => id == msg.id);
-          const currDms = [...olderData.dms];
-          currDms[index].is_pinned = true;
-
-          return {
-            ...olderData,
-            dms: currDms,
-          };
-        });
+        addPinnedMessages(queryClient, receiverId, msg);
+        setIsMessagePinned(receiverId, msg.id, true);
         console.log("Pinned message successfully", res);
       }
     );
@@ -67,32 +59,7 @@ const DmModalNotifier = ({
         return;
       }
 
-      queryClient.setQueryData(
-        ["chatMessages", String(receiverId)],
-        (olderData) => {
-          const { dms } = olderData;
-          const currDms = [...dms];
-          const index = currDms.findIndex(({ id }) => id == msg.id);
-          const msgsRepliedToIndex = currDms.reduce((acc, curr, i) => {
-            if (curr.replied_msg_id == msg.id) acc.push(i);
-            return acc;
-          }, []);
-
-          console.log(msgsRepliedToIndex);
-
-          if (msgsRepliedToIndex.length)
-            msgsRepliedToIndex.forEach((e) => {
-              console.log(currDms[e]);
-              currDms[e].is_replied_msg_deleted = true;
-            });
-          currDms.splice(index, 1);
-
-          return {
-            ...olderData,
-            dms: currDms,
-          };
-        }
-      );
+      deleteMessage(receiverId, msg.id);
       console.log("Deleted message successfully", res);
     });
 
@@ -110,16 +77,7 @@ const DmModalNotifier = ({
             return;
           }
 
-          queryClient.setQueryData(
-            ["pinnedMessages", receiverId],
-            (olderData) => {
-              const filteredData = [...olderData].filter(
-                ({ id }) => id != msg.id
-              );
-
-              return filteredData;
-            }
-          );
+          removePinnedMessage(queryClient, receiverId, msg.id);
         }
       );
     }
@@ -142,26 +100,9 @@ const DmModalNotifier = ({
           console.log("Error: ", err);
         }
 
-        queryClient.setQueryData(
-          ["pinnedMessages", receiverId],
-          (olderData) => {
-            const filteredData = [...olderData].filter(
-              ({ id }) => id != msg.id
-            );
+        removePinnedMessage(queryClient, receiverId, msg.id);
+        setIsMessagePinned(receiverId, msg.id, false);
 
-            return filteredData;
-          }
-        );
-        queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
-          const index = olderData.dms.findIndex(({ id }) => id == msg.id);
-          const currDms = [...olderData.dms];
-          currDms[index].is_pinned = false;
-
-          return {
-            ...olderData,
-            dms: currDms,
-          };
-        });
         // console.log("Unpinned successfully", res);
       }
     );

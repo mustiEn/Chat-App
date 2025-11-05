@@ -6,40 +6,43 @@ import { FaUserFriends } from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
 import PinnedMsgsBox from "./PinnedMsgsBox";
 import PopoverComponent from "./PopoverComponent";
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Box, Flex, Modal, Button, Image, Text } from "@mantine/core";
-import { useFriendStore } from "../stores/useFriendStore.js";
 import { useDisclosure } from "@mantine/hooks";
-import stylesPanelTop from "../css/dm_panel_top.module.css";
-import styles from "../css/dm_panel.module.css";
 import { socket } from "../socket.js";
 import toast from "react-hot-toast";
-import { useFriendRequestStore } from "../stores/useFriendRequestStore.js";
+import stylesPanelTop from "../css/dm_panel_top.module.css";
+import styles from "../css/dm_panel.module.css";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePinnedMessages } from "../custom-hooks/usePinnedMessages.js";
+import {
+  addSentFriendRequest,
+  removeReceivedFriendRequest,
+} from "../utils/friendRequests.js";
+import { useFriendRequests } from "../custom-hooks/useFriendRequests.js";
+import { addFriends, removeFriend } from "../utils/friends.js";
+import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { userId: receiverId } = useParams();
+  const queryClient = useQueryClient();
+  const { dmChatRef } = useOutletContext();
+  const { isPinnedMessagesFetched } = dmChatRef.current;
   const [opened, { open, close }] = useDisclosure(false);
   const customOverlayRef = useRef();
   const pinnedMsgsBoxRef = useRef(null);
   const [search, setSearch] = useState("");
 
-  const allFriends = useFriendStore((s) => s.friends);
+  const { data: allFriendsData } = useAllFriends();
+  const allFriends =
+    allFriendsData?.pages.flatMap(({ friends }) => friends) ?? [];
   const receiver = useReceiverStore((s) => s.receivers[receiverId]);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
-  const addSentFriendRequest = useFriendRequestStore((s) => s.addSentRequest);
-  const sentFriendRequest = useFriendRequestStore(
-    (s) => s.friendRequests.sentRequests
-  );
-  const receivedFriendRequest = useFriendRequestStore(
-    (s) => s.friendRequests.receivedRequests
-  );
-  const removeReceivedRequest = useFriendRequestStore(
-    (s) => s.removeReceivedRequest
-  );
-  const removeFromFriends = useFriendStore((s) => s.removeFromFriends);
+  const { data } = useFriendRequests();
+  const { sentFriendRequests = [], receivedFriendRequests = [] } = data ?? {};
   const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
     (s) => s.addToShowPinnedMsgBox
   );
@@ -49,22 +52,20 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.addToNewPinnedMsgExists
   );
-  const addToFriends = useFriendStore((s) => s.addToFriends);
-
   const isFriend = allFriends.some((e) => e.id == receiverId);
-  const isFriendRequestSent = sentFriendRequest.some((id) => id == receiverId);
-  const isFriendRequestReceived = receivedFriendRequest.some(
+  const isFriendRequestSent = sentFriendRequests.some((id) => id == receiverId);
+  const isFriendRequestReceived = receivedFriendRequests.some(
     ({ id }) => id == receiverId
   );
 
-  const removeFriend = (friendId) => {
+  const handleRemoveFriend = (friendId) => {
     socket.emit("send removed friends", friendId, (err, res) => {
       if (err) {
         toast.error(err.message);
         return;
       }
 
-      removeFromFriends(friendId);
+      removeFriend(queryClient, friendId);
       toast.success("Friend removed");
     });
   };
@@ -75,7 +76,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         return;
       }
 
-      addSentFriendRequest([friendId]);
+      addSentFriendRequest(queryClient, [friendId]);
       toast.success("Friend request sent");
     });
   };
@@ -90,12 +91,14 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
           return;
         }
 
-        if (status === "accepted") addToFriends([receiver]);
+        if (status === "accepted") addFriends(queryClient, [receiver]);
 
-        removeReceivedRequest(receiverId);
+        removeReceivedFriendRequest(queryClient, receiverId);
       }
     );
   };
+
+  const { refetch } = usePinnedMessages(receiverId);
 
   useEffect(() => {
     if (showPinnedMsgBox[receiverId])
@@ -145,7 +148,10 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                     addToShowPinnedMsgBox(receiverId, true);
                     addToNewPinnedMsgExists(receiverId, false);
 
-                    if (!isFetched) refetch();
+                    if (!isPinnedMessagesFetched[receiverId]) {
+                      isPinnedMessagesFetched[receiverId] = true;
+                      refetch();
+                    }
                   }}
                 >
                   <RxDrawingPin
@@ -295,7 +301,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 handleMessageRequestAcceptance("accepted");
                 return;
               }
-              isFriend ? removeFriend() : sendFriendRequest(receiverId);
+              isFriend ? handleRemoveFriend() : sendFriendRequest(receiverId);
             }}
             disabled={isFriendRequestSent}
           >

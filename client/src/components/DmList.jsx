@@ -24,6 +24,7 @@ import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
+import { addOldMessages } from "../utils/chatMessages.js";
 
 const DmList = ({ isInitialDataLoading }) => {
   const { userId: receiverId } = useParams();
@@ -38,7 +39,7 @@ const DmList = ({ isInitialDataLoading }) => {
     scrollPosition,
     initialPageParam,
     prevScrollHeight,
-    prevChatDataUpdatedAtRef,
+    DmPanel: { chatMessagesUpdatedAt },
   } = dmChatRef.current;
   const fetchMoreData = async ({ pageParam }) => {
     const res = await fetch(`/api/dm/moreData?nextId=${pageParam}`, {
@@ -111,20 +112,23 @@ const DmList = ({ isInitialDataLoading }) => {
 
   useLayoutEffect(() => {
     //* If item length FaChampagneGlasses,adjust scrollPosition
+    console.log("dm list");
+    console.log(chatMessagesUpdatedAt, dataUpdatedAt);
+
     if (!items.length) return;
 
     const el = scrollElementRef.current;
 
     if (!el) return;
     if (isFetched) {
-      const isDataNew = prevChatDataUpdatedAtRef[receiverId] != dataUpdatedAt;
+      const isDataNew = chatMessagesUpdatedAt[receiverId] != dataUpdatedAt;
 
-      prevChatDataUpdatedAtRef[receiverId] = dataUpdatedAt;
+      chatMessagesUpdatedAt[receiverId] = dataUpdatedAt;
 
       if (isDataNew) {
         const diff = el.scrollHeight - (prevScrollHeight[receiverId] ?? 0);
 
-        el.scrollTop = el.scrollTop + diff;
+        el.scrollTop = hasNextPage ? el.scrollTop + diff : el.scrollTop;
       } else {
         //* After the fetch, new data hasnt been fetched
         el.scrollTop = scrollPosition[receiverId];
@@ -133,7 +137,7 @@ const DmList = ({ isInitialDataLoading }) => {
       el.scrollTop = el.scrollHeight;
     }
 
-    scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
+    // scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
 
     prevScrollHeight[receiverId] = el.scrollHeight;
     scrollPosition[receiverId] = el.scrollTop;
@@ -143,17 +147,15 @@ const DmList = ({ isInitialDataLoading }) => {
     if (!isSuccess) return;
 
     const { dms } = data.pages[data.pages.length - 1];
-    const isDataNew = prevChatDataUpdatedAtRef[receiverId] != dataUpdatedAt;
+    const isDataNew = chatMessagesUpdatedAt[receiverId] != dataUpdatedAt;
 
-    if (!dms.length) return;
+    // if (!dms.length) return;
     if (!isDataNew) return;
 
-    queryClient.setQueryData(["chatMessages", receiverId], (oldData) => ({
-      ...oldData,
-      dms: [...dms, ...oldData.dms],
-    }));
+    addOldMessages(receiverId, dms);
 
-    scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
+    // scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
+    console.log("hasNextPage", hasNextPage);
 
     addToHasMoreUp(receiverId, hasNextPage);
   }, [data]);

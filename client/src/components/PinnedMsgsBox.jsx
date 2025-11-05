@@ -8,7 +8,6 @@ import { socket } from "../socket";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
-import { useDisclosure } from "@mantine/hooks";
 import {
   Box,
   Center,
@@ -19,15 +18,17 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import styles from "../css/pinned_msgs_box.module.css";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
+import styles from "../css/pinned_msgs_box.module.css";
+import { usePinnedMessages } from "../custom-hooks/usePinnedMessages.js";
 
 const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
   const { userId: receiverId } = useParams();
-  const queryClient = useQueryClient();
-  const pinnedMsgs = queryClient.getQueryData(["pinnedMessages", receiverId]);
-  const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
   const { setActiveMsg, open } = useContext(DmPanelContext);
+
+  const { data: pinnedMsgs } = usePinnedMessages(receiverId);
+  const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
+
   const handleDmModalNotifier = (msg, type) => {
     setActiveMsg({ msg, type });
     open();
@@ -56,7 +57,9 @@ const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
             Pinned Messages
           </Title>
         </Flex>
-        {!pinnedMsgs?.length ? (
+        {!pinnedMsgs ? (
+          <PulseLoader color={"white"} />
+        ) : !pinnedMsgs?.length ? (
           <>
             <TbHeartBroken className={styles["no-data"]} />
             <Center mb={"xl"}>

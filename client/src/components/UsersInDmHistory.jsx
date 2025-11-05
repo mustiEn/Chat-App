@@ -1,49 +1,24 @@
 import React, { memo, useContext, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import HeaderContext from "../contexts/HeaderContext";
-import { useQuery } from "@tanstack/react-query";
 import DmHistorySkeleton from "./DmHistorySkeleton";
-import { useDmHistoryUserStore } from "../stores/useDmHistoryUserStore.js";
 import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
-// import DmHistorySkeleton from './DmHistorySkeleton'
+import { useDmHistory } from "../custom-hooks/useDmHistory.js";
+import DmHistorySkeleton from "./DmHistorySkeleton";
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
   const setHeader = useContext(HeaderContext);
-  const dmHistoryUsers = useDmHistoryUserStore((s) => s.dmHistoryUsers);
-  const addToDmHistoryUsers = useDmHistoryUserStore(
-    (s) => s.addToDmHistoryUsers
-  );
-  const getDmHistory = async () => {
-    const res = await fetch("/api/dmHistory");
-    const { dmHistoryResult } = await res.json();
-
-    if (!res.ok) throw new Error(dmHistoryResult.error);
-
-    return dmHistoryResult;
-  };
-  const { data, error, isError, isSuccess, isLoading } = useQuery({
-    queryKey: ["dmHistory"],
-    queryFn: getDmHistory,
-    staleTime: Infinity,
-  });
-
-  useEffect(() => {
-    if (!isSuccess) return;
-    if (!data?.length) return;
-    if (dmHistoryUsers.length) return;
-
-    addToDmHistoryUsers(data);
-  }, [data]);
+  const { data, isLoading } = useDmHistory();
 
   return (
     <>
       <Stack gap={"xs"}>
         {isLoading ? (
           <DmHistorySkeleton />
-        ) : !dmHistoryUsers.length ? (
+        ) : !data.length ? (
           <DmHistorySkeleton />
         ) : (
-          dmHistoryUsers.map((e, i) => (
+          data.map((e, i) => (
             <Box
               key={e.id}
               // className="position-relative"

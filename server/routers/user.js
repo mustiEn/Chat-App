@@ -6,20 +6,16 @@ import { isAuthenticated } from "../middlewares/check_auth_user.js";
 const router = express.Router();
 
 router.post(
-  "/dm/initialData/:offset",
-  [
-    isAuthenticated,
-    body("receiverId").notEmpty().isNumeric(),
-    param("offset").notEmpty().isNumeric(),
-  ],
+  "/dm/initialChatData/:receiverId",
+  [isAuthenticated, param("receiverId").notEmpty().isNumeric()],
   userController.getInitialDmData
 );
 
 router.post(
-  "/dm/moreData",
+  "/dm/moreData/:receiverId",
   [
     isAuthenticated,
-    body("receiverId").notEmpty().isNumeric(),
+    param("receiverId").notEmpty().isNumeric(),
     query("nextId").notEmpty().isNumeric(),
   ],
   userController.getDmData

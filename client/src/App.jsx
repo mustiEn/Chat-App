@@ -27,6 +27,8 @@ const queryClient = new QueryClient({
   }),
 });
 
+window.__TANSTACK_QUERY_CLIENT__ = queryClient;
+
 function App() {
   const router = createBrowserRouter([
     {
@@ -40,7 +42,7 @@ function App() {
             {
               path: "friends",
               element: <FriendsPanel />,
-              loader: Loader.loadFriends(queryClient),
+              // loader: Loader.loadAllFriends(queryClient),
               children: [
                 { index: true, element: <AllFriends /> },
                 { path: "online", element: <OnlineFriends /> },

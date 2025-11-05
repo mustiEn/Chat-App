@@ -1,15 +1,6 @@
 const getDmData = async (receiverId) => {
   try {
-    const offset = 0;
-    const res = await fetch(`/api/dm/initialData/${offset}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        receiverId,
-      }),
-    });
+    const res = await fetch(`/api/dm/initialChatData/${receiverId}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -22,30 +13,11 @@ const getDmData = async (receiverId) => {
     throw new Error("loadDmData failed");
   }
 };
-const getReceivedFriendRequests = async () => {
-  try {
-    const res = await fetch(`/api/get-friend-requests`);
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message);
-    }
-
-    return data;
-  } catch (error) {
-    console.log(error);
-    throw new Error("getReceivedFriendRequests failed");
-  }
-};
 
 export const dmDataQuery = (receiverId) => ({
-  queryKey: ["chatMessages", receiverId],
+  // queryKey: ["chatMessages", receiverId],
+  queryKey: ["initialChatData", receiverId],
   queryFn: () => getDmData(receiverId),
-  staleTime: Infinity,
-});
-export const friendRequestsQuery = () => ({
-  queryKey: ["friendRequests"],
-  queryFn: getReceivedFriendRequests,
   staleTime: Infinity,
 });
 
@@ -58,10 +30,3 @@ export const loadDmData =
 
     return null;
   };
-
-export const loadFriends = (queryClient) => async () => {
-  const query = friendRequestsQuery();
-  await queryClient.ensureQueryData(query);
-
-  return null;
-};

@@ -1,32 +1,18 @@
 import React from "react";
 import FriendRequestsTop from "./FriendRequestsTop";
 import { Box, Flex, Image, Stack, Text } from "@mantine/core";
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { socket } from "../socket";
-import { friendRequestsQuery } from "../loaders";
 import { RxCross1 } from "react-icons/rx";
 import PopoverComponent from "./PopoverComponent";
-import { PulseLoader } from "react-spinners";
-import { FaRegComment } from "react-icons/fa";
-import { useFriendRequestStore } from "../stores/useFriendRequestStore";
-import { useFriendStore } from "../stores/useFriendStore";
 import styles from "../css/friend_requests.module.css";
 import { IoCheckmarkOutline } from "react-icons/io5";
-import { useOutletContext } from "react-router-dom";
+import { useFriendRequests } from "../custom-hooks/useFriendRequests";
+import { removeReceivedFriendRequest } from "../utils/friendRequests";
+import { addFriends } from "../utils/friends";
 
 const FriendRequests = () => {
-  const { prevFriendsPanelUpdatedAt } = useOutletContext();
-
-  const addToFriends = useFriendStore((s) => s.addToFriends);
-  const receivedFriendRequests = useFriendRequestStore(
-    (s) => s.friendRequests.receivedRequests
-  );
-  const addReceivedRequest = useFriendRequestStore((s) => s.addReceivedRequest);
-  const addSentRequest = useFriendRequestStore((s) => s.addSentRequest);
-  const removeReceivedRequest = useFriendRequestStore(
-    (s) => s.removeReceivedRequest
-  );
+  const queryClient = useQueryClient();
 
   const handleMessageRequestAcceptance = (status, friend) => {
     socket.emit(
@@ -40,29 +26,15 @@ const FriendRequests = () => {
         }
         console.log(friend);
 
-        if (status === "accepted") addToFriends([friend]);
+        if (status === "accepted") addFriends(queryClient, [friend]);
 
-        removeReceivedRequest(friend.id);
+        removeReceivedFriendRequest(queryClient, friend.id);
       }
     );
   };
 
-  const { data, isSuccess, dataUpdatedAt } = useQuery(friendRequestsQuery());
-
-  useEffect(() => {
-    const isFetched =
-      prevFriendsPanelUpdatedAt.current.friendRequests === dataUpdatedAt;
-
-    if (isFetched) return;
-    if (!isSuccess) return;
-
-    const { receivedFriendRequests: received, sentFriendRequests: sent } = data;
-    const mappedSent = sent.map(({ id }) => id);
-
-    addReceivedRequest(received);
-    addSentRequest(mappedSent);
-    prevFriendsPanelUpdatedAt.current.friendRequests = dataUpdatedAt;
-  }, [data, receivedFriendRequests]);
+  const { data, isLoading } = useFriendRequests();
+  const { receivedFriendRequests } = data ?? {};
 
   return (
     <>
@@ -72,7 +44,9 @@ const FriendRequests = () => {
           Received - {receivedFriendRequests.length}
         </Text>
 
-        {!receivedFriendRequests.length ? (
+        {isLoading ? (
+          <div>Loading...</div>
+        ) : !receivedFriendRequests.length ? (
           <div>No data</div>
         ) : (
           <>

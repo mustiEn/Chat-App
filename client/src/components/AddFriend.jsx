@@ -2,22 +2,20 @@ import { Box, Button, Flex, Text, TextInput } from "@mantine/core";
 import { IoCompassOutline } from "react-icons/io5";
 import { MdOutlineKeyboardArrowRight } from "react-icons/md";
 import { useState } from "react";
-import { useFriendRequestStore } from "../stores/useFriendRequestStore";
 import { socket } from "../socket";
-import { useFriendStore } from "../stores/useFriendStore";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  addSentFriendRequest,
+  removeReceivedFriendRequest,
+} from "../utils/friendRequests";
+import { useFriendRequests } from "../custom-hooks/useFriendRequests";
 
 const AddFriend = () => {
   const [inp, setInp] = useState("");
-  const addToFriends = useFriendStore((s) => s.addToFriends);
-  const addSentFriendRequest = useFriendRequestStore((s) => s.addSentRequest);
-  const receivedFriendRequest = useFriendRequestStore(
-    (s) => s.friendRequests.receivedRequests
-  );
-  const removeReceivedRequest = useFriendRequestStore(
-    (s) => s.removeReceivedRequest
-  );
-
+  const { data } = useFriendRequests();
+  const { receivedFriendRequests } = data ?? {};
+  const queryClient = useQueryClient();
   const sendFriendRequest = () => {
     socket.emit("send friend requests", inp, (err, res) => {
       if (err && res.status === "error") {
@@ -25,7 +23,7 @@ const AddFriend = () => {
         return;
       }
 
-      addSentFriendRequest([res.friend.id]);
+      addSentFriendRequest(queryClient, [res.friend.id]);
       toast.success("Friend request sent");
     });
   };
@@ -40,8 +38,8 @@ const AddFriend = () => {
           return;
         }
 
-        addToFriends([receiver]);
-        removeReceivedRequest(receiver.id);
+        addFriends(queryClient, [receiver]);
+        removeReceivedFriendRequest(queryClient, receiver.id);
       }
     );
   };
@@ -69,8 +67,7 @@ const AddFriend = () => {
                   my={"md"}
                   onClick={() => {
                     if (inp === "") return;
-
-                    const friendRequestReceived = receivedFriendRequest.find(
+                    const friendRequestReceived = receivedFriendRequests.find(
                       ({ username }) => username == inp
                     );
 

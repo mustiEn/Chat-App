@@ -1,11 +1,7 @@
 import React, { useRef } from "react";
 import { FaRegComment } from "react-icons/fa";
-import { Box, Flex, Image, Stack, Text } from "@mantine/core";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { Box, Flex, Image, Text } from "@mantine/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { useInView } from "react-intersection-observer";
 import { useEffect } from "react";
@@ -14,114 +10,43 @@ import { PulseLoader } from "react-spinners";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { socket } from "../socket.js";
 import PopoverComponent from "./PopoverComponent";
-import { useFriendStore } from "../stores/useFriendStore.js";
-import { useFriendRequestStore } from "../stores/useFriendRequestStore.js";
-import { friendRequestsQuery } from "../loaders/index.js";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import styles from "../css/all_friends.module.css";
+import { useAllFriends } from "../custom-hooks/useAllFriends.js";
+import { removeFriend } from "../utils/friends.js";
 
 const AllFriends = () => {
-  const { prevFriendsPanelUpdatedAt } = useOutletContext();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { inView, ref } = useInView({
     threshold: 0.4,
   });
   const parentRef = useRef();
-
-  const allFriends = useFriendStore((s) => s.friends);
-  const addToFriends = useFriendStore((s) => s.addToFriends);
-
-  const getAllFriends = async ({ pageParam }) => {
-    try {
-      // const res = await fetch(`/api/get-all-friends/${pageParam}`);
-      const res = await fetch(
-        `https://dummyjson.com/users?limit=20&skip=${pageParam}`
-      );
-      let data = await res.json();
-
-      if (!res.ok) throw new Error(data.error);
-      data.users = data.users.map((e) => ({
-        ...e,
-        id: e.id === 2 ? 1000 : e.id === 4 ? 200 : e.id,
-        display_name: e.firstName,
-        profile: e.image,
-      }));
-      return data;
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
-  const removeFriend = (friendId, index) => {
+  const handleRemoveFriend = (friendId) => {
     socket.emit("send removed friends", friendId, (err, res) => {
       if (err) {
         console.log(err.message);
         return;
       }
 
-      const friendIndexInCache = Math.floor(index / 15);
-
-      queryClient.setQueryData(["allFriends"], (olderData) => {
-        const newPagesArr = [...olderData.pages];
-        const friendsFiltered = newPagesArr[friendIndexInCache].friends.filter(
-          ({ id }) => id !== friendId
-        );
-
-        newPagesArr[friendIndexInCache] = {
-          ...newPagesArr[friendIndexInCache],
-          friends: friendsFiltered,
-        };
-
-        return {
-          ...olderData,
-          pages: newPagesArr,
-        };
-      });
-
+      removeFriend(queryClient, friendId);
       toast.success("Friend removed");
     });
   };
-
-  const {
-    data: allFriendsData,
-    isSuccess: isAllFriendsDataSuccess,
-    isLoading,
-    hasNextPage,
-    fetchNextPage,
-    dataUpdatedAt: allFriendsUpdatedAt,
-  } = useInfiniteQuery({
-    queryKey: ["allFriends"],
-    queryFn: getAllFriends,
-    initialPageParam: 0,
-    getNextPageParam: (lastData) => {
-      return lastData.skip + lastData.limit;
-    },
-    staleTime: Infinity,
-  });
+  const { data, isLoading, hasNextPage, fetchNextPage } = useAllFriends();
 
   useEffect(() => {
-    const isFetched =
-      prevFriendsPanelUpdatedAt.current.allFriends === allFriendsUpdatedAt;
+    if (inView) {
+      fetchNextPage();
+    }
+  }, [inView]);
 
-    if (isFetched) return;
-    if (!isAllFriendsDataSuccess) return;
-
-    const friendsData = allFriendsData.pages.at(-1).users.at(-1);
-    const lastItemId = friendsData?.id;
-    const isDataTheSame = allFriends.some(({ id }) => id === lastItemId);
-
-    if (!lastItemId) return;
-    if (isDataTheSame) return;
-
-    addToFriends(allFriendsData.pages.at(-1).users);
-    prevFriendsPanelUpdatedAt.current.allFriends = allFriendsUpdatedAt;
-  }, [allFriendsData, allFriends]);
-
-  // useEffect(() => {
-  //   if (inView) {
-  //     fetchNextPage();
-  //   }
-  // }, [inView]);
+  const allFriendsData = data?.pages.flatMap((e) => e.friends) ?? [];
+  const allFriends = allFriendsData.sort((a, b) =>
+    a.display_name.localeCompare(b.display_name, undefined, {
+      sensitivity: "base",
+    })
+  );
   const rowVirtualizer = useVirtualizer({
     count: allFriends?.length ?? 0,
     getScrollElement: () => parentRef.current,
@@ -232,7 +157,7 @@ const AllFriends = () => {
                                   queryClient.getQueryData(["allFriends"])
                                 );
 
-                                removeFriend(friend.id, i);
+                                handleRemoveFriend(friend.id);
                               }}
                             >
                               <RxCross1 className={styles.icon} />
