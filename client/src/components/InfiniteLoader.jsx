@@ -1,30 +1,11 @@
 import React, { useEffect } from "react";
 
 import { useOutletContext, useParams } from "react-router-dom";
-import DmHeadProfile from "./DmHeadProfile";
-import { useInView } from "react-intersection-observer";
-import { useQueryClient } from "@tanstack/react-query";
-import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 
-const InfiniteLoader = ({ next, loader, children }) => {
-  const { userId: receiverId } = useParams();
-  const hasMoreUp = useHasMoreUpStore((s) => s.hasMoreUp);
-  const queryClient = useQueryClient();
-  const queryData = queryClient.getQueryData(["chatMessages", receiverId]);
-  const currentChat = queryData?.dms ?? [];
-  const { ref, inView } = useInView({
-    threshold: 1,
-  });
+const InfiniteLoader = ({ children }) => {
   const { scrollElementRef } = useOutletContext();
 
-  useEffect(() => {
-    if (hasMoreUp[receiverId] && inView) {
-      next();
-    }
-  }, [inView]);
-  useEffect(() => {
-    console.log("hasmoreup changed", hasMoreUp);
-  }, [hasMoreUp]);
+  // console.log("dm loader");
 
   return (
     <>
@@ -37,23 +18,6 @@ const InfiniteLoader = ({ next, loader, children }) => {
         ref={scrollElementRef}
         className="custom-scrollbar px-2"
       >
-        {!currentChat.length ? (
-          <>
-            <DmHeadProfile />
-            <div className="empty-state">
-              No messages yet. Start the conversation!
-            </div>
-          </>
-        ) : !hasMoreUp[receiverId] ? (
-          <DmHeadProfile />
-        ) : (
-          ""
-        )}
-        {hasMoreUp[receiverId] && currentChat && (
-          <div className="mb-4" ref={ref}>
-            {loader}
-          </div>
-        )}
         {children}
       </div>
     </>

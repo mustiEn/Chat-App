@@ -10,6 +10,7 @@ import {
   removeReceivedFriendRequest,
 } from "../utils/friendRequests";
 import { useFriendRequests } from "../custom-hooks/useFriendRequests";
+import { addFriends } from "../utils/friends";
 
 const AddFriend = () => {
   const [inp, setInp] = useState("");
@@ -18,8 +19,8 @@ const AddFriend = () => {
   const queryClient = useQueryClient();
   const sendFriendRequest = () => {
     socket.emit("send friend requests", inp, (err, res) => {
-      if (err && res.status === "error") {
-        toast.error(err.message);
+      if (err || res.status === "error") {
+        toast.error(res.error);
         return;
       }
 
@@ -35,6 +36,7 @@ const AddFriend = () => {
       (err, res) => {
         if (err || res.status === "duplicated" || res.status === "error") {
           console.log("Message failed:", err, res.error);
+          toast.error(res.error);
           return;
         }
 

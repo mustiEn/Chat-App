@@ -463,14 +463,14 @@ export const setUpSocket = (io) => {
             )
         `;
 
-        if (!user) throw new Error("Friend not found");
+        // if (!user) throw new Error("Friend not found");
 
-        await sequelize.query(friendSql, {
-          replacements: {
-            userId,
-            friendId,
-          },
-        });
+        // await sequelize.query(friendSql, {
+        //   replacements: {
+        //     userId,
+        //     friendId,
+        //   },
+        // });
       } catch (error) {
         return done({
           status: "error",
@@ -499,6 +499,25 @@ export const setUpSocket = (io) => {
             },
             raw: true,
           });
+          const requestExistsSql = `
+            SELECT 
+              COUNT(*) val 
+            FROM 
+              friends 
+            WHERE 
+              user_id = :userId 
+              AND friend_id = :friendId
+              AND request_state = "pending"
+          `;
+          const [requestExists] = await sequelize.query(requestExistsSql, {
+            type: QueryTypes.SELECT,
+            replacements: {
+              userId,
+              friendId: friend.id,
+            },
+          });
+          logger.log(requestExists);
+          if (requestExists.val) throw new Error("Friend request already sent");
         } else {
           friend = await User.findByPk(friendInfo, { raw: true });
         }
@@ -523,11 +542,11 @@ export const setUpSocket = (io) => {
 
         if (isFriend) throw new Error("You're already friends with this user");
 
-        //& await Friend.create({
-        //   user_id:userId,
-        //   friend_id:friendId,
-        //   request_state:"pending"
-        // })
+        await Friend.create({
+          user_id: userId,
+          friend_id: friend.id,
+          request_state: "pending",
+        });
         console.log(friend);
       } catch (error) {
         logger.log(error);
@@ -544,7 +563,6 @@ export const setUpSocket = (io) => {
       io.to(Number(friend.id)).emit("receive friend requests", {
         result: [sender],
       });
-      logger.log("friend req sent");
     });
     socket.on(
       "send friend request acceptance",
@@ -564,17 +582,26 @@ export const setUpSocket = (io) => {
             status,
           });
 
-          // await Friend.update(
-          //   {
-          //     request_state: status,
-          //   },
-          //   {
-          //     where: {
-          //       user_id: friendId,
-          //       friend_id: userId,
-          //     },
-          //   }
-          // );
+          if (status === "accepted") {
+            await Friend.update(
+              {
+                request_state: status,
+              },
+              {
+                where: {
+                  user_id: friendId,
+                  friend_id: userId,
+                },
+              }
+            );
+          } else {
+            await Friend.destroy({
+              where: {
+                user_id: friendId,
+                friend_id: userId,
+              },
+            });
+          }
         } catch (error) {
           return done({
             status: "error",

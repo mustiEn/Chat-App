@@ -6,10 +6,12 @@ export const addOldMessages = (queryClient, receiverId, newMsgs) => {
 };
 export const setIsMessagePinned = (queryClient, receiverId, msgId, val) => {
   queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
+    if (!olderData) return olderData;
+
     const newPages = olderData.pages.map((page) => ({
       ...page,
       messages: page.messages.map((e) => {
-        e.id == msgId ? { ...e, is_pinned: val } : e;
+        return e.id == msgId ? { ...e, is_pinned: val } : e;
       }),
     }));
 
@@ -29,17 +31,18 @@ export const editMessage = (
   queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
     const newPages = olderData.pages.map((page) => ({
       ...page,
-      messages: page.messages.map((e) => {
-        e.id == msgId
+      messages: page.messages.map((m) => {
+        return m.id == msgId
           ? {
               ...m,
               message: editedMessage,
               isPending: isPending,
               is_edited: true,
             }
-          : e;
+          : m;
       }),
     }));
+    console.log(newPages);
 
     return {
       ...olderData,
@@ -49,6 +52,8 @@ export const editMessage = (
 };
 export const deleteMessage = (queryClient, receiverId, msgId) => {
   queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
+    if (!olderData) return olderData;
+
     const newPages = olderData.pages.map((page) => ({
       ...page,
       messages: page.messages
@@ -66,6 +71,8 @@ export const deleteMessage = (queryClient, receiverId, msgId) => {
 };
 export const addMessage = (queryClient, receiverId, msg) => {
   queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
+    if (!olderData) return olderData;
+
     const newPages = olderData.pages.map((page, i) => ({
       ...page,
       messages:

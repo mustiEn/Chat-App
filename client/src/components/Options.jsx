@@ -10,15 +10,21 @@ import styles from "../css/dm_panel.module.css";
 import { useContext } from "react";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { Flex, Text } from "@mantine/core";
+import { useEffect } from "react";
+import { useModalStore } from "../stores/useModalStore.js";
 
 const Options = ({ msg, handleEditableMsg }) => {
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
-  const { activeMsg, setActiveMsg, open } = useContext(DmPanelContext);
+  const { activeMsg } = useContext(DmPanelContext);
+  const open = useModalStore((s) => s.dmModalNotifierOpen);
   const handleDmModalNotifier = (msg, type) => {
-    setActiveMsg({ msg, type });
+    activeMsg.current = {
+      msg,
+      type,
+    };
     open();
   };
-
+  // useEffect(() => console.log(msg), [msg]);
   const options = useCallback(
     () => [
       {
@@ -34,7 +40,9 @@ const Options = ({ msg, handleEditableMsg }) => {
       {
         name: "Delete",
         icon: <ImBin />,
-        func: (msg) => handleDmModalNotifier(msg, "Delete"),
+        func: function (msg) {
+          handleDmModalNotifier(msg, this.name);
+        },
       },
       {
         name: msg.is_pinned ? "Unpin" : "Pin",
@@ -44,7 +52,7 @@ const Options = ({ msg, handleEditableMsg }) => {
         },
       },
     ],
-    [activeMsg]
+    [msg.is_pinned]
   );
   const isUserIdIsEqualToFromId = (optionName) => {
     if (optionName == "Delete" && socket.auth.user?.id !== msg.from_id) {

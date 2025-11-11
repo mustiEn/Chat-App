@@ -9,13 +9,15 @@ const getAllFriends = async ({ pageParam }) => {
     let data = await res.json();
 
     if (!res.ok) throw new Error(data.error);
-    data.users = data.users.map((e) => ({
-      ...e,
-      id: e.id === 2 ? 1000 : e.id === 4 ? 200 : e.id,
-      display_name: e.firstName,
-      profile: e.image,
-    }));
-    return data;
+    const newData = {
+      friends: data.users.map((e) => ({
+        ...e,
+        id: e.id === 2 ? 1000 : e.id === 1 ? 200 : e.id,
+        display_name: e.firstName,
+        profile: e.image,
+      })),
+    };
+    return newData;
   } catch (error) {
     toast.error(error.message);
   }

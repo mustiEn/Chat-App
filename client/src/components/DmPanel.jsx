@@ -3,109 +3,55 @@ import { useOutletContext, useParams } from "react-router-dom";
 import FriendProfile from "./FriendProfile";
 import DmPanelTop from "./DmPanelTop";
 import styles from "../css/dm_panel.module.css";
-import { socket } from "../socket";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dmDataQuery } from "../loaders";
 import toast from "react-hot-toast";
-import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
-import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import { Box, Flex } from "@mantine/core";
 import DmList from "./DmList.jsx";
 import MessageInput from "./MessageInput.jsx";
 import DmModalNotifier from "./DmModalNotifier.jsx";
 import { useDisclosure } from "@mantine/hooks";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import { useChatMessages } from "../custom-hooks/useChatMessages.js";
 import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
 import {
   addReceivedFriendRequest,
   addSentFriendRequest,
 } from "../utils/friendRequests.js";
-import { useMessageRequests } from "../custom-hooks/useMessageRequests.js";
-import {
-  addReceivedMessageRequests,
-  addSentMessageRequests,
-} from "../utils/msgRequests.js";
+import { useMemo } from "react";
 
 const DmPanel = () => {
   const queryClient = useQueryClient();
   const { userId: receiverId } = useParams();
   const { dmChatRef } = useOutletContext();
-  const {
-    initialPageParam,
-    dmPanel: { chatMessagesUpdatedAt },
-  } = dmChatRef.current;
+  const { initialPageParam } = dmChatRef.current;
 
-  const addToHasMoreUp = useHasMoreUpStore((s) => s.addToHasMoreUp);
-  const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const receivers = useReceiverStore((s) => s.receivers);
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
-  const { data } = useMessageRequests();
-  const { receivedMessageRequests = [] } = data ?? {};
   const { data: initialDmData, isSuccess: isInitialDmDataSuccess } = useQuery(
     dmDataQuery(receiverId)
   );
-  const {
-    data: chatMessages,
-    fetchNextPage,
-    isFetched,
-    hasNextPage,
-    isLoading,
-    isSuccess: isChatMessagesSuccess,
-    dataUpdatedAt: chatMessagesQueryUpdatedAt,
-  } = useChatMessages(receiverId);
 
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
   const [showOffset, setShowOffset] = useState(false);
-  const [activeMsg, setActiveMsg] = useState({
+  // const [activeMsg, setActiveMsg] = useState({
+  //   msg: null,
+  //   type: null,
+  // });
+  const activeMsg = useRef({
     msg: null,
     type: null,
   });
-  const [opened, { open, close }] = useDisclosure(false);
+  // const [opened, { open, close }] = useDisclosure(false);
 
   //* dont allow user to search blocked one up,but show the msgs still.
 
   //^ before fethcing chats,allow socket get msgs and save,then fetch chat and merge then rmeove dups - notification
 
   useEffect(() => {
-    if (!isChatMessagesSuccess) return;
-    if (chatMessagesUpdatedAt[receiverId]) return;
-    if (!chatMessages) return;
-
-    const firstFetchedMsgs = chatMessages.pages[0].messages;
-    const setMsgRequest = () => {
-      const isReqFromReceiver = firstFetchedMsgs[0].from_id == receiverId;
-
-      isReqFromReceiver
-        ? addReceivedMessageRequests(queryClient, firstFetchedMsgs[0])
-        : addSentMessageRequests(queryClient, firstFetchedMsgs[0]);
-    };
-    const isDmsLengthLess = firstFetchedMsgs.length < 30 ? false : true;
-    const msgRequestAlreadyExists = !firstFetchedMsgs.length
-      ? false
-      : receivedMessageRequests.some((e) => e.id == firstFetchedMsgs[0].id);
-
-    if (
-      firstFetchedMsgs.length &&
-      firstFetchedMsgs[0].request_state == "pending" &&
-      !msgRequestAlreadyExists
-    ) {
-      setMsgRequest();
-    }
-
-    addToHasMoreUp(receiverId, isDmsLengthLess);
-    setMsgToReply(null);
-
-    chatMessagesUpdatedAt[receiverId] = chatMessagesQueryUpdatedAt;
-    socket.auth.serverOffset[receiverId] =
-      firstFetchedMsgs.length === 0 ? 0 : firstFetchedMsgs.at(-1).id;
-  }, [chatMessages]);
-
-  useEffect(() => {
     if (!isInitialDmDataSuccess) return;
 
-    const { receiver, nextId, friendStatus } = isInitialDmDataSuccess;
+    const { receiver, nextId, friendStatus } = initialDmData;
     const isUserInReceiversObj = receivers[receiverId];
     const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
     const isUserInDmHistory =
@@ -122,9 +68,13 @@ const DmPanel = () => {
     initialPageParam[receiverId] = nextId;
   }, [initialDmData]);
 
+  // const contextValue = useMemo(
+  //   () => ({ open, opened, close, activeMsg }),
+  //   [open, opened, close]
+  // );
   return (
     <>
-      <DmPanelContext value={{ open, setActiveMsg, opened, close, activeMsg }}>
+      <DmPanelContext value={{ activeMsg }}>
         <DmPanelTop
           key={receiverId}
           handleOffsetToggle={handleOffsetToggle}
@@ -151,14 +101,17 @@ const DmPanel = () => {
               }}
             >
               <DmList
-                key={receiverId}
-                isInitialDataLoading={isLoading}
-                fetchNextPage={fetchNextPage}
-                hasNextPage={hasNextPage}
+              // key={receiverId}
+              // isInitialDataLoading={isLoading}
+              // fetchNextPage={fetchNextPage}
+              // hasNextPage={hasNextPage}
+              // messages={messages}
+              // isFetched={isFetched}
+              // dataUpdatedAt={chatMessagesQueryUpdatedAt}
               />
             </Box>
 
-            <MessageInput key={receiverId} />
+            <MessageInput />
           </Flex>
 
           <FriendProfile
@@ -167,12 +120,7 @@ const DmPanel = () => {
           />
         </Flex>
       </DmPanelContext>
-      <DmModalNotifier
-        activeMsg={activeMsg}
-        setActiveMsg={setActiveMsg}
-        show={opened}
-        close={close}
-      />
+      <DmModalNotifier activeMsg={activeMsg} />
     </>
   );
 };

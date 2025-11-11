@@ -29,6 +29,8 @@ import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
+  const { data: allFriendsData } = useAllFriends();
+  const { data: friendRequests } = useFriendRequests();
   const { dmChatRef } = useOutletContext();
   const { isPinnedMessagesFetched } = dmChatRef.current;
   const [opened, { open, close }] = useDisclosure(false);
@@ -36,14 +38,13 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const pinnedMsgsBoxRef = useRef(null);
   const [search, setSearch] = useState("");
 
-  const { data: allFriendsData } = useAllFriends();
-  // const allFriends =
-  //   allFriendsData?.pages.flatMap(({ friends }) => friends) ?? [];
-  const allFriends = allFriendsData?.pages.flatMap(({ users }) => users) ?? [];
+  const allFriends =
+    allFriendsData?.pages.flatMap(({ friends }) => friends) ?? [];
   const receiver = useReceiverStore((s) => s.receivers[receiverId]);
+  const { sentFriendRequests = [], receivedFriendRequests = [] } =
+    friendRequests ?? {};
+
   const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
-  const { data } = useFriendRequests();
-  const { sentFriendRequests = [], receivedFriendRequests = [] } = data ?? {};
   const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
     (s) => s.addToShowPinnedMsgBox
   );
@@ -53,31 +54,32 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.addToNewPinnedMsgExists
   );
+
   const isFriend = allFriends.some((e) => e.id == receiverId);
   const isFriendRequestSent = sentFriendRequests.some((id) => id == receiverId);
   const isFriendRequestReceived = receivedFriendRequests.some(
     ({ id }) => id == receiverId
   );
 
-  const handleRemoveFriend = (friendId) => {
-    socket.emit("send removed friends", friendId, (err, res) => {
-      if (err) {
-        toast.error(err.message);
+  const handleRemoveFriend = () => {
+    socket.emit("send removed friends", receiverId, (err, res) => {
+      if (err || res.status === "duplicated" || res.status === "error") {
+        toast.error(res.error);
         return;
       }
 
-      removeFriend(queryClient, friendId);
+      removeFriend(queryClient, receiverId);
       toast.success("Friend removed");
     });
   };
-  const sendFriendRequest = (friendId) => {
-    socket.emit("send friend requests", friendId, (err, res) => {
-      if (err) {
-        toast.error(err.message);
+  const sendFriendRequest = () => {
+    socket.emit("send friend requests", receiverId, (err, res) => {
+      if (err || res.status === "duplicated" || res.status === "error") {
+        toast.error(res.error);
         return;
       }
 
-      addSentFriendRequest(queryClient, [friendId]);
+      addSentFriendRequest(queryClient, [receiverId]);
       toast.success("Friend request sent");
     });
   };
@@ -89,10 +91,14 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       (err, res) => {
         if (err || res.status === "duplicated" || res.status === "error") {
           console.log("Message failed:", err, res.error);
+          toast.error(res.error);
           return;
         }
 
-        if (status === "accepted") addFriends(queryClient, [receiver]);
+        if (status === "accepted") {
+          addFriends(queryClient, [receiver]);
+          toast.success("Friend request accepted");
+        }
 
         removeReceivedFriendRequest(queryClient, receiverId);
       }
@@ -302,7 +308,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 handleMessageRequestAcceptance("accepted");
                 return;
               }
-              isFriend ? handleRemoveFriend() : sendFriendRequest(receiverId);
+              isFriend ? handleRemoveFriend() : sendFriendRequest();
             }}
             disabled={isFriendRequestSent}
           >

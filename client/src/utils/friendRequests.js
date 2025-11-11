@@ -1,44 +1,48 @@
 export const addSentFriendRequest = (queryClient, userIds) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
-    const vals = olderData.sentRequests;
-    const uniqueIds = userIds.filter((id) => !vals.some((e) => e == id));
+    const vals = olderData?.sentFriendRequests ?? [];
+    const uniqueIds = vals.length
+      ? userIds.filter((id) => !vals.some((e) => e == id))
+      : userIds;
 
     return {
       ...olderData,
-      sentRequests: [...olderData.sentRequests, ...uniqueIds],
+      sentFriendRequests: [...vals, ...uniqueIds],
     };
   });
 };
 export const addReceivedFriendRequest = (queryClient, users) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
-    const vals = olderData.receivedRequests;
-    const uniqueUsers = users.filter((id) => !vals.some((e) => e == id));
+    const vals = olderData?.receivedFriendRequests ?? [];
+    const uniqueUsers = vals.length
+      ? users.filter((id) => !vals.some((e) => e == id))
+      : users;
 
     return {
       ...olderData,
-      receivedRequests: [...uniqueUsers, ...olderData.receivedRequests],
+      receivedFriendRequests: [...uniqueUsers, ...vals],
     };
   });
 };
 export const removeSentFriendRequest = (queryClient, userId) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
-    const vals = olderData.sentRequests;
-    const filtered = vals.filter((id) => id != userId);
+    const vals = olderData?.sentFriendRequests ?? [];
+    const filtered = vals.length ? vals.filter((id) => id != userId) : [];
 
     return {
       ...olderData,
-      sentRequests: filtered,
+      sentFriendRequests: filtered,
     };
   });
 };
 export const removeReceivedFriendRequest = (queryClient, userId) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
-    const vals = olderData.receivedRequest;
-    const filtered = vals.filter(({ id }) => id != userId);
+    const vals = olderData?.receivedRequest ?? [];
+    const filtered = vals.length ? vals.filter(({ id }) => id != userId) : [];
 
     return {
       ...olderData,
-      receivedRequests: filtered,
+      receivedFriendRequests: filtered,
     };
   });
 };

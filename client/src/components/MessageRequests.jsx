@@ -21,12 +21,13 @@ const MessageRequests = () => {
     const handleEmitCallback = (err, res) => {
       if (err || res.status === "duplicated" || res.status === "error") {
         console.log("Message failed:", err, res.error);
+        toast.error(res.error);
         return;
       }
 
       removeReceivedMessageRequest(queryClient, msg.from_id);
       socket.auth.serverOffset[msg.from_id] = msg.id;
-      toast.success("Message request accepted");
+      toast.success(`Message request ${status}`);
     };
 
     socket.emit("send msg request acceptance", {}, emitData, (err, res) =>
@@ -34,7 +35,7 @@ const MessageRequests = () => {
     );
   };
   const { data, isLoading } = useMessageRequests();
-  const { receivedRequests = [] } = data ?? [];
+  const { receivedMessageRequests = [] } = data ?? {};
 
   return (
     <>
@@ -45,11 +46,11 @@ const MessageRequests = () => {
         </Text>
         {isLoading ? (
           <div>Loading...</div>
-        ) : !receivedRequests.length ? (
+        ) : !receivedMessageRequests.length ? (
           <div>No data</div>
         ) : (
           <Stack gap={0}>
-            {receivedRequests.map((msg) => (
+            {receivedMessageRequests.map((msg) => (
               <Flex
                 className={styles["msg-request"]}
                 align={"center"}

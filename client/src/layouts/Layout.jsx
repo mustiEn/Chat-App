@@ -15,7 +15,7 @@ const Layout = () => {
       <Header content={header} />
 
       <HeaderProvider value={value}>
-        <Flex h={"calc(100% - 30px)"}>
+        <Flex h={"calc(100% - var(--header-height))"}>
           <ServerList />
           <Outlet />
         </Flex>

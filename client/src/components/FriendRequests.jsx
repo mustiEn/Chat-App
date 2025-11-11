@@ -10,6 +10,7 @@ import { IoCheckmarkOutline } from "react-icons/io5";
 import { useFriendRequests } from "../custom-hooks/useFriendRequests";
 import { removeReceivedFriendRequest } from "../utils/friendRequests";
 import { addFriends } from "../utils/friends";
+import toast from "react-hot-toast";
 
 const FriendRequests = () => {
   const queryClient = useQueryClient();
@@ -22,13 +23,15 @@ const FriendRequests = () => {
       (err, res) => {
         if (err || res.status === "duplicated" || res.status === "error") {
           console.log("Message failed:", err, res.error);
+          toast.error(res.error);
+
           return;
         }
-        console.log(friend);
 
         if (status === "accepted") addFriends(queryClient, [friend]);
 
         removeReceivedFriendRequest(queryClient, friend.id);
+        toast.success(`Friend request ${status}`);
       }
     );
   };

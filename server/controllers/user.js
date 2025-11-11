@@ -116,13 +116,17 @@ export const getInitialDmData = async (req, res, next) => {
         },
       });
 
-      if (!hasChatHistory.val && !friendStatus?.request_state === "accepted") {
+      if (
+        // !hasChatHistory.val
+        1 &&
+        (friendStatus?.request_state !== "accepted" ||
+          friendStatus?.request_state === null)
+      ) {
         receiver["with_in_no_contact"] = true;
       }
+      logger.log(!friendStatus?.request_state === "accepted");
     }
-
-    logger.log("initial data");
-
+    logger.log(receiver);
     res.status(200).json({ receiver, friendStatus });
   } catch (error) {
     next(error);
@@ -208,12 +212,7 @@ export const getDmData = async (req, res, next) => {
       replacements,
     });
     dms = dms.reverse();
-    logger.log("RAW SQL:", dmsSql);
-    logger.log("REPLACEMENTS:", replacements);
-
-    logger.log(nextId, nextId ? 1 : 2);
     nextId = dms.length < 30 ? null : dms[0].id;
-    logger.log("mora data");
 
     res.status(200).json({ messages: dms, nextId });
   } catch (error) {
@@ -242,7 +241,7 @@ export const getDmHistory = async (req, res, next) => {
       replacements: { userId },
     });
 
-    res.status(200).json({ dmHistoryResult: dmHistory });
+    res.status(200).json(dmHistory);
   } catch (error) {
     next(error);
   }

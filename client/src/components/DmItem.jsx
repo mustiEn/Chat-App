@@ -1,17 +1,17 @@
 import React, { useCallback, useState } from "react";
 import Options from "./Options.jsx";
-("../contexts/DmContext.jsx");
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import DmItemInner from "./DmItemInner.jsx";
 import styles from "../css/dm_panel.module.css";
 import { Box } from "@mantine/core";
+import { memo } from "react";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const DmItem = ({ msg }) => {
+const DmItem = memo(function DmList({ msg }) {
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
   const handleEditableMsg = (msg) => {
     setEditedMessage({
@@ -46,6 +46,6 @@ const DmItem = ({ msg }) => {
       </Box>
     </>
   );
-};
+});
 
 export default DmItem;

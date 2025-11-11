@@ -1,8 +1,8 @@
 export const addDmHistoryUsers = (queryClient, users) => {
-  queryClient.setQueryData(["dmHistory"], (olderData) => ({
+  queryClient.setQueryData(["dmHistory"], (olderData) => [
     ...users,
     ...olderData,
-  }));
+  ]);
 };
 export const removeDmHistoryUsers = (queryClient, user) => {
   queryClient.setQueryData(["dmHistory"], (olderData) => {

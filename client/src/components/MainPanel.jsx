@@ -25,6 +25,7 @@ import {
   addMessage,
   deleteMessage,
   editMessage,
+  setIsMessagePinned,
 } from "../utils/chatMessages.js";
 
 const MainPanel = () => {
@@ -38,13 +39,15 @@ const MainPanel = () => {
   const scrollElementRef = useRef(null);
   const dmChatRef = useRef({
     scrollPosition: {},
-    prevScrollHeight: {},
+    prevTopId: {},
     isPinnedMessagesFetched: {},
     initialPageParam: {},
     dmPanel: {
-      chatMessagesUpdatedAt: {},
+      chatMessagesTopId: {},
+      chatMessagesBottomId: {},
       isInitialDmDataFetched: false,
     },
+    newMsgAdded: {},
   });
 
   useEffect(() => {
@@ -69,11 +72,17 @@ const MainPanel = () => {
       });
     };
     const handleNewMessages = ({ result }) => {
+      const {
+        dmPanel: { chatMessagesBottomId },
+        newMsgAdded,
+      } = dmChatRef.current;
       console.log("new msgs: ", result);
 
       result.forEach((newMsg) => {
         addMessage(queryClient, String(newMsg.from_id), newMsg);
         socket.auth.serverOffset[newMsg.from_id] = newMsg.id;
+        chatMessagesBottomId[newMsg.from_id] = newMsg.id;
+        newMsgAdded[newMsg.from_id] = true;
       });
     };
     const handlePinnedMessages = ({ result, isRecovery }) => {
@@ -82,33 +91,54 @@ const MainPanel = () => {
       if (!isRecovery) {
         const { last_pin_action_by_id, is_pinned, id } = result;
 
-        const isQueryFetched = queryClient.getQueryState([
+        const isPinnedMessagesQueryFetched = queryClient.getQueryData([
           "pinnedMessages",
+          String(last_pin_action_by_id),
+        ]);
+        const isChatMessagesQueryFetched = queryClient.getQueryData([
+          "chatMessages",
           String(last_pin_action_by_id),
         ]);
 
         //^ here, add a notification and amend if needed.if notification is here,no need to check ispinned, cuz now i cant know whether to notify on mount
 
-        if (isQueryFetched) {
+        if (isPinnedMessagesQueryFetched) {
           if (is_pinned) {
             const val = !showPinnedMsgBox[last_pin_action_by_id];
 
-            addPinnedMessages(queryClient, String(last_pin_action_by_id), id);
+            addPinnedMessages(
+              queryClient,
+              String(last_pin_action_by_id),
+              result
+            );
             addToNewPinnedMsgExists(last_pin_action_by_id, val); //* if the modal is open,dont notify the user, if not, do it
           } else {
             removePinnedMessage(queryClient, String(last_pin_action_by_id), id);
           }
         }
+        if (isChatMessagesQueryFetched) {
+          setIsMessagePinned(
+            queryClient,
+            String(last_pin_action_by_id),
+            id,
+            is_pinned
+          );
+        }
       } else {
-        result.forEach(({ last_pin_action_by_id, is_pinned, id }) => {
-          const isQueryFetched = queryClient.getQueryState([
+        result.forEach((result) => {
+          const { last_pin_action_by_id, is_pinned, id } = result;
+          const isPinnedMessagesQueryFetched = queryClient.getQueryData([
             "pinnedMsgs",
+            String(last_pin_action_by_id),
+          ]);
+          const isChatMessagesQueryFetched = queryClient.getQueryData([
+            "chatMessages",
             String(last_pin_action_by_id),
           ]);
 
           //^ notification thing applies to this here too.
 
-          if (isQueryFetched) {
+          if (isPinnedMessagesQueryFetched) {
             if (is_pinned) {
               const val = !showPinnedMsgBox[last_pin_action_by_id];
 
@@ -122,6 +152,14 @@ const MainPanel = () => {
               );
             }
           }
+          if (isChatMessagesQueryFetched) {
+            setIsMessagePinned(
+              queryClient,
+              String(last_pin_action_by_id),
+              id,
+              is_pinned
+            );
+          }
         });
       }
     };
@@ -132,7 +170,7 @@ const MainPanel = () => {
       result.forEach((reqAcceptance) => {
         console.log("reqAcceptance", reqAcceptance);
 
-        const isQueryFetched = queryClient.getQueryState([
+        const isQueryFetched = queryClient.getQueryData([
           "chatMessages",
           String(reqAcceptance.from_id),
         ]);
@@ -198,6 +236,7 @@ const MainPanel = () => {
     };
     const handleRemovedFriends = ({ result }) => {
       result.forEach((id) => removeFriend(queryClient, id));
+      console.log(result, "removed");
     };
     const handleFriendRequests = ({ result }) => {
       addReceivedFriendRequest(queryClient, result);

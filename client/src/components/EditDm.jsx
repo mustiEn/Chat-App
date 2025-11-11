@@ -29,12 +29,10 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
         message: "",
       });
       return;
-    } else if (msg.message == editedMessage.message) {
-      return;
-    }
+    } else if (msg.message == editedMessage.message) return;
 
     if (!socket.connected) {
-      editMessage(receiverId, msg.id, editedMessage.message, true);
+      editMessage(queryClient, receiverId, msg.id, editedMessage.message, true);
     }
 
     setEditedMessage({
@@ -56,7 +54,13 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
           return;
         }
 
-        editMessage(receiverId, msg.id, editedMessage.message, false);
+        editMessage(
+          queryClient,
+          receiverId,
+          msg.id,
+          editedMessage.message,
+          false
+        );
 
         console.log("Edited Message successfull: ", res);
       }

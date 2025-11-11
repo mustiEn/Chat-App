@@ -1,101 +1,64 @@
-import React, {
-  useState,
-  useContext,
-  memo,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState, useContext, useEffect, useMemo } from "react";
 import DmItem from "./DmItem.jsx";
 import { PulseLoader } from "react-spinners";
 import { useOutletContext, useParams } from "react-router-dom";
 import MyLoader from "./InfiniteLoader.jsx";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  QueryClient,
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+
 import { useLayoutEffect } from "react";
 import ChatSkeleton from "./ChatSkeleton.jsx";
-import { dmDataQuery } from "../loaders/index.js";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import { addOldMessages } from "../utils/chatMessages.js";
+import { useChatMessages } from "../custom-hooks/useChatMessages.js";
+import DmHeadProfile from "./DmHeadProfile.jsx";
+import { useInView } from "react-intersection-observer";
 
-const DmList = ({ isInitialDataLoading }) => {
+const DmList = () => {
   const { userId: receiverId } = useParams();
-  const { activeMsg } = useContext(DmPanelContext);
-  const queryClient = useQueryClient();
-  const { data: cachedQuery } = useQuery(dmDataQuery(receiverId));
-  const addToHasMoreUp = useHasMoreUpStore((s) => s.addToHasMoreUp);
-  const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs);
-  const currentChat = cachedQuery?.dms ?? [];
   const { scrollElementRef, dmChatRef } = useOutletContext();
+
+  const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs);
+  const addToHasMoreUp = useHasMoreUpStore((s) => s.addToHasMoreUp);
+  const hasMoreUp = useHasMoreUpStore((s) => s.hasMoreUp);
+
   const {
     scrollPosition,
-    initialPageParam,
-    prevScrollHeight,
-    dmPanel: { chatMessagesUpdatedAt },
+    prevTopId,
+    dmPanel: { chatMessagesTopId },
+    newMsgAdded,
   } = dmChatRef.current;
-  const fetchMoreData = async ({ pageParam }) => {
-    const res = await fetch(`/api/dm/moreData?nextId=${pageParam}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        receiverId,
-      }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.log("ERROR");
-      throw new Error(data.error);
-    }
-
-    return data;
-  };
   const {
-    data,
+    data: chatMessages,
     fetchNextPage,
     isFetched,
     hasNextPage,
+    isLoading,
     isSuccess,
     dataUpdatedAt,
-  } = useInfiniteQuery({
-    queryKey: ["moreMessages", receiverId],
-    queryFn: fetchMoreData,
-    initialPageParam: initialPageParam[receiverId],
-    getNextPageParam: (lastPage) => {
-      return lastPage.nextId ?? undefined;
-    },
-    enabled: false,
-  });
+  } = useChatMessages(receiverId);
 
-  const itemsContainerRef = useRef(null);
+  const reversed = chatMessages && chatMessages.pages.toReversed();
+  const messages = reversed ? reversed.flatMap(({ messages }) => messages) : [];
+  const items = useMemo(
+    () => [...messages, ...(pendingMsgs[receiverId] ?? [])],
+    [messages, pendingMsgs[receiverId]]
+  );
   const rowVirtualizer = useVirtualizer({
-    count: (currentChat?.length ?? 0) + (pendingMsgs[receiverId]?.length ?? 0),
+    count: (messages.length ?? 0) + (pendingMsgs[receiverId]?.length ?? 0),
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
     overscan: 5,
     gap: 20,
   });
-  const items = useMemo(
-    () => [...(currentChat ?? []), ...(pendingMsgs[receiverId] ?? [])],
-    [currentChat, pendingMsgs[receiverId]]
-  );
-
-  // if (isError) {
-  //   console.log(error.message);
-  // }
+  const { ref, inView } = useInView({
+    threshold: 0.6,
+  });
 
   useEffect(() => {
     const el = scrollElementRef.current;
+
     if (!el) return;
 
     const handleScroll = () => {
@@ -105,61 +68,87 @@ const DmList = ({ isInitialDataLoading }) => {
     el.addEventListener("scroll", handleScroll);
     return () => {
       el.removeEventListener("scroll", handleScroll);
+      // console.log("scerollposition", scrollPosition);
     };
   }, [scrollElementRef.current, receiverId]);
 
   useLayoutEffect(() => {
-    //* If item length FaChampagneGlasses,adjust scrollPosition
-    if (!items.length) return;
+    const el = scrollElementRef.current;
 
+    if (!items.length || !el) return;
+
+    const latestTopId = items[0].id;
+    const newMsgsLoaded =
+      chatMessagesTopId[receiverId] &&
+      chatMessagesTopId[receiverId] !== latestTopId;
+    const isNearBottom = rowVirtualizer.range.endIndex >= items.length - 4;
+
+    if (scrollPosition[receiverId] === undefined) {
+      el.scrollTop = el.scrollHeight;
+      scrollPosition[receiverId] = el.scrollTop;
+      addToHasMoreUp(receiverId, hasNextPage);
+    } else if (newMsgsLoaded) {
+      const index = items.findIndex(({ id }) => id == prevTopId[receiverId]);
+
+      addToHasMoreUp(receiverId, hasNextPage);
+      rowVirtualizer.scrollToIndex(index, {
+        align: "center",
+        behavior: "smooth",
+      });
+    } else if (isNearBottom && newMsgAdded[receiverId]) {
+      el.scrollTo({ top: el.scrollHeight + 20, behavior: "smooth" });
+      newMsgAdded[receiverId] = false;
+    }
+    // else {
+    //   console.log("not new");
+
+    //   el.scrollTop = scrollPosition[receiverId];
+    // }
+
+    chatMessagesTopId[receiverId] = latestTopId;
+  }, [items]);
+
+  useLayoutEffect(() => {
     const el = scrollElementRef.current;
 
     if (!el) return;
-    if (isFetched) {
-      const isDataNew = chatMessagesUpdatedAt[receiverId] != dataUpdatedAt;
-
-      chatMessagesUpdatedAt[receiverId] = dataUpdatedAt;
-
-      if (isDataNew) {
-        const diff = el.scrollHeight - (prevScrollHeight[receiverId] ?? 0);
-
-        el.scrollTop = hasNextPage ? el.scrollTop + diff : el.scrollTop;
-      } else {
-        //* After the fetch, new data hasnt been fetched
-        el.scrollTop = scrollPosition[receiverId];
-      }
-    } else if (scrollPosition[receiverId] == undefined) {
-      el.scrollTop = el.scrollHeight;
-    }
-
-    // scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
-
-    prevScrollHeight[receiverId] = el.scrollHeight;
-    scrollPosition[receiverId] = el.scrollTop;
-  }, [items]);
+    el.scrollTop = scrollPosition[receiverId];
+  }, []);
 
   useEffect(() => {
-    if (!isSuccess) return;
+    if (hasMoreUp[receiverId] && inView) {
+      const el = scrollElementRef.current;
 
-    const { dms } = data.pages[data.pages.length - 1];
-    const isDataNew = chatMessagesUpdatedAt[receiverId] != dataUpdatedAt;
+      prevTopId[receiverId] = messages.at(0)?.id;
+      scrollPosition[receiverId] = el.scrollTop;
 
-    // if (!dms.length) return;
-    if (!isDataNew) return;
-
-    addOldMessages(receiverId, dms);
-
-    // scrollElementRef.current.scrollTop = scrollElementRef.current.scrollHeight;
-
-    addToHasMoreUp(receiverId, hasNextPage);
-  }, [data]);
+      fetchNextPage();
+    }
+  }, [inView]);
 
   return (
     <>
-      {isInitialDataLoading ? (
+      {isLoading ? (
         <ChatSkeleton />
       ) : (
         <MyLoader next={fetchNextPage} loader={<PulseLoader color={"white"} />}>
+          {!messages.length ? (
+            <>
+              <DmHeadProfile />
+              <div className="empty-state">
+                No messages yet. Start the conversation!
+              </div>
+            </>
+          ) : !hasMoreUp[receiverId] ? (
+            <DmHeadProfile />
+          ) : (
+            ""
+          )}
+          {hasMoreUp[receiverId] && messages.length && (
+            <div className="mb-4" ref={ref}>
+              <PulseLoader color={"white"} />
+            </div>
+          )}
           <Box
             h={rowVirtualizer.getTotalSize()}
             style={{
@@ -167,7 +156,6 @@ const DmList = ({ isInitialDataLoading }) => {
               minHeight: 355,
             }}
             p={"xs"}
-            ref={itemsContainerRef}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const item = items[virtualRow.index];
@@ -185,7 +173,10 @@ const DmList = ({ isInitialDataLoading }) => {
                   data-index={virtualRow.index}
                   ref={rowVirtualizer.measureElement}
                 >
-                  <DmItem msg={item} activeMsg={activeMsg} />
+                  {/* <Box w={"100%"} p={"xs"}>
+                    {virtualRow.index}
+                  </Box> */}
+                  <DmItem msg={item} />
                 </Box>
               );
             })}

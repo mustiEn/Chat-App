@@ -5,7 +5,7 @@ const Header = ({ content }) => {
     <>
       <div
         className="w-100 text-center text-white fs-5"
-        style={{ backgroundColor: "#121214" }}
+        style={{ backgroundColor: "#121214", height: "var(--header-height)" }}
       >
         {content}
       </div>

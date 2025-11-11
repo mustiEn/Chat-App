@@ -11,9 +11,9 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import { socket } from "../socket.js";
 import PopoverComponent from "./PopoverComponent";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import styles from "../css/all_friends.module.css";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { removeFriend } from "../utils/friends.js";
+import styles from "../css/all_friends.module.css";
 
 const AllFriends = () => {
   const queryClient = useQueryClient();
@@ -24,8 +24,9 @@ const AllFriends = () => {
   const parentRef = useRef();
   const handleRemoveFriend = (friendId) => {
     socket.emit("send removed friends", friendId, (err, res) => {
-      if (err) {
+      if (err || res.status === "duplicated" || res.status === "error") {
         console.log(err.message);
+        toast.error(res.message);
         return;
       }
 
@@ -41,10 +42,7 @@ const AllFriends = () => {
     }
   }, [inView]);
 
-  useEffect(() => console.log(data), [data]);
-
-  const newdata = data?.pages.flatMap(({ users }) => users) ?? [];
-  // const allFriendsData = data?.pages.flatMap((e) => e.friends) ?? [];
+  const newdata = data?.pages.flatMap(({ friends }) => friends) ?? [];
   const allFriends = newdata.sort((a, b) =>
     a.display_name.localeCompare(b.display_name, undefined, {
       sensitivity: "base",
@@ -59,7 +57,7 @@ const AllFriends = () => {
 
   return (
     <>
-      <Flex direction={"column"} p={"sm"} h={"100%"}>
+      <Flex direction={"column"} p={"sm"} className={styles["all-friends-box"]}>
         <Text c={"white"} mb={"md"} fw={"lighter"}>
           All Friends - {allFriends.length}
         </Text>
@@ -72,10 +70,10 @@ const AllFriends = () => {
           <>
             <Box
               ref={parentRef}
+              w={"100%"}
+              h={"100%"}
               className="custom-scrollbar"
               style={{
-                height: 730,
-                width: `100%`,
                 overflow: "auto",
               }}
             >

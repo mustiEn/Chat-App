@@ -11,6 +11,7 @@ const fetchMoreData = async (pageParam, receiverId) => {
       console.log("ERROR");
       throw new Error(data.error);
     }
+    console.log("Fethcing...");
 
     return data;
   } catch (error) {
@@ -20,7 +21,6 @@ const fetchMoreData = async (pageParam, receiverId) => {
 
 export const useChatMessages = (receiverId) => {
   return useInfiniteQuery({
-    // queryKey: ["moreMessages", receiverId],
     queryKey: ["chatMessages", receiverId],
     queryFn: ({ pageParam }) => fetchMoreData(pageParam, receiverId),
     initialPageParam: 0,

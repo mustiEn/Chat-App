@@ -1,3 +1,8 @@
+:root {
+  --panel-top-height: rem(58px);
+  --header-height: rem(32px);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -37,7 +42,7 @@ a {
   border-right: none;
   border-left: none;
   flex-shrink: 0;
-  height: rem(58px);
+  height: var(--panel-top-height);
 }
 
 .popover-content {

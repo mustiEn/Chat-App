@@ -21,16 +21,17 @@ import {
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import styles from "../css/pinned_msgs_box.module.css";
 import { usePinnedMessages } from "../custom-hooks/usePinnedMessages.js";
+import { useModalStore } from "../stores/useModalStore.js";
 
 const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
   const { userId: receiverId } = useParams();
-  const { setActiveMsg, open } = useContext(DmPanelContext);
-
+  const { activeMsg } = useContext(DmPanelContext);
+  const open = useModalStore((s) => s.dmModalNotifierOpen);
   const { data: pinnedMsgs } = usePinnedMessages(receiverId);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
 
   const handleDmModalNotifier = (msg, type) => {
-    setActiveMsg({ msg, type });
+    activeMsg.current = { msg, type };
     open();
     customOverlayRef.current.display = "none";
   };

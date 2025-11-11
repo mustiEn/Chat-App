@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { LuDot } from "react-icons/lu";
 import { useParams } from "react-router-dom";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
@@ -6,7 +6,8 @@ import { Box, Button, Flex, Image, Text } from "@mantine/core";
 
 const DmHeadProfile = () => {
   const { userId: receiverId } = useParams();
-  const receiver = useReceiverStore((s) => s.receivers[receiverId]);
+  const receivers = useReceiverStore((s) => s.receivers);
+  const receiver = receivers[receiverId];
 
   return (
     <>

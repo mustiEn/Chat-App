@@ -8,14 +8,12 @@ import {
   addPinnedMessages,
   removePinnedMessage,
 } from "../utils/pinnedMessages";
-import { setIsMessagePinned } from "../utils/chatMessages.js";
+import { deleteMessage, setIsMessagePinned } from "../utils/chatMessages.js";
+import { useModalStore } from "../stores/useModalStore.js";
+import toast from "react-hot-toast";
 
-const DmModalNotifier = ({
-  setActiveMsg,
-  activeMsg: { msg, type },
-  show,
-  close,
-}) => {
+const DmModalNotifier = ({ activeMsg }) => {
+  const { msg, type } = activeMsg.current;
   const { userId: receiverId } = useParams();
   const queryClient = useQueryClient();
   const pinMessage = () => {
@@ -33,15 +31,17 @@ const DmModalNotifier = ({
       (err, res) => {
         if (err) {
           console.log("Error: ", err);
+          toast.error(err);
+          return;
         }
 
         addPinnedMessages(queryClient, receiverId, msg);
-        setIsMessagePinned(receiverId, msg.id, true);
+        setIsMessagePinned(queryClient, receiverId, msg.id, true);
         console.log("Pinned message successfully", res);
       }
     );
   };
-  const deleteMessage = () => {
+  const handleDeleteMessage = () => {
     const pinnedMsgData = queryClient.getQueryData([
       "pinnedMessages",
       String(receiverId),
@@ -60,7 +60,7 @@ const DmModalNotifier = ({
         return;
       }
 
-      deleteMessage(receiverId, msg.id);
+      deleteMessage(queryClient, receiverId, msg.id);
       console.log("Deleted message successfully", res);
     });
 
@@ -99,10 +99,12 @@ const DmModalNotifier = ({
       (err, res) => {
         if (err) {
           console.log("Error: ", err);
+          toast.error(err);
+          return;
         }
 
         removePinnedMessage(queryClient, receiverId, msg.id);
-        setIsMessagePinned(receiverId, msg.id, false);
+        setIsMessagePinned(queryClient, receiverId, msg.id, false);
 
         // console.log("Unpinned successfully", res);
       }
@@ -111,22 +113,24 @@ const DmModalNotifier = ({
   const functions = useCallback(
     {
       Unpin: unPinMessage,
-      Delete: deleteMessage,
+      Delete: handleDeleteMessage,
       Pin: pinMessage,
     },
     [msg]
   );
+  const opened = useModalStore((s) => s.dmModalNotifierOpened);
+  const close = useModalStore((s) => s.dmModalNotifierClose);
 
   return (
     <>
       <Modal
-        opened={show}
+        opened={opened}
         onClose={() => {
           close();
-          setActiveMsg({
+          activeMsg.current = {
             msg: null,
             type: null,
-          });
+          };
         }}
         radius={"md"}
         title={type + " " + "Message"}

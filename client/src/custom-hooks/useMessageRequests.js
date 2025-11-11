@@ -4,7 +4,6 @@ const getMessageRequests = async () => {
   try {
     const res = await fetch("/api/message-requests");
     const data = await res.json();
-    console.log("message - reqs");
 
     if (!res.ok) throw new Error(data.error);
 
