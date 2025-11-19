@@ -12,7 +12,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const DmDisplay = ({ isInitialDataLoading }) => {
-  const { userId: receiverId } = useParams();
+  const { recevierId } = useParams();
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   return (
@@ -24,10 +24,10 @@ const DmDisplay = ({ isInitialDataLoading }) => {
           minHeight: 350,
         }}
       >
-        <DmList key={receiverId} isInitialDataLoading={isInitialDataLoading} />
+        <DmList key={recevierId} isInitialDataLoading={isInitialDataLoading} />
       </Box>
 
-      <MessageInput key={receiverId} />
+      <MessageInput key={recevierId} />
     </>
   );
 };

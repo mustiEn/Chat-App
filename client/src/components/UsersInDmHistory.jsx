@@ -26,7 +26,7 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
               h={45}
               onClick={() => setHeader(e.display_name)}
             >
-              <NavLink to={`${e.id}`}>
+              <NavLink to={`${e.chatId}`}>
                 <Button
                   color={"dark"}
                   w={"100%"}

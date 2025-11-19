@@ -24,11 +24,13 @@ const AddFriend = () => {
         return;
       }
 
-      addSentFriendRequest(queryClient, [res.friend.id]);
+      addSentFriendRequest(queryClient, [
+        { id: res.friend.id, username: res.friend.username },
+      ]);
       toast.success("Friend request sent");
     });
   };
-  const handleMessageRequestAcceptance = (receiver) => {
+  const handleFriendRequestAcceptance = (receiver) => {
     socket.emit(
       "send friend request acceptance",
       receiver.id,
@@ -40,7 +42,7 @@ const AddFriend = () => {
           return;
         }
 
-        addFriends(queryClient, [receiver]);
+        addFriends(queryClient, [{ ...receiver, chatId: res.chatIds[0] }]);
         removeReceivedFriendRequest(queryClient, receiver.id);
       }
     );
@@ -74,7 +76,7 @@ const AddFriend = () => {
                     );
 
                     friendRequestReceived
-                      ? handleMessageRequestAcceptance(friendRequestReceived)
+                      ? handleFriendRequestAcceptance(friendRequestReceived)
                       : sendFriendRequest();
                     setInp("");
                   }}

@@ -136,7 +136,9 @@ const AllFriends = () => {
                               h={50}
                               bdrs={"xl"}
                               ms={"auto"}
-                              onClick={() => navigate(`${friend.id}`)}
+                              onClick={() =>
+                                navigate(`/@me/${friend.chatId ?? friend.id}`)
+                              }
                             >
                               <FaRegComment className={styles.icon} />
                             </Flex>

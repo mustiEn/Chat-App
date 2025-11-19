@@ -22,14 +22,14 @@ import { useMemo } from "react";
 
 const DmPanel = () => {
   const queryClient = useQueryClient();
-  const { userId: receiverId } = useParams();
+  const { chatId } = useParams();
   const { dmChatRef } = useOutletContext();
   const { initialPageParam } = dmChatRef.current;
 
   const receivers = useReceiverStore((s) => s.receivers);
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const { data: initialDmData, isSuccess: isInitialDmDataSuccess } = useQuery(
-    dmDataQuery(receiverId)
+    dmDataQuery(chatId)
   );
 
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
@@ -52,75 +52,81 @@ const DmPanel = () => {
     if (!isInitialDmDataSuccess) return;
 
     const { receiver, nextId, friendStatus } = initialDmData;
-    const isUserInReceiversObj = receivers[receiverId];
+    const isUserInReceiversObj = receivers[receiver.id];
     const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
     const isUserInDmHistory =
-      dmHistoryUsers && dmHistoryUsers.some((e) => e.id == receiverId);
+      dmHistoryUsers && dmHistoryUsers.some((e) => e.id == receiver.id);
 
-    if (!isUserInDmHistory) addDmHistoryUsers(queryClient, [receiver]);
-    if (!isUserInReceiversObj) addToReceivers(receiverId, receiver);
+    if (!isUserInDmHistory)
+      addDmHistoryUsers(queryClient, [
+        { ...receiver, receiverId: receiver.id },
+      ]);
+    if (!isUserInReceiversObj)
+      addToReceivers(receiver.id, { ...receiver, receiverId: receiver.id });
     if (friendStatus?.request_state === "pending") {
-      friendStatus.user_id == receiverId
+      friendStatus.user_id == receiver.id
         ? addReceivedFriendRequest(queryClient, [receiver])
-        : addSentFriendRequest(queryClient, [receiverId]);
+        : addSentFriendRequest(queryClient, [
+            { id: receiver.id, username: receiver.username },
+          ]);
     }
-
-    initialPageParam[receiverId] = nextId;
+    // initialPageParam[recevierId] = nextId;
   }, [initialDmData]);
 
-  // const contextValue = useMemo(
-  //   () => ({ open, opened, close, activeMsg }),
-  //   [open, opened, close]
-  // );
+  const value = useMemo(
+    () => ({ activeMsg, receiverId: initialDmData?.receiver.id }),
+    [activeMsg, initialDmData]
+  );
   return (
     <>
-      <DmPanelContext value={{ activeMsg }}>
-        <DmPanelTop
-          key={receiverId}
-          handleOffsetToggle={handleOffsetToggle}
-          showOffset={showOffset}
-        />
-        <Flex
-          w={"100%"}
-          style={{
-            minHeight: 0,
-            flexGrow: 1,
-          }}
-        >
-          <Flex
-            id={styles["dmPanelContent"]}
-            direction={"column"}
-            gap={"xs"}
-            w={"100%"}
-          >
-            <Box
-              c={"white"}
+      <DmPanelContext value={value}>
+        {initialDmData?.receiver.id && (
+          <>
+            <DmPanelTop
+              // key={receiverId}
+              handleOffsetToggle={handleOffsetToggle}
+              showOffset={showOffset}
+            />
+            <Flex
               w={"100%"}
               style={{
-                minHeight: 350,
+                minHeight: 0,
+                flexGrow: 1,
               }}
             >
-              <DmList
-              // key={receiverId}
-              // isInitialDataLoading={isLoading}
-              // fetchNextPage={fetchNextPage}
-              // hasNextPage={hasNextPage}
-              // messages={messages}
-              // isFetched={isFetched}
-              // dataUpdatedAt={chatMessagesQueryUpdatedAt}
+              <Flex
+                id={styles["dmPanelContent"]}
+                direction={"column"}
+                gap={"xs"}
+                w={"100%"}
+              >
+                <Box
+                  c={"white"}
+                  w={"100%"}
+                  style={{
+                    minHeight: 350,
+                  }}
+                >
+                  <DmList />
+                </Box>
+
+                <MessageInput />
+              </Flex>
+
+              <FriendProfile
+                friend={receivers[initialDmData.receiver.id]}
+                showOffset={showOffset}
               />
-            </Box>
-
-            <MessageInput />
-          </Flex>
-
-          <FriendProfile
-            friend={receivers[receiverId] ?? []}
-            showOffset={showOffset}
-          />
-        </Flex>
+            </Flex>
+          </>
+        )}
       </DmPanelContext>
-      <DmModalNotifier activeMsg={activeMsg} />
+      {initialDmData?.receiver.id && (
+        <DmModalNotifier
+          activeMsg={activeMsg}
+          receiverId={initialDmData.receiver.id}
+        />
+      )}
     </>
   );
 };

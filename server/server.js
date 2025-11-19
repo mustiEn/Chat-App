@@ -14,7 +14,19 @@ import userRouter from "./routers/user.js";
 import { Server } from "socket.io";
 import { createServer } from "node:http";
 import { setUpSocket } from "./socket.js";
+import { createClient } from "redis";
+import { DirectMessage } from "./models/DirectMessage.js";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+// export const client = createClient({
+//   enable_offline_queue: false,
+// });
 const app = express();
 const sqlStore = SequelizeStore(session.Store);
 const sessionStore = new sqlStore({
@@ -40,11 +52,33 @@ export const io = new Server(server, {
   },
 });
 
+// client.on("error", (err) => logger.log("Redis Client Error", err));
+
+// await client.connect();
+// logger.log("Redis connected");
+
 try {
   await sequelize.authenticate();
   setUpAssociation();
   await sequelize.sync();
   logger.log("Connection has been established successfully.");
+  // const time = dayjs.tz("2025-11-17 20:10:55", "Europe/Istanbul");
+  // const time2 = dayjs("2025-11-17 20:10:55").tz(`Europe/Istanbul`);
+  // const time2 = dayjs.tz("Asia/Tokyo").format("YYYY-MM-DD HH:mm:ss");
+
+  // logger.log(time2.format("YYYY-MM-DD HH:mm:ss"));
+
+  // await DirectMessage.update(
+  //   {
+  //     pin_updated_at: time,
+  //     is_pinned: true,
+  //   },
+  //   {
+  //     where: {
+  //       id: 583,
+  //     },
+  //   }
+  // );
 } catch (error) {
   logger.error("Unable to connect to the database:", error);
 }

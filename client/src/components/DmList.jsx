@@ -14,10 +14,12 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { useChatMessages } from "../custom-hooks/useChatMessages.js";
 import DmHeadProfile from "./DmHeadProfile.jsx";
 import { useInView } from "react-intersection-observer";
+import { socket } from "../socket.js";
 
 const DmList = () => {
-  const { userId: receiverId } = useParams();
+  const { chatId } = useParams();
   const { scrollElementRef, dmChatRef } = useOutletContext();
+  const { receiverId } = useContext(DmPanelContext);
 
   const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs);
   const addToHasMoreUp = useHasMoreUpStore((s) => s.addToHasMoreUp);
@@ -27,7 +29,7 @@ const DmList = () => {
     scrollPosition,
     prevTopId,
     dmPanel: { chatMessagesTopId },
-    newMsgAdded,
+    msgAddedOrDeleted,
   } = dmChatRef.current;
   const {
     data: chatMessages,
@@ -37,16 +39,16 @@ const DmList = () => {
     isLoading,
     isSuccess,
     dataUpdatedAt,
-  } = useChatMessages(receiverId);
+  } = useChatMessages(chatId);
 
   const reversed = chatMessages && chatMessages.pages.toReversed();
   const messages = reversed ? reversed.flatMap(({ messages }) => messages) : [];
   const items = useMemo(
-    () => [...messages, ...(pendingMsgs[receiverId] ?? [])],
-    [messages, pendingMsgs[receiverId]]
+    () => [...messages, ...(pendingMsgs[chatId] ?? [])],
+    [messages, pendingMsgs[chatId]]
   );
   const rowVirtualizer = useVirtualizer({
-    count: (messages.length ?? 0) + (pendingMsgs[receiverId]?.length ?? 0),
+    count: (messages.length ?? 0) + (pendingMsgs[chatId]?.length ?? 0),
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
     overscan: 5,
@@ -62,7 +64,7 @@ const DmList = () => {
     if (!el) return;
 
     const handleScroll = () => {
-      scrollPosition[receiverId] = el.scrollTop;
+      scrollPosition[chatId] = el.scrollTop;
     };
 
     el.addEventListener("scroll", handleScroll);
@@ -70,7 +72,7 @@ const DmList = () => {
       el.removeEventListener("scroll", handleScroll);
       // console.log("scerollposition", scrollPosition);
     };
-  }, [scrollElementRef.current, receiverId]);
+  }, [scrollElementRef.current, chatId]);
 
   useLayoutEffect(() => {
     const el = scrollElementRef.current;
@@ -79,48 +81,48 @@ const DmList = () => {
 
     const latestTopId = items[0].id;
     const newMsgsLoaded =
-      chatMessagesTopId[receiverId] &&
-      chatMessagesTopId[receiverId] !== latestTopId;
+      chatMessagesTopId[chatId] && chatMessagesTopId[chatId] !== latestTopId;
     const isNearBottom = rowVirtualizer.range.endIndex >= items.length - 4;
 
-    if (scrollPosition[receiverId] === undefined) {
+    if (scrollPosition[chatId] === undefined) {
       el.scrollTop = el.scrollHeight;
-      scrollPosition[receiverId] = el.scrollTop;
-      addToHasMoreUp(receiverId, hasNextPage);
+      scrollPosition[chatId] = el.scrollTop;
+      addToHasMoreUp(chatId, hasNextPage);
     } else if (newMsgsLoaded) {
-      const index = items.findIndex(({ id }) => id == prevTopId[receiverId]);
+      const index = items.findIndex(({ id }) => id == prevTopId[chatId]);
 
-      addToHasMoreUp(receiverId, hasNextPage);
+      addToHasMoreUp(chatId, hasNextPage);
       rowVirtualizer.scrollToIndex(index, {
         align: "center",
         behavior: "smooth",
       });
-    } else if (isNearBottom && newMsgAdded[receiverId]) {
+    } else if (isNearBottom && msgAddedOrDeleted[chatId]) {
       el.scrollTo({ top: el.scrollHeight + 20, behavior: "smooth" });
-      newMsgAdded[receiverId] = false;
+      msgAddedOrDeleted[chatId] = false;
     }
     // else {
     //   console.log("not new");
 
-    //   el.scrollTop = scrollPosition[receiverId];
+    //   el.scrollTop = scrollPosition[chatId];
     // }
 
-    chatMessagesTopId[receiverId] = latestTopId;
+    socket.auth.serverOffset[receiverId] = messages.at(-1)?.id ?? 0;
+    chatMessagesTopId[chatId] = latestTopId;
   }, [items]);
 
   useLayoutEffect(() => {
     const el = scrollElementRef.current;
 
     if (!el) return;
-    el.scrollTop = scrollPosition[receiverId];
+    el.scrollTop = scrollPosition[chatId];
   }, []);
 
   useEffect(() => {
-    if (hasMoreUp[receiverId] && inView) {
+    if (hasMoreUp[chatId] && inView) {
       const el = scrollElementRef.current;
 
-      prevTopId[receiverId] = messages.at(0)?.id;
-      scrollPosition[receiverId] = el.scrollTop;
+      prevTopId[chatId] = messages.at(0)?.id;
+      scrollPosition[chatId] = el.scrollTop;
 
       fetchNextPage();
     }
@@ -139,12 +141,12 @@ const DmList = () => {
                 No messages yet. Start the conversation!
               </div>
             </>
-          ) : !hasMoreUp[receiverId] ? (
+          ) : !hasMoreUp[chatId] ? (
             <DmHeadProfile />
           ) : (
             ""
           )}
-          {hasMoreUp[receiverId] && messages.length && (
+          {hasMoreUp[chatId] && messages.length && (
             <div className="mb-4" ref={ref}>
               <PulseLoader color={"white"} />
             </div>

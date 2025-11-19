@@ -4,7 +4,7 @@ import { sequelize } from "./db.js";
 export const Friend = sequelize.define("Friends", {
   request_state: {
     type: DataTypes.ENUM,
-    values: ["accepted", "pending", "rejected"],
+    values: ["accepted", "pending"],
     defaultValue: null,
   },
 });

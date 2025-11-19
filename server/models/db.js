@@ -9,7 +9,7 @@ export const sequelize = new Sequelize(
   {
     host: "localhost",
     dialect: "mysql",
-    timezone: "+01:00",
+    // timezone: "+02:00",
     logging: false,
   }
 );

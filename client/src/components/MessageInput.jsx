@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { GoPlusCircle } from "react-icons/go";
 import { useRef } from "react";
 import TextareaAutosize from "react-textarea-autosize";
@@ -23,15 +23,17 @@ import {
   removeReceivedMessageRequest,
 } from "../utils/msgRequests.js";
 import toast from "react-hot-toast";
+import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const MessageInput = () => {
   const queryClient = useQueryClient();
-  const { userId: receiverId } = useParams();
+  const { chatId } = useParams();
+  const { receiverId } = useContext(DmPanelContext);
   const { dmChatRef } = useOutletContext();
-  const { newMsgAdded } = dmChatRef.current;
+  const { msgAddedOrDeleted } = dmChatRef.current;
   const { data } = useMessageRequests();
   const { receivedMessageRequests = [], sentMessageRequests = [] } = data ?? [];
 
@@ -73,18 +75,18 @@ const MessageInput = () => {
         addDmHistoryUsers(queryClient, [receivers[receiverId]]);
     }
 
-    if (pendingMsgs[res.result[0].to_id])
-      removeFromPendingMsgs(receiverId, res.result[0].clientOffset);
+    if (pendingMsgs[chatId])
+      removeFromPendingMsgs(chatId, res.result[0].clientOffset);
 
-    addMessage(queryClient, receiverId, res.result[0]);
-    socket.auth.serverOffset[receiverId] = res.result[0].id;
+    addMessage(queryClient, chatId, res.result[0]);
+    // socket.auth.serverOffset[receiverId] = res.result[0].id;
     // chatMessagesBottomId[receiverId] = res.result[0].id;
-    newMsgAdded[receiverId] = true;
+    msgAddedOrDeleted[chatId] = true;
 
     console.log("Message successful:", res);
   };
   const handleSocketEmit = (clientOffset) => {
-    const data = queryClient.getQueryData(["chatMessages", receiverId]);
+    const data = queryClient.getQueryData(["chatMessages", chatId]);
     const messages = data.pages.flatMap(({ messages }) => messages);
     const emitData = {
       message: message,
@@ -94,11 +96,12 @@ const MessageInput = () => {
       reply_to_msg: msgToReply?.id ?? null,
     };
 
-    if (receivedMessageRequests.some(({ from_id }) => from_id == receiverId)) {
+    const msgReqReceived = receivedMessageRequests.find(
+      ({ from_id }) => from_id == receiverId
+    );
+    if (msgReqReceived) {
       const acceptance = {
-        reqMsg: receivedMessageRequests.find(
-          ({ from_id }) => from_id == receiverId
-        ),
+        msgReq: msgReqReceived,
         status: "accepted",
       };
 
@@ -113,15 +116,15 @@ const MessageInput = () => {
         handleEmitCallback(err, res, "request")
       );
     } else {
-      socket.emit("send dms", emitData, (err, res) =>
+      socket.emit("send dms", emitData, chatId, (err, res) =>
         handleEmitCallback(err, res, "dm")
       );
     }
   };
   const handleSubmit = (msgPayload) => {
     if (!socket.connected) {
-      addToPendingMsgs(receiverId, { ...msgPayload, isPending: true });
-      newMsgAdded[msgPayload.to_id] = true;
+      addToPendingMsgs(chatId, { ...msgPayload, isPending: true });
+      msgAddedOrDeleted[chatId] = true;
     }
 
     setMessage("");

@@ -3,7 +3,7 @@ import { socket } from "../socket";
 import { formatDate } from "../utils/index.js";
 import { Modal, Button, Text, Flex, Image } from "@mantine/core";
 import { useParams } from "react-router-dom";
-import { useCallback } from "react";
+import { useCallback, useContext } from "react";
 import {
   addPinnedMessages,
   removePinnedMessage,
@@ -11,10 +11,11 @@ import {
 import { deleteMessage, setIsMessagePinned } from "../utils/chatMessages.js";
 import { useModalStore } from "../stores/useModalStore.js";
 import toast from "react-hot-toast";
+import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
-const DmModalNotifier = ({ activeMsg }) => {
+const DmModalNotifier = ({ activeMsg, receiverId }) => {
   const { msg, type } = activeMsg.current;
-  const { userId: receiverId } = useParams();
+  const { chatId } = useParams();
   const queryClient = useQueryClient();
   const pinMessage = () => {
     if (!socket.connected) {
@@ -26,8 +27,9 @@ const DmModalNotifier = ({ activeMsg }) => {
       {
         id: msg.id,
         isPinned: true,
-        toId: receiverId,
+        // toId: receiverId,
       },
+      chatId,
       (err, res) => {
         if (err) {
           console.log("Error: ", err);
@@ -35,17 +37,14 @@ const DmModalNotifier = ({ activeMsg }) => {
           return;
         }
 
-        addPinnedMessages(queryClient, receiverId, msg);
-        setIsMessagePinned(queryClient, receiverId, msg.id, true);
+        addPinnedMessages(queryClient, chatId, msg);
+        setIsMessagePinned(queryClient, chatId, msg.id, true);
         console.log("Pinned message successfully", res);
       }
     );
   };
   const handleDeleteMessage = () => {
-    const pinnedMsgData = queryClient.getQueryData([
-      "pinnedMessages",
-      String(receiverId),
-    ]);
+    const pinnedMsgData = queryClient.getQueryData(["pinnedMessages", chatId]);
     const isMsgPinned =
       pinnedMsgData?.findIndex(({ id }) => id == msg.id) ?? -1;
 
@@ -54,13 +53,13 @@ const DmModalNotifier = ({ activeMsg }) => {
       return;
     }
 
-    socket.emit("send deleted msgs", msg, (err, res) => {
+    socket.emit("send deleted msgs", msg, chatId, (err, res) => {
       if (err) {
         console.log("err", err);
         return;
       }
 
-      deleteMessage(queryClient, receiverId, msg.id);
+      deleteMessage(queryClient, chatId, msg.id);
       console.log("Deleted message successfully", res);
     });
 
@@ -70,7 +69,7 @@ const DmModalNotifier = ({ activeMsg }) => {
         {
           id: msg.id,
           isPinned: false,
-          toId: receiverId,
+          // toId: receiverId,
         },
         (err, res) => {
           if (err) {
@@ -78,7 +77,7 @@ const DmModalNotifier = ({ activeMsg }) => {
             return;
           }
 
-          removePinnedMessage(queryClient, receiverId, msg.id);
+          removePinnedMessage(queryClient, chatId, msg.id);
         }
       );
     }
@@ -94,8 +93,9 @@ const DmModalNotifier = ({ activeMsg }) => {
       {
         id: msg.id,
         isPinned: false,
-        toId: receiverId,
+        // toId: receiverId,
       },
+      chatId,
       (err, res) => {
         if (err) {
           console.log("Error: ", err);
@@ -103,8 +103,8 @@ const DmModalNotifier = ({ activeMsg }) => {
           return;
         }
 
-        removePinnedMessage(queryClient, receiverId, msg.id);
-        setIsMessagePinned(queryClient, receiverId, msg.id, false);
+        removePinnedMessage(queryClient, chatId, msg.id);
+        setIsMessagePinned(queryClient, chatId, msg.id, false);
 
         // console.log("Unpinned successfully", res);
       }

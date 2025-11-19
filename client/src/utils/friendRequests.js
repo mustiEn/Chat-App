@@ -1,9 +1,9 @@
-export const addSentFriendRequest = (queryClient, userIds) => {
+export const addSentFriendRequest = (queryClient, users) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
     const vals = olderData?.sentFriendRequests ?? [];
     const uniqueIds = vals.length
-      ? userIds.filter((id) => !vals.some((e) => e == id))
-      : userIds;
+      ? users.filter((id) => !vals.some((e) => e == id))
+      : users;
 
     return {
       ...olderData,
@@ -15,7 +15,7 @@ export const addReceivedFriendRequest = (queryClient, users) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
     const vals = olderData?.receivedFriendRequests ?? [];
     const uniqueUsers = vals.length
-      ? users.filter((id) => !vals.some((e) => e == id))
+      ? users.filter((user) => !vals.some((e) => e == user.id))
       : users;
 
     return {

@@ -2,6 +2,7 @@ import { Group } from "../Group.js";
 import { DirectMessage } from "../DirectMessage.js";
 import { User } from "../User.js";
 import { Friend } from "../Friend.js";
+import { ChatId } from "../ChatId.js";
 
 export const setUpAssociation = () => {
   DirectMessage.belongsTo(User, {
@@ -53,6 +54,14 @@ export const setUpAssociation = () => {
     as: "blockedUsers",
     foreignKey: "blocked_id",
     otherKey: "blocked_by_id",
+    timestamps: true,
+  });
+
+  User.belongsToMany(User, {
+    through: ChatId,
+    as: "chatIds",
+    foreignKey: "user_id",
+    otherKey: "receiver_id",
     timestamps: true,
   });
 };

@@ -4,9 +4,9 @@ import { immer } from "zustand/middleware/immer";
 export const useNewPinnedMsgIndicatorStore = create(
   immer((set) => ({
     newPinnedMsgExists: {},
-    addToNewPinnedMsgExists: (receiverId, val) =>
+    addToNewPinnedMsgExists: (chatId, val) =>
       set((state) => {
-        state.newPinnedMsgExists[receiverId] = val;
+        state.newPinnedMsgExists[chatId] = val;
       }),
   }))
 );

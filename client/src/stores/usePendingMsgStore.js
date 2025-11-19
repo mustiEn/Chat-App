@@ -4,14 +4,14 @@ import { immer } from "zustand/middleware/immer";
 export const usePendingMsgStore = create(
   immer((set) => ({
     pendingMsgs: {},
-    addToPendingMsgs: (receiverId, pendingMsg) =>
+    addToPendingMsgs: (chatId, pendingMsg) =>
       set((state) => {
-        if (!state.pendingMsgs[receiverId]) state.pendingMsgs[receiverId] = [];
-        state.pendingMsgs[receiverId].push(pendingMsg);
+        if (!state.pendingMsgs[chatId]) state.pendingMsgs[chatId] = [];
+        state.pendingMsgs[chatId].push(pendingMsg);
       }),
-    removeFromPendingMsgs: (receiverId, clientOffset) =>
+    removeFromPendingMsgs: (chatId, clientOffset) =>
       set((state) => {
-        state.pendingMsgs[receiverId] = state.pendingMsgs[receiverId].filter(
+        state.pendingMsgs[chatId] = state.pendingMsgs[chatId].filter(
           (e) => e.clientOffset != clientOffset
         );
       }),

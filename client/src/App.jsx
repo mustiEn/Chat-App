@@ -51,7 +51,7 @@ function App() {
               ],
             },
             {
-              path: ":userId",
+              path: ":chatId",
               element: <DmPanel />,
               loader: Loader.loadDmData(queryClient),
             },

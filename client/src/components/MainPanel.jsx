@@ -47,7 +47,7 @@ const MainPanel = () => {
       chatMessagesBottomId: {},
       isInitialDmDataFetched: false,
     },
-    newMsgAdded: {},
+    msgAddedOrDeleted: {},
   });
 
   useEffect(() => {
@@ -64,135 +64,126 @@ const MainPanel = () => {
     const onDisconnect = (reason) => {
       console.log("❌ Socket disconnected, ", reason);
     };
-    const handleEditedMessages = ({ result }) => {
+    const handleEditedMessages = ({ result, chatId }) => {
       console.log("Edited msgs: ", result);
 
       result.forEach(({ from_id, id, message }) => {
-        editMessage(queryClient, String(from_id), id, message, false);
+        editMessage(queryClient, chatId, id, message, false);
       });
     };
-    const handleNewMessages = ({ result }) => {
+    const handleNewMessages = ({ result, chatId }) => {
       const {
         dmPanel: { chatMessagesBottomId },
-        newMsgAdded,
+        msgAddedOrDeleted,
       } = dmChatRef.current;
       console.log("new msgs: ", result);
 
       result.forEach((newMsg) => {
-        addMessage(queryClient, String(newMsg.from_id), newMsg);
-        socket.auth.serverOffset[newMsg.from_id] = newMsg.id;
-        chatMessagesBottomId[newMsg.from_id] = newMsg.id;
-        newMsgAdded[newMsg.from_id] = true;
+        addMessage(queryClient, chatId, newMsg);
+        // socket.auth.serverOffset[newMsg.from_id] = newMsg.id;
+        chatMessagesBottomId[chatId] = newMsg.id;
+        msgAddedOrDeleted[chatId] = true;
       });
     };
-    const handlePinnedMessages = ({ result, isRecovery }) => {
+    const handlePinnedMessages = ({ result, isRecovery, chatId }) => {
       const { showPinnedMsgBox } = useShowPinnedMsgBoxStore.getState();
+      console.log(result);
 
       if (!isRecovery) {
         const { last_pin_action_by_id, is_pinned, id } = result;
 
         const isPinnedMessagesQueryFetched = queryClient.getQueryData([
           "pinnedMessages",
-          String(last_pin_action_by_id),
+          chatId,
         ]);
         const isChatMessagesQueryFetched = queryClient.getQueryData([
           "chatMessages",
-          String(last_pin_action_by_id),
+          chatId,
         ]);
 
         //^ here, add a notification and amend if needed.if notification is here,no need to check ispinned, cuz now i cant know whether to notify on mount
 
         if (isPinnedMessagesQueryFetched) {
           if (is_pinned) {
-            const val = !showPinnedMsgBox[last_pin_action_by_id];
+            const val = !showPinnedMsgBox[chatId];
 
-            addPinnedMessages(
-              queryClient,
-              String(last_pin_action_by_id),
-              result
-            );
-            addToNewPinnedMsgExists(last_pin_action_by_id, val); //* if the modal is open,dont notify the user, if not, do it
+            addPinnedMessages(queryClient, chatId, result);
+            addToNewPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
           } else {
-            removePinnedMessage(queryClient, String(last_pin_action_by_id), id);
+            removePinnedMessage(queryClient, chatId, id);
           }
         }
         if (isChatMessagesQueryFetched) {
-          setIsMessagePinned(
-            queryClient,
-            String(last_pin_action_by_id),
-            id,
-            is_pinned
-          );
+          setIsMessagePinned(queryClient, chatId, id, is_pinned);
         }
       } else {
-        result.forEach((result) => {
-          const { last_pin_action_by_id, is_pinned, id } = result;
+        result.forEach((res, i) => {
+          console.log(res);
+
+          const { last_pin_action_by_id, is_pinned, id } = res;
           const isPinnedMessagesQueryFetched = queryClient.getQueryData([
-            "pinnedMsgs",
-            String(last_pin_action_by_id),
+            "pinnedMessages",
+            chatId,
           ]);
           const isChatMessagesQueryFetched = queryClient.getQueryData([
             "chatMessages",
-            String(last_pin_action_by_id),
+            chatId,
           ]);
 
           //^ notification thing applies to this here too.
 
           if (isPinnedMessagesQueryFetched) {
             if (is_pinned) {
-              const val = !showPinnedMsgBox[last_pin_action_by_id];
+              const val = !showPinnedMsgBox[chatId];
 
-              addPinnedMessages(queryClient, String(last_pin_action_by_id), id);
-              addToNewPinnedMsgExists(last_pin_action_by_id, val); //* if the modal is open,dont notify the user, if not, do it
+              addPinnedMessages(queryClient, chatId, res);
+              addToNewPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
             } else {
-              removePinnedMessage(
-                queryClient,
-                String(last_pin_action_by_id),
-                id
-              );
+              removePinnedMessage(queryClient, chatId, id);
             }
           }
           if (isChatMessagesQueryFetched) {
-            setIsMessagePinned(
-              queryClient,
-              String(last_pin_action_by_id),
-              id,
-              is_pinned
-            );
+            setIsMessagePinned(queryClient, chatId, id, is_pinned);
           }
         });
       }
     };
-    const handleMessageRequestAcceptance = ({ result }) => {
+    const handleMessageRequestAcceptance = ({ result, chatIds }) => {
       const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
       console.log("handleMessageRequestAcceptance");
 
-      result.forEach((reqAcceptance) => {
+      result.forEach((reqAcceptance, i) => {
         console.log("reqAcceptance", reqAcceptance);
 
         const isQueryFetched = queryClient.getQueryData([
           "chatMessages",
-          String(reqAcceptance.from_id),
+          chatIds[i],
         ]);
         //^ This is to keep cache empty if undefined cuz on dmpanel mount,its already gonna comeup
-        if (isQueryFetched && reqAcceptance.id)
-          addMessage(queryClient, String(reqAcceptance.from_id), reqAcceptance);
+        if (isQueryFetched && reqAcceptance.message)
+          addMessage(queryClient, chatIds[i], reqAcceptance);
 
         removeSentMessageRequest(queryClient, reqAcceptance.from_id);
 
         const isUserInDmHistory = dmHistoryUsers.some(
           (i) => i.id == reqAcceptance.from_id
         );
+        const dmHistoryUser = {
+          id: reqAcceptance.from_id,
+          display_name: req.display_name,
+          username: req.username,
+          profile: req.profile,
+          chatId: chatIds[i],
+        };
 
-        if (!isUserInDmHistory)
-          addDmHistoryUsers(queryClient, [reqAcceptance.from_id]);
-        socket.emit("join room", reqAcceptance.from_id);
+        if (!isUserInDmHistory) addDmHistoryUsers(queryClient, [dmHistoryUser]);
+        socket.emit("join room", chatIds[i]);
       });
     };
-    const handleMessageRequests = ({ result }) => {
+    const handleMessageRequests = ({ result, chatIds }) => {
       const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
 
-      result.forEach((req) => {
+      result.forEach((req, i) => {
         const isUserInDmHistory = dmHistoryUsers.some(
           ({ id }) => id == req.from_id
         );
@@ -201,36 +192,42 @@ const MainPanel = () => {
           display_name: req.display_name,
           username: req.username,
           profile: req.profile,
+          chatId: chatIds[i],
         };
 
         if (!isUserInDmHistory) addDmHistoryUsers(queryClient, [dmHistoryUser]);
 
-        addMessage(queryClient, String(req.from_id), req);
-        addReceivedMessageRequests(queryClient, [req]);
+        addMessage(queryClient, chatIds[i], req);
+        addReceivedMessageRequests(queryClient, [
+          { ...req, chatId: chatIds[i] },
+        ]);
         addToReceivers(req.from_id, dmHistoryUser);
       });
     };
-    const handleDeletedMessages = ({ result, userId }) => {
-      result.forEach((deletedMsgId) => {
+    const handleDeletedMessages = ({ result, chatId }) => {
+      console.log("result", result);
+
+      result.forEach(({ id: deletedMsgId }) => {
+        const { msgAddedOrDeleted } = dmChatRef.current;
         const isPinnedMsgsQueryFetched = queryClient.getQueryData([
           "pinnedMessages",
-          String(userId),
+          chatId,
         ]);
         const isChatQueryFetched = queryClient.getQueryData([
           "chatMessages",
-          String(userId),
+          chatId,
         ]);
 
         if (isPinnedMsgsQueryFetched) {
-          const isMsgPinned = olderData.findIndex(
+          const isMsgPinned = isPinnedMsgsQueryFetched.findIndex(
             ({ id }) => id == deletedMsgId
           );
-          s;
           if (isMsgPinned)
-            removePinnedMessage(queryClient, String(userId), deletedMsgId);
+            removePinnedMessage(queryClient, chatId, deletedMsgId);
         }
         if (isChatQueryFetched) {
-          deleteMessage(queryClient, String(userId), deletedMsgId);
+          deleteMessage(queryClient, chatId, deletedMsgId);
+          msgAddedOrDeleted[chatId] = true;
         }
       });
     };
@@ -241,13 +238,19 @@ const MainPanel = () => {
     const handleFriendRequests = ({ result }) => {
       addReceivedFriendRequest(queryClient, result);
     };
-    const handleFriendRequestAcceptance = ({ result }) => {
-      result.forEach(({ sender, status }) => {
-        if (status === "accepted") addFriends(queryClient, [sender]);
-        console.log("status:", status);
+    const handleFriendRequestAcceptance = ({ result, chatIds }) => {
+      console.log("handleFriendRequestAcceptance", result);
 
-        removeSentFriendRequest(queryClient, sender.id);
+      result.forEach((e, i) => {
+        if (e.status === "accepted")
+          addFriends(queryClient, [{ ...e.sender, chatId: chatIds[i] }]);
+        console.log("status:", e.status);
+
+        removeSentFriendRequest(queryClient, e.sender.id);
       });
+    };
+    const handleUserStatus = (res) => {
+      console.log("result", res);
     };
 
     socket.connect();
@@ -266,6 +269,7 @@ const MainPanel = () => {
       "receive friend request acceptance",
       handleFriendRequestAcceptance
     );
+    socket.on("status", handleUserStatus);
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", (err) =>
       console.error("⚠️ Connect error:", err)
@@ -290,6 +294,7 @@ const MainPanel = () => {
         "receive friend request acceptance",
         handleFriendRequestAcceptance
       );
+      socket.off("status", handleUserStatus);
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
 

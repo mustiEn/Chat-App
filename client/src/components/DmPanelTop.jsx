@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import Form from "react-bootstrap/Form";
 import { RxCross2, RxDrawingPin } from "react-icons/rx";
@@ -25,13 +25,15 @@ import {
 import { useFriendRequests } from "../custom-hooks/useFriendRequests.js";
 import { addFriends, removeFriend } from "../utils/friends.js";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
+import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
-  const { userId: receiverId } = useParams();
+  const { chatId } = useParams();
   const queryClient = useQueryClient();
   const { data: allFriendsData } = useAllFriends();
   const { data: friendRequests } = useFriendRequests();
   const { dmChatRef } = useOutletContext();
+  const { receiverId } = useContext(DmPanelContext);
   const { isPinnedMessagesFetched } = dmChatRef.current;
   const [opened, { open, close }] = useDisclosure(false);
   const customOverlayRef = useRef();
@@ -56,10 +58,19 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   );
 
   const isFriend = allFriends.some((e) => e.id == receiverId);
-  const isFriendRequestSent = sentFriendRequests.some((id) => id == receiverId);
-  const isFriendRequestReceived = receivedFriendRequests.some(
-    ({ id }) => id == receiverId
+  const isFriendRequestSent = sentFriendRequests.some(
+    (e) => e.id == receiverId
   );
+  const isFriendRequestReceived = receivedFriendRequests.some(
+    (e) => e.id == receiverId
+  );
+
+  useEffect(() => {
+    console.log("allFriends", allFriends);
+    console.log("sentFriendRequests", sentFriendRequests);
+    console.log("receivedFriendRequests", receivedFriendRequests);
+    console.log("friendRequests", friendRequests);
+  }, [allFriends, sentFriendRequests, receivedFriendRequests, friendRequests]);
 
   const handleRemoveFriend = () => {
     socket.emit("send removed friends", receiverId, (err, res) => {
@@ -79,7 +90,9 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         return;
       }
 
-      addSentFriendRequest(queryClient, [receiverId]);
+      addSentFriendRequest(queryClient, [
+        { id: receiverId, username: receiver.username },
+      ]);
       toast.success("Friend request sent");
     });
   };
@@ -96,7 +109,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         }
 
         if (status === "accepted") {
-          addFriends(queryClient, [receiver]);
+          addFriends(queryClient, [{ ...receiver, chatId }]);
           toast.success("Friend request accepted");
         }
 
@@ -105,10 +118,10 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
     );
   };
 
-  const { refetch } = usePinnedMessages(receiverId);
+  const { refetch } = usePinnedMessages(chatId);
 
   useEffect(() => {
-    if (showPinnedMsgBox[receiverId])
+    if (showPinnedMsgBox[chatId])
       customOverlayRef.current.style.display = "block";
 
     const closePinnedMsgsBox = (event) => {
@@ -119,7 +132,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       if (!isTargetOverlay) return;
 
       customOverlayRef.current.style.display = "none";
-      addToShowPinnedMsgBox(receiverId, false);
+      addToShowPinnedMsgBox(chatId, false);
     };
 
     document.addEventListener("click", closePinnedMsgsBox);
@@ -150,13 +163,13 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 <div
                   className="position-relative"
                   onClick={(e) => {
-                    if (!showPinnedMsgBox[receiverId]) e.stopPropagation();
+                    if (!showPinnedMsgBox[chatId]) e.stopPropagation();
 
-                    addToShowPinnedMsgBox(receiverId, true);
-                    addToNewPinnedMsgExists(receiverId, false);
+                    addToShowPinnedMsgBox(chatId, true);
+                    addToNewPinnedMsgExists(chatId, false);
 
-                    if (!isPinnedMessagesFetched[receiverId]) {
-                      isPinnedMessagesFetched[receiverId] = true;
+                    if (!isPinnedMessagesFetched[chatId]) {
+                      isPinnedMessagesFetched[chatId] = true;
                       refetch();
                     }
                   }}
@@ -164,10 +177,10 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                   <RxDrawingPin
                     id="drawingPin"
                     className={`ms-auto fs-5 ${
-                      showPinnedMsgBox[receiverId] && stylesPanelTop["active"]
+                      showPinnedMsgBox[chatId] && stylesPanelTop["active"]
                     } ${stylesPanelTop["dm-panel-top-icon"]}`}
                   />
-                  {newPinnedMsgExists[receiverId] && (
+                  {newPinnedMsgExists[chatId] && (
                     <div
                       className="position-absolute rounded-circle"
                       style={{

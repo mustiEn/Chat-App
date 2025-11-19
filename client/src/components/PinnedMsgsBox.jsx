@@ -24,10 +24,10 @@ import { usePinnedMessages } from "../custom-hooks/usePinnedMessages.js";
 import { useModalStore } from "../stores/useModalStore.js";
 
 const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
-  const { userId: receiverId } = useParams();
   const { activeMsg } = useContext(DmPanelContext);
+  const { chatId } = useParams();
   const open = useModalStore((s) => s.dmModalNotifierOpen);
-  const { data: pinnedMsgs } = usePinnedMessages(receiverId);
+  const { data: pinnedMsgs } = usePinnedMessages(chatId);
   const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
 
   const handleDmModalNotifier = (msg, type) => {
@@ -44,7 +44,7 @@ const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
         shadow="xl"
         radius={"lg"}
         pb={"1rem"}
-        className={showPinnedMsgBox[receiverId] ? `${styles.paper}` : "d-none"}
+        className={showPinnedMsgBox[chatId] ? `${styles.paper}` : "d-none"}
       >
         <Flex
           align={"center"}

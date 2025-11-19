@@ -1,10 +1,11 @@
-import { NUMBER, Op, QueryTypes, fn } from "sequelize";
+import { Op, QueryTypes, fn } from "sequelize";
 import { DirectMessage } from "./models/DirectMessage.js";
 import dayjs from "dayjs";
 import { logger, lastDisconnect } from "./utils/index.js";
 import { sequelize } from "./models/db.js";
 import { User } from "./models/User.js";
 import { Friend } from "./models/Friend.js";
+import { ChatId } from "./models/ChatId.js";
 
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
@@ -21,49 +22,61 @@ export const setUpSocket = (io) => {
       ],
       raw: true,
     });
-    const usersWithInContactSql = `
-      SELECT 
-        DISTINCT IF(from_id = :userId, to_id, from_id) AS user_id 
-      FROM 
-        direct_messages 
-      WHERE 
-        from_id = :userId 
-        OR to_id = :userId
-      
-      UNION
-      
-      SELECT 
-        friend_id 
-      FROM 
-        friends 
-      WHERE 
-        user_id = :userId
-    `;
-    const usersWithInContact = await sequelize.query(usersWithInContactSql, {
-      type: QueryTypes.SELECT,
-      replacements: {
-        userId,
-      },
-    });
+    // const usersWithInContactSql = `
+    //   SELECT
+    //     chat_id
+    //   FROM
+    //     chat_ids
+    //   WHERE
+    //     from_id = :userId
+    //     OR to_id = :userId
 
-    //? REDIS GET ONLINE FRIENDS
+    // `;
+    // const usersWithInContact = await sequelize.query(usersWithInContactSql, {
+    //   type: QueryTypes.SELECT,
+    //   replacements: {
+    //     userId,
+    //   },
+    // });
+
+    const usersWithInContact = await ChatId.findAll({
+      attributes: ["chat_id"],
+      where: {
+        [Op.or]: [
+          {
+            user_id: userId,
+          },
+          { receiver_id: userId },
+        ],
+      },
+      raw: true,
+    });
 
     // if (userLastDisconnect) lastDisconnect.delete(userId);
 
     logger.log(`User with id => ${userId} connected`);
 
     socket.emit("initial", sender);
+    // socket.broadcast.emit("status", { userId, status: "status1" });
     socket.join(userId);
 
-    usersWithInContact.forEach((e) => {
-      // logger.log(e);
-      const receiverId = e.user_id;
-      const key = [userId, receiverId];
-      const room = key.sort((a, b) => a - b).join("_");
-      const roomExists = Array.from(socket.rooms).includes(room);
+    //^ on login, get all withincontact users which are dmhistoryusers with the logged in user and friends
+    //^ then send whatever the status is (this will work only if status is online/offline).
+    //^ save all related users in redis so on status change, it can be edited.If someone visits me,
+    //^ receive socket emit, save this visiter so if i change status, they can see it.
+    //^ Visitor will already see my statis through databas first.
 
-      if (!roomExists) socket.join(room);
+    //~ create room ids, if they are friends,create one, if in teh same gruop,create one.
+
+    //* in groups,no access to anyone regadless of friendship,only allow a msg input.
+
+    usersWithInContact.forEach(({ chat_id }) => {
+      const roomExists = Array.from(socket.rooms).includes(chat_id);
+
+      if (!roomExists) socket.join(chat_id);
     });
+
+    // logger.log("rooms: ", socket.rooms);
 
     socket.on("join room", (receiverId, done) => {
       receiverId = Number(receiverId);
@@ -85,10 +98,14 @@ export const setUpSocket = (io) => {
         status: "ok",
       });
     });
-    socket.on("send edited msgs", async (msg, done) => {
-      const receiverId = Number(msg.toId);
-      const key = [userId, receiverId];
-      const room = key.sort((a, b) => a - b).join("_");
+    // socket.on("send user status", (userId, status, done) => {
+    //   userId = Number(userId);
+    //   socket.broadcast.emit("status", { userId, status });
+    //   done({
+    //     status: "ok",
+    //   });
+    // });
+    socket.on("send edited msgs", async (msg, chatId, done) => {
       let message;
 
       try {
@@ -121,7 +138,9 @@ export const setUpSocket = (io) => {
         });
       }
 
-      socket.to(room).emit("receive edited msgs", { result: [message] });
+      socket
+        .to(chatId)
+        .emit("receive edited msgs", { result: [message], chatId });
       logger.log("message edited");
 
       done({
@@ -131,15 +150,19 @@ export const setUpSocket = (io) => {
     });
     socket.on("send msg requests", async (msg, done) => {
       const receiverId = Number(msg.to_id);
-      let result;
-
-      msg = {
+      let msgObj = {
         ...msg,
         request_state: "pending",
       };
+      let result;
+      let chatId;
 
       try {
-        result = await DirectMessage.create(msg, { raw: true });
+        const msgReq = await DirectMessage.create(msgObj, { raw: true });
+        chatId = await ChatId.create({
+          user_id: userId,
+          receiver_id: receiverId,
+        });
 
         const resultSql = `
           SELECT
@@ -163,11 +186,14 @@ export const setUpSocket = (io) => {
             LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg = replied_msg.id
             LEFT JOIN users replied_msg_sender ON replied_msg.from_id = replied_msg_sender.id
           WHERE
-            dm.id = ${result.id}
+            dm.id = :msgReqId
         `;
 
         result = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
+          replacements: {
+            msgReqId: msgReq.id,
+          },
         });
       } catch (error) {
         if (
@@ -180,25 +206,27 @@ export const setUpSocket = (io) => {
 
         console.error("❌ Unexpected error inserting message:", error);
       }
-      io.to(receiverId).emit("receive msg requests", {
-        result,
-      });
-      logger.log("REQ sent/emitted, receive msg requests", receiverId);
       done({
         status: "ok",
         result,
+        chatId: chatId.chat_id,
       });
+
+      io.to(receiverId).emit("receive msg requests", {
+        result,
+        chatIds: [chatId.chat_id],
+      });
+
+      logger.log("REQ sent/emitted, receive msg requests", receiverId);
     });
     socket.on("send msg request acceptance", async (msg, answer, done) => {
-      const receiverId = Number(answer.reqMsg.from_id);
-      const key = [userId, receiverId];
-      const room = key.sort((a, b) => a - b).join("_");
+      const { chatId } = answer.msgReq;
       let result = [{}];
 
-      logger.log("send msg request acceptance", receiverId);
+      logger.log("send msg request acceptance", chatId);
 
       try {
-        const requestMessage = await DirectMessage.findByPk(answer.reqMsg.id);
+        const requestMessage = await DirectMessage.findByPk(answer.msgReq.id);
 
         if (!requestMessage) throw new Error("Message not found");
 
@@ -238,7 +266,7 @@ export const setUpSocket = (io) => {
             },
           });
         } else {
-          result[0].from_id = userId;
+          result = [{ ...sender, from_id: userId }];
         }
 
         await DirectMessage.update(
@@ -248,7 +276,7 @@ export const setUpSocket = (io) => {
           },
           {
             where: {
-              id: answer.reqMsg.id,
+              id: answer.msgReq.id,
             },
           }
         );
@@ -261,24 +289,24 @@ export const setUpSocket = (io) => {
       }
 
       if (answer.status == "accepted") {
-        io.to(receiverId).emit("receive msg request acceptance", {
+        io.to(chatId).emit("receive msg request acceptance", {
           result,
+          chatIds: [chatId],
         });
-        socket.join(room);
-        logger.log("Joined room: ", room);
-        logger.log("sender", userId);
+        socket.join(chatId);
+        // logger.log("Joined chatId: ", chatId);
+        // logger.log("sender", userId);
       }
 
       logger.log("Emit receive msg request acceptance");
       done({
         status: "ok",
         result,
+        chatId,
       });
     });
-    socket.on("send dms", async (msg, done) => {
+    socket.on("send dms", async (msg, chatId, done) => {
       let result;
-      const key = [userId, Number(msg.to_id)];
-      const room = key.sort((a, b) => a - b).join("_");
 
       try {
         const newMsg = await DirectMessage.create(msg, { raw: true });
@@ -325,19 +353,18 @@ export const setUpSocket = (io) => {
         }
         console.error("❌ Unexpected error inserting message:", error);
       }
-      socket.to(room).emit("receive dms", {
+      socket.to(chatId).emit("receive dms", {
         result,
-        sender,
+        chatId,
       });
       logger.log("Sent dm:", result);
-      return done({
+      done({
         status: "ok",
         result,
+        chatId,
       });
     });
-    socket.on("send pinned msgs", async (msg, done) => {
-      const receiverId = Number(msg.toId);
-      const room = [userId, receiverId].sort((a, b) => a - b).join("_");
+    socket.on("send pinned msgs", async (msg, chatId, done) => {
       let pinnedMessage;
 
       try {
@@ -348,7 +375,7 @@ export const setUpSocket = (io) => {
         await DirectMessage.update(
           {
             is_pinned: msg.isPinned,
-            pin_updated_at: fn("NOW"),
+            pin_updated_at: dayjs.utc().format("YYYY-MM-DD HH:mm:ss"),
             last_pin_action_by_id: userId,
           },
           {
@@ -397,33 +424,32 @@ export const setUpSocket = (io) => {
         });
       }
 
-      socket.to(room).emit("receive pinned msgs", {
+      socket.to(chatId).emit("receive pinned msgs", {
         result: pinnedMessage,
         isRecovery: false,
+        chatId,
       });
       logger.log("pinned sent");
-      return done({
+      done({
         status: "ok",
         result: pinnedMessage,
+        chatId,
       });
     });
-    socket.on("send deleted msgs", async (msg, done) => {
-      const key = [userId, Number(msg.to_id)];
-      const room = key.sort((a, b) => a - b).join("_");
-
+    socket.on("send deleted msgs", async (msg, chatId, done) => {
       try {
-        let message = await DirectMessage.findByPk(msg.id, { raw: true });
+        const message = await DirectMessage.findByPk(msg.id, { raw: true });
         logger.log("message state", message);
-        if (!message) return done({ status: "not found" });
+        if (!message) throw new Error("Message not found");
 
-        // await DirectMessage.update(
-        //   { is_deleted: true },
-        //   {
-        //     where: {
-        //       id: msg.id,
-        //     },
-        //   }
-        // );
+        await DirectMessage.update(
+          { is_deleted: true },
+          {
+            where: {
+              id: msg.id,
+            },
+          }
+        );
       } catch (error) {
         logger.log(error);
         return done({
@@ -432,45 +458,39 @@ export const setUpSocket = (io) => {
         });
       }
 
-      socket.to(room).emit("receive deleted msgs", {
+      socket.to(chatId).emit("receive deleted msgs", {
         result: [msg.id],
         userId,
+        chatId,
       });
       logger.log("Deleted dm:", msg.id);
-      return done({
+      done({
         status: "ok",
+        chatId,
       });
     });
-    socket.on("send removed friends", async (friendId, done) => {
-      const key = [userId, Number(friendId)];
-      const room = key.sort((a, b) => a - b).join("_");
+    socket.on("send removed friends", async (friendIdParam, done) => {
+      const friendId = Number(friendIdParam);
 
       try {
         const user = await User.findByPk(friendId, { raw: true });
-        const friendSql = `
-          DELETE FROM friends 
-          WHERE 
-            (
-              userId = :userId
-              AND 
-              friend_id = :friendId
-            )
-            OR
-            (
-              userId = :friendId
-              AND 
-              friend_id = :userId
-            )
-        `;
 
-        // if (!user) throw new Error("Friend not found");
+        if (!user) throw new Error("Friend not found");
 
-        // await sequelize.query(friendSql, {
-        //   replacements: {
-        //     userId,
-        //     friendId,
-        //   },
-        // });
+        await Friend.destroy({
+          where: {
+            [Op.or]: [
+              {
+                user_id: userId,
+                friend_id: friendId,
+              },
+              {
+                user_id: friendId,
+                friend_id: userId,
+              },
+            ],
+          },
+        });
       } catch (error) {
         return done({
           status: "error",
@@ -480,7 +500,7 @@ export const setUpSocket = (io) => {
       done({
         status: "ok",
       });
-      socket.to(room).emit("receive removed friends", {
+      io.to(friendId).emit("receive removed friends", {
         result: [userId],
       });
       logger.log("Deleted friend:", friendId);
@@ -489,40 +509,38 @@ export const setUpSocket = (io) => {
       let friend;
 
       try {
+        if (friendInfo === sender.username)
+          throw new Error("Something went wrong");
         if (isNaN(friendInfo)) {
-          if (friendInfo === sender.username)
-            throw new Error("Something went wrong");
-
           friend = await User.findOne({
+            attributes: ["id"],
             where: {
               username: friendInfo,
             },
             raw: true,
           });
-          const requestExistsSql = `
-            SELECT 
-              COUNT(*) val 
-            FROM 
-              friends 
-            WHERE 
-              user_id = :userId 
-              AND friend_id = :friendId
-              AND request_state = "pending"
-          `;
-          const [requestExists] = await sequelize.query(requestExistsSql, {
-            type: QueryTypes.SELECT,
-            replacements: {
-              userId,
-              friendId: friend.id,
-            },
-          });
-          logger.log(requestExists);
-          if (requestExists.val) throw new Error("Friend request already sent");
-        } else {
-          friend = await User.findByPk(friendInfo, { raw: true });
-        }
 
-        if (!friend) throw new Error("Friend not found");
+          if (!friend) throw new Error("User not found");
+
+          const isFriendRequestSent = await Friend.findOne({
+            where: {
+              user_id: userId,
+              friend_id: friend.id,
+              request_state: "pending",
+            },
+            raw: true,
+          });
+
+          if (isFriendRequestSent)
+            throw new Error("Friend request already sent");
+        } else {
+          friend = await User.findByPk(friendInfo, {
+            attributes: ["id"],
+            raw: true,
+          });
+
+          if (!friend) throw new Error("Friend not found");
+        }
 
         const isFriend = await Friend.findOne({
           where: {
@@ -560,27 +578,24 @@ export const setUpSocket = (io) => {
         friend: friend,
       });
 
-      io.to(Number(friend.id)).emit("receive friend requests", {
+      io.to(friend.id).emit("receive friend requests", {
         result: [sender],
       });
     });
     socket.on(
       "send friend request acceptance",
-      async (friendId, status, done) => {
-        const receiverId = Number(friendId);
-        const key = [userId, receiverId];
-        const room = key.sort((a, b) => a - b).join("_");
-        let result = [];
+      async (friendIdParam, status, done) => {
+        const friendId = Number(friendIdParam);
+        let chat = undefined;
+        let chatIdCreated;
 
         try {
-          const user = await User.findByPk(friendId, { raw: true });
-
-          if (!user) throw new Error("Friend not found");
-
-          result.push({
-            sender,
-            status,
+          const friend = await User.findByPk(friendId, {
+            attributes: ["id"],
+            raw: true,
           });
+
+          if (!friend) throw new Error("Friend not found");
 
           if (status === "accepted") {
             await Friend.update(
@@ -594,6 +609,20 @@ export const setUpSocket = (io) => {
                 },
               }
             );
+            [chat, chatIdCreated] = await ChatId.findCreateFind({
+              attributes: ["chat_id"],
+              where: {
+                [Op.or]: [
+                  { user_id: userId, receiver_id: friendId },
+                  { user_id: friendId, receiver_id: userId },
+                ],
+              },
+              defaults: {
+                user_id: userId,
+                receiver_id: friendId,
+              },
+              raw: true,
+            });
           } else {
             await Friend.destroy({
               where: {
@@ -608,19 +637,24 @@ export const setUpSocket = (io) => {
             error: error.message,
           });
         }
+        logger.log(chat);
         done({
           status: "ok",
+          chatIds: [chat?.chat_id ?? null],
         });
 
-        io.to(receiverId).emit("receive friend request acceptance", {
-          result,
+        io.to(friendId).emit("receive friend request acceptance", {
+          result: [
+            {
+              status,
+              sender,
+            },
+          ],
+          chatIds: [chat?.chat_id ?? null],
         });
 
-        if (status === "accepted") {
-          const roomExists = Array.from(socket.rooms).includes(room);
+        if (status === "accepted" && chatIdCreated) socket.join(chatId);
 
-          if (!roomExists) socket.join(room);
-        }
         logger.log("friend req accepted");
       }
     );
@@ -633,10 +667,22 @@ export const setUpSocket = (io) => {
 
       try {
         const obj = socket.handshake.auth.serverOffset;
-
+        logger.log(obj);
         if (userLastDisconnect && Object.keys(obj).length) {
           for (const receiverId in obj) {
             const serverOffset = obj[receiverId];
+            logger.log("userid", userId);
+            logger.log(serverOffset, receiverId);
+            const key = `${[userId, receiverId]
+              .sort((a, b) => a - b)
+              .join("-")}`;
+            const { chat_id: chatId } = await ChatId.findOne({
+              attributes: ["chat_id"],
+              where: {
+                chat_key: key,
+              },
+              raw: true,
+            });
             const messagesSql = `
               SELECT 
                 dm.id,
@@ -664,6 +710,7 @@ export const setUpSocket = (io) => {
                 dm.from_id = :receiverId 
                 AND dm.to_id = :userId 
                 AND dm.id > :serverOffset
+                AND dm.is_deleted = 0
               ORDER BY dm.createdAt ASC
             `;
             const pinnedMessagesSql = `
@@ -697,17 +744,6 @@ export const setUpSocket = (io) => {
               ORDER BY
                 dm.pin_updated_at DESC
             `;
-            const deletedMessagesSql = `
-              SELECT 
-                dm.id, 
-                dm.from_id 
-              FROM 
-                direct_messages dm 
-              WHERE 
-                dm.to_id = :userId 
-                AND dm.from_id = :receiverId 
-                AND dm.updatedAt >= :lastDisconnect
-            `;
             const [messages, editedMessages, pinnedMessages, deletedMessages] =
               await Promise.all([
                 sequelize.query(messagesSql, {
@@ -739,34 +775,43 @@ export const setUpSocket = (io) => {
                     lastDisconnect: userLastDisconnect,
                   },
                 }),
-                sequelize.query(deletedMessagesSql, {
-                  type: QueryTypes.SELECT,
-                  replacements: {
-                    userId,
-                    receiverId,
-                    lastDisconnect: userLastDisconnect,
+                DirectMessage.findAll({
+                  attributes: ["id"],
+                  where: {
+                    to_id: userId,
+                    from_id: receiverId,
+                    updatedAt: {
+                      [Op.gte]: userLastDisconnect,
+                    },
+                    is_deleted: 1,
                   },
+                  raw: true,
                 }),
               ]);
 
-            if (messages.length)
-              socket.emit("receive dms", { result: messages });
-            if (editedMessages.length)
-              socket.emit("receive edited msgs", { result: editedMessages });
-            if (pinnedMessages.length)
+            if (messages.length) {
+              socket.emit("receive dms", { result: messages, chatId });
+            }
+            if (editedMessages.length) {
+              socket.emit("receive edited msgs", {
+                result: editedMessages,
+                chatId,
+              });
+            }
+            if (pinnedMessages.length) {
               socket.emit("receive pinned msgs", {
                 result: pinnedMessages,
                 isRecovery: true,
+                chatId,
               });
-            if (deletedMessages.length)
+            }
+            if (deletedMessages.length) {
               socket.emit("receive deleted msgs", {
                 result: deletedMessages,
+                chatId,
               });
-
-            // logger.log(`ReceiverId: ${receiverId}`);
-            // logger.log("Dms:", messages);
-            // logger.log("EditedMsgs:", editedMessages);
-            // logger.log("Pinnedmsgs:", pinnedMessages);
+            }
+            logger.log(deletedMessages);
           }
 
           const msgRequestAcceptanceSql = `
@@ -828,7 +873,66 @@ export const setUpSocket = (io) => {
               AND dm.request_state = "pending" 
               AND dm.createdAt >= :lastDisconnect
           `;
-          const [msgRequestAcceptance, msgRequests] = await Promise.all([
+          const friendRequestsSql = `
+            SELECT 
+              u.id, u.username, u.display_name, u.profile 
+            FROM 
+              friends f
+              INNER JOIN users u ON u.id = f.user_id 
+            WHERE 
+              user_id = :userId
+              AND request_state = "pending"
+              AND f.createdAt > :lastDisconnect            
+          `;
+          const friendRequestsAcceptanceSql = `
+            SELECT 
+              u.id,
+              u.display_name,
+              u.username,
+              u.profile,
+              f.request_state status
+            FROM 
+              friends f 
+              INNER JOIN users u ON u.id = f.friend_id 
+            WHERE 
+              f.user_id = :userId 
+              AND f.request_state = "accepted" 
+              AND f.createdAt > :lastDisconnect 
+            UNION 
+            SELECT 
+              u.id,
+              u.display_name,
+              u.username,
+              u.profile,
+              f.request_state status
+            FROM 
+              friends f 
+              INNER JOIN users u ON u.id = f.friend_id 
+            WHERE 
+              f.user_id = :userId 
+              AND f.request_state = "rejected" 
+              AND f.createdAt > :lastDisconnect 
+          `;
+          const [
+            friendRequests,
+            friendRequestsAcceptance,
+            msgRequestAcceptance,
+            msgRequests,
+          ] = await Promise.all([
+            sequelize.query(friendRequestsSql, {
+              type: QueryTypes.SELECT,
+              replacements: {
+                userId,
+                lastDisconnect: userLastDisconnect,
+              },
+            }),
+            sequelize.query(friendRequestsAcceptanceSql, {
+              type: QueryTypes.SELECT,
+              replacements: {
+                userId,
+                lastDisconnect: userLastDisconnect,
+              },
+            }),
             sequelize.query(msgRequestAcceptanceSql, {
               type: QueryTypes.SELECT,
               replacements: {
@@ -845,15 +949,66 @@ export const setUpSocket = (io) => {
             }),
           ]);
 
-          if (msgRequestAcceptance.length)
+          if (msgRequestAcceptance.length) {
             socket.emit("receive msg request acceptance", {
               result: msgRequestAcceptance,
             });
-          if (msgRequests.length)
+          }
+          if (msgRequests.length) {
+            const chatIds = [];
+
+            for (const element of msgRequests) {
+              const { from_id, to_id } = element;
+              const key = [from_id, to_id].sort((a, b) => a - b).join("-");
+              const { chat_id } = await ChatId.findOne({
+                attributes: ["chat_id"],
+                where: {
+                  chat_key: key,
+                },
+                raw: true,
+              });
+              chatIds.push(chat_id);
+            }
+
             socket.emit("receive msg requests", {
-              sender,
               result: msgRequests,
+              chatIds,
             });
+          }
+          if (friendRequestsAcceptance.length) {
+            const chatIds = [];
+
+            for (const element of friendRequestsAcceptance) {
+              const { id: friendId, status } = element;
+              const key = [friendId, userId].sort((a, b) => a - b).join("-");
+              const [chatId, chatIdCreated] = await ChatId.findCreateFind({
+                attributes: ["chat_id"],
+                where: {
+                  chat_key: key,
+                },
+                defaults: {
+                  user_id: userId,
+                  receiver_id: friendId,
+                },
+                raw: true,
+              });
+
+              if (status === "accepted" && chatIdCreated)
+                socket.join(chatId.chat_id);
+              chatIds.push(chatId.chat_id);
+            }
+
+            socket.emit("receive friend request acceptance", {
+              result: friendRequestsAcceptance,
+              chatIds,
+            });
+          }
+          if (friendRequests.length) {
+            socket.emit("receive friend requests", {
+              sender,
+              result: friendRequests,
+            });
+          }
         }
       } catch (e) {
         logger.log("recovery error", e);

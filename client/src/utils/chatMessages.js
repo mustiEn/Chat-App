@@ -1,11 +1,11 @@
-export const addOldMessages = (queryClient, receiverId, newMsgs) => {
-  queryClient.setQueryData(["chatMessages", receiverId], (olderData) => ({
+export const addOldMessages = (queryClient, chatId, newMsgs) => {
+  queryClient.setQueryData(["chatMessages", chatId], (olderData) => ({
     ...olderData,
     pages: [{ messages: newMsgs }, ...olderData.pages],
   }));
 };
-export const setIsMessagePinned = (queryClient, receiverId, msgId, val) => {
-  queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
+export const setIsMessagePinned = (queryClient, chatId, msgId, val) => {
+  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page) => ({
@@ -23,12 +23,12 @@ export const setIsMessagePinned = (queryClient, receiverId, msgId, val) => {
 };
 export const editMessage = (
   queryClient,
-  receiverId,
+  chatId,
   msgId,
   editedMessage,
   isPending
 ) => {
-  queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
+  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
     const newPages = olderData.pages.map((page) => ({
       ...page,
       messages: page.messages.map((m) => {
@@ -50,8 +50,8 @@ export const editMessage = (
     };
   });
 };
-export const deleteMessage = (queryClient, receiverId, msgId) => {
-  queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
+export const deleteMessage = (queryClient, chatId, msgId) => {
+  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page) => ({
@@ -69,8 +69,8 @@ export const deleteMessage = (queryClient, receiverId, msgId) => {
     };
   });
 };
-export const addMessage = (queryClient, receiverId, msg) => {
-  queryClient.setQueryData(["chatMessages", receiverId], (olderData) => {
+export const addMessage = (queryClient, chatId, msg) => {
+  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page, i) => ({

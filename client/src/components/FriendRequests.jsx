@@ -15,7 +15,7 @@ import toast from "react-hot-toast";
 const FriendRequests = () => {
   const queryClient = useQueryClient();
 
-  const handleMessageRequestAcceptance = (status, friend) => {
+  const handleFriendRequestAcceptance = (status, friend) => {
     socket.emit(
       "send friend request acceptance",
       friend.id,
@@ -28,7 +28,8 @@ const FriendRequests = () => {
           return;
         }
 
-        if (status === "accepted") addFriends(queryClient, [friend]);
+        if (status === "accepted")
+          addFriends(queryClient, [{ ...friend, chatId: res.chatIds[0] }]);
 
         removeReceivedFriendRequest(queryClient, friend.id);
         toast.success(`Friend request ${status}`);
@@ -101,7 +102,7 @@ const FriendRequests = () => {
                           bdrs={"xl"}
                           ms={"auto"}
                           onClick={() =>
-                            handleMessageRequestAcceptance("accepted", friend)
+                            handleFriendRequestAcceptance("accepted", friend)
                           }
                         >
                           <IoCheckmarkOutline className={styles.icon} />
@@ -120,7 +121,7 @@ const FriendRequests = () => {
                           justify={"center"}
                           bdrs={"xl"}
                           onClick={() =>
-                            handleMessageRequestAcceptance("rejected", friend)
+                            handleFriendRequestAcceptance("rejected", friend)
                           }
                         >
                           <RxCross1 className={styles.icon} />

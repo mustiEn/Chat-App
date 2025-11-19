@@ -2,11 +2,13 @@ import express from "express";
 import { logger } from "../utils/index.js";
 import { validationResult, matchedData } from "express-validator";
 import { User } from "../models/User.js";
-import { Op, QueryTypes } from "sequelize";
+import { fn, Op, QueryTypes } from "sequelize";
 import { sequelize } from "../models/db.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
+import { ChatId } from "../models/ChatId.js";
+import { Friend } from "../models/Friend.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -15,6 +17,7 @@ export const getInitialDmData = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
+
     const isReceiverBlockedSql = `
       SELECT 
         COUNT(*) val 
@@ -24,27 +27,6 @@ export const getInitialDmData = async (req, res, next) => {
         blocked_by_id = :userId 
         AND
         blocked_id = :receiverId
-    `;
-    const friendStatusSql = `
-      SELECT 
-        user_id,
-        request_state
-      FROM 
-        friends 
-      WHERE
-        (  
-          (
-            user_id = :userId 
-            AND
-            friend_id = :receiverId
-          ) 
-          OR
-          (
-            user_id = :receiverId 
-            AND
-            friend_id = :userId
-          )
-        )
     `;
     const hasChatHistorySql = `
       SELECT 
@@ -70,21 +52,32 @@ export const getInitialDmData = async (req, res, next) => {
       throw new Error("Validation failed");
     }
 
-    const { receiverId } = matchedData(req);
+    const { chatId } = matchedData(req);
+    const chat = await ChatId.findOne({
+      attributes: ["user_id", "receiver_id"],
+      where: {
+        chat_id: chatId,
+      },
+      raw: true,
+    });
 
-    receiver = (
-      await User.findByPk(receiverId, {
-        attributes: [
-          "id",
-          "display_name",
-          "username",
-          "profile",
-          "background_color",
-          "about_me",
-          "createdAt",
-        ],
-      })
-    ).toJSON();
+    if (!chat) throw new Error("Chat not found");
+
+    const { user_id, receiver_id } = chat;
+    const receiverId = user_id == userId ? receiver_id : user_id;
+
+    receiver = await User.findByPk(receiverId, {
+      attributes: [
+        "id",
+        "display_name",
+        "username",
+        "profile",
+        "background_color",
+        "about_me",
+        "createdAt",
+      ],
+      raw: true,
+    });
 
     if (!receiver) throw new Error("Receiver not found");
 
@@ -101,12 +94,20 @@ export const getInitialDmData = async (req, res, next) => {
     if (isReceiverBlocked.val) {
       receiver["is_blocked"] = true;
     } else {
-      [friendStatus] = await sequelize.query(friendStatusSql, {
-        type: QueryTypes.SELECT,
-        replacements: {
-          userId,
-          receiverId,
+      friendStatus = await Friend.findOne({
+        where: {
+          [Op.or]: [
+            {
+              user_id: userId,
+              friend_id: receiverId,
+            },
+            {
+              user_id: receiverId,
+              friend_id: userId,
+            },
+          ],
         },
+        raw: true,
       });
       const [hasChatHistory] = await sequelize.query(hasChatHistorySql, {
         type: QueryTypes.SELECT,
@@ -119,14 +120,12 @@ export const getInitialDmData = async (req, res, next) => {
       if (
         // !hasChatHistory.val
         1 &&
-        (friendStatus?.request_state !== "accepted" ||
-          friendStatus?.request_state === null)
+        !friendStatus
       ) {
         receiver["with_in_no_contact"] = true;
       }
-      logger.log(!friendStatus?.request_state === "accepted");
     }
-    logger.log(receiver);
+    logger.log("friendStatus", friendStatus);
     res.status(200).json({ receiver, friendStatus });
   } catch (error) {
     next(error);
@@ -150,8 +149,36 @@ export const getDmData = async (req, res, next) => {
       throw new Error("Validation failed");
     }
 
-    let { receiverId, nextId } = matchedData(req);
+    let { chatId, nextId } = matchedData(req);
+    const chat = await ChatId.findOne({
+      attributes: ["user_id", "receiver_id"],
+      where: {
+        chat_id: chatId,
+      },
+      raw: true,
+    });
+
+    if (!chat) throw new Error("Chat not found");
+
+    const { user_id, receiver_id } = chat;
+    const receiverId = user_id == userId ? receiver_id : user_id;
+
     nextId = Number(nextId);
+    receiver = await User.findByPk(receiverId, {
+      attributes: [
+        "id",
+        "display_name",
+        "username",
+        "profile",
+        "background_color",
+        "about_me",
+        "createdAt",
+      ],
+      raw: true,
+    });
+
+    if (!receiver) throw new Error("Receiver not found");
+
     const dmsSql = ` 
       SELECT 
         dm.id,
@@ -224,17 +251,39 @@ export const getDmHistory = async (req, res, next) => {
     const userId = req.session.passport.user;
     const dmHistorySql = `
       SELECT 
-        u.id, 
-        u.display_name, 
-        u.profile, 
-        dmh.createdAt created_at 
-      FROM 
-        direct_message_history dmh 
-        INNER JOIN users u ON dm_history_user_id = u.id 
-      WHERE 
-        user_id = :userId
-      ORDER BY 
-        dmh.createdAt DESC
+          * 
+        FROM 
+          (
+            SELECT 
+              u.id, 
+              u.display_name, 
+              u.profile, 
+              c.chat_id chatId, 
+              dmh.createdAt created_at 
+            FROM 
+              direct_message_history dmh 
+              INNER JOIN users u ON dm_history_user_id = u.id 
+              INNER JOIN chat_ids c ON c.receiver_id = u.id 
+              AND c.user_id = :userId 
+            WHERE 
+              dmh.user_id = :userId 
+            UNION 
+            SELECT 
+              u.id, 
+              u.display_name, 
+              u.profile, 
+              c.chat_id, 
+              dmh.createdAt created_at 
+            FROM 
+              direct_message_history dmh 
+              INNER JOIN users u ON dm_history_user_id = u.id 
+              INNER JOIN chat_ids c ON c.user_id = u.id 
+              AND c.receiver_id = :userId 
+            WHERE 
+              dmh.user_id = :userId
+          ) AS t 
+        ORDER BY 
+          t.created_at DESC
     `;
     const dmHistory = await sequelize.query(dmHistorySql, {
       type: QueryTypes.SELECT,
@@ -256,7 +305,19 @@ export const getPinnedMessages = async (req, res, next) => {
       throw new Error("Validation failed");
     }
 
-    const { receiverId } = matchedData(req);
+    const { chatId } = matchedData(req);
+    const chat = await ChatId.findOne({
+      attributes: ["user_id", "receiver_id"],
+      where: {
+        chat_id: chatId,
+      },
+      raw: true,
+    });
+
+    if (!chat) throw new Error("Chat not found");
+
+    const { user_id, receiver_id } = chat;
+    const receiverId = user_id == userId ? receiver_id : user_id;
     const receiver = await User.findByPk(receiverId);
 
     if (!receiver) {
@@ -283,13 +344,13 @@ export const getPinnedMessages = async (req, res, next) => {
         LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
       WHERE 
         ((
-          dm.to_id = ${userId} 
-          AND dm.from_id = ${receiverId}
+          dm.to_id = :userId
+          AND dm.from_id = :receiverId
         ) 
         OR
         (
-          dm.to_id = ${receiverId}
-          AND dm.from_id = ${userId} 
+          dm.to_id = :receiverId
+          AND dm.from_id = :userId
         )) 
         AND dm.is_pinned = 1
       ORDER BY 
@@ -297,6 +358,10 @@ export const getPinnedMessages = async (req, res, next) => {
     `;
     const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
       type: QueryTypes.SELECT,
+      replacements: {
+        userId,
+        receiverId,
+      },
     });
     const sortedPinnedMessages = pinnedMessages.sort((a, b) => {
       const dateA = new Date(a.pin_updated_at);
@@ -443,13 +508,13 @@ export const getAllFriends = async (req, res, next) => {
     const { offset } = matchedData(req);
     const friendsSql = `
       SELECT 
-        u.id, 
+        IF(f.user_id = :userId, friend_id, user_id) id, 
         u.username, 
         u.display_name, 
         u.profile 
       FROM 
         friends f 
-        INNER JOIN users u ON u.id = f.friend_id 
+        INNER JOIN users u ON u.id = IF(f.user_id = :userId, friend_id, user_id)
       WHERE 
         (
           f.user_id = :userId 
@@ -462,7 +527,7 @@ export const getAllFriends = async (req, res, next) => {
       LIMIT :limit 
       OFFSET :offset
     `;
-    const friends = await sequelize.query(friendsSql, {
+    let friends = await sequelize.query(friendsSql, {
       type: QueryTypes.SELECT,
       replacements: {
         userId,
@@ -470,9 +535,30 @@ export const getAllFriends = async (req, res, next) => {
         offset: Number(offset),
       },
     });
-    const next =
-      friends.length < limit ? undefined : friends.length + Number(offset);
+    const ids = friends.map(({ id }) =>
+      [userId, id].sort((a, b) => a - b).join("-")
+    );
+    const chatIds = await ChatId.findAll({
+      attributes: ["chat_id", "chat_key"],
+      where: {
+        chat_key: {
+          [Op.in]: ids,
+        },
+      },
+      raw: true,
+    });
+    if (chatIds.length) {
+      const findChatId = (friendId) => {
+        const key = [userId, friendId].sort((a, b) => a - b).join("-");
+        const chat = chatIds.find(({ chat_key }) => chat_key === key);
+        return chat.chat_id;
+      };
 
+      friends = friends.map((e) => ({ ...e, chatId: findChatId(e.id) }));
+    }
+
+    const next =
+      friends.length < limit ? null : friends.length + Number(offset);
     res.status(200).json({ friends, next });
   } catch (error) {
     next(error);
@@ -509,7 +595,8 @@ export const getFriendRequests = async (req, res, next) => {
     `;
     const sentFriendRequestsSql = `
       SELECT 
-        u.id
+        u.id,
+        u.username
       FROM 
         friends f
         INNER JOIN users u ON u.id = f.friend_id
@@ -530,7 +617,7 @@ export const getFriendRequests = async (req, res, next) => {
         },
       }),
     ]);
-
+    logger.log("sentFriendRequestsSql", sentFriendRequests);
     res.status(200).json({ receivedFriendRequests, sentFriendRequests });
   } catch (error) {
     next(error);

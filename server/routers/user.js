@@ -6,24 +6,24 @@ import { isAuthenticated } from "../middlewares/check_auth_user.js";
 const router = express.Router();
 
 router.get(
-  "/dm/initialChatData/:receiverId",
-  [isAuthenticated, param("receiverId").notEmpty().isNumeric()],
+  "/dm/initialChatData/:chatId",
+  [isAuthenticated, param("chatId").notEmpty().isString()],
   userController.getInitialDmData
 );
 
 router.get(
-  "/dm/moreData/:receiverId",
+  "/dm/moreData/:chatId",
   [
     isAuthenticated,
-    param("receiverId").notEmpty().isNumeric(),
+    param("chatId").notEmpty().isString(),
     query("nextId").notEmpty().isNumeric(),
   ],
   userController.getDmData
 );
 
 router.get(
-  "/dm/pinned-messages/:receiverId",
-  [isAuthenticated, param("receiverId").notEmpty().isNumeric()],
+  "/dm/pinned-messages/:chatId",
+  [isAuthenticated, param("chatId").notEmpty().isString()],
   userController.getPinnedMessages
 );
 

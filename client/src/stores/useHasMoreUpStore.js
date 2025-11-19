@@ -4,9 +4,9 @@ import { immer } from "zustand/middleware/immer";
 export const useHasMoreUpStore = create(
   immer((set) => ({
     hasMoreUp: {},
-    addToHasMoreUp: (receiverId, val) =>
+    addToHasMoreUp: (chatId, val) =>
       set((state) => {
-        state.hasMoreUp[receiverId] = val;
+        state.hasMoreUp[chatId] = val;
       }),
   }))
 );

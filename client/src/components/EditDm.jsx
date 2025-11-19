@@ -14,7 +14,7 @@ dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
 const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
-  const { userId: receiverId } = useParams();
+  const { chatId } = useParams();
   const queryClient = useQueryClient();
   const editInpRef = useRef(null);
 
@@ -32,7 +32,7 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
     } else if (msg.message == editedMessage.message) return;
 
     if (!socket.connected) {
-      editMessage(queryClient, receiverId, msg.id, editedMessage.message, true);
+      editMessage(queryClient, chatId, msg.id, editedMessage.message, true);
     }
 
     setEditedMessage({
@@ -44,23 +44,17 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
       "send edited msgs",
       {
         id: editedMessage.id,
-        toId: receiverId,
         message: editedMessage.message,
         updatedAt: time,
       },
+      chatId,
       (err, res) => {
         if (err) {
           console.log("Edited Message failed:", err);
           return;
         }
 
-        editMessage(
-          queryClient,
-          receiverId,
-          msg.id,
-          editedMessage.message,
-          false
-        );
+        editMessage(queryClient, chatId, msg.id, editedMessage.message, false);
 
         console.log("Edited Message successfull: ", res);
       }

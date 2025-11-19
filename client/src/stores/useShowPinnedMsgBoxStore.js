@@ -4,9 +4,9 @@ import { immer } from "zustand/middleware/immer";
 export const useShowPinnedMsgBoxStore = create(
   immer((set) => ({
     showPinnedMsgBox: {},
-    addToShowPinnedMsgBox: (receiverId, val) =>
+    addToShowPinnedMsgBox: (chatId, val) =>
       set((state) => {
-        state.showPinnedMsgBox[receiverId] = val;
+        state.showPinnedMsgBox[chatId] = val;
       }),
   }))
 );

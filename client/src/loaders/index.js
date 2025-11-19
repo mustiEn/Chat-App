@@ -1,6 +1,6 @@
-const getDmData = async (receiverId) => {
+const getDmData = async (chatId) => {
   try {
-    const res = await fetch(`/api/dm/initialChatData/${receiverId}`);
+    const res = await fetch(`/api/dm/initialChatData/${chatId}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -14,18 +14,18 @@ const getDmData = async (receiverId) => {
   }
 };
 
-export const dmDataQuery = (receiverId) => ({
-  // queryKey: ["chatMessages", receiverId],
-  queryKey: ["initialChatData", receiverId],
-  queryFn: () => getDmData(receiverId),
+export const dmDataQuery = (chatId) => ({
+  // queryKey: ["chatMessages", chatId],
+  queryKey: ["initialChatData", chatId],
+  queryFn: () => getDmData(chatId),
   staleTime: Infinity,
 });
 
 export const loadDmData =
   (queryClient) =>
   async ({ params }) => {
-    const { userId: receiverId } = params;
-    const query = dmDataQuery(receiverId);
+    const { chatId } = params;
+    const query = dmDataQuery(chatId);
     await queryClient.ensureQueryData(query);
 
     return null;
