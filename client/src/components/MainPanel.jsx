@@ -239,12 +239,9 @@ const MainPanel = () => {
       addReceivedFriendRequest(queryClient, result);
     };
     const handleFriendRequestAcceptance = ({ result, chatIds }) => {
-      console.log("handleFriendRequestAcceptance", result);
-
       result.forEach((e, i) => {
         if (e.status === "accepted")
           addFriends(queryClient, [{ ...e.sender, chatId: chatIds[i] }]);
-        console.log("status:", e.status);
 
         removeSentFriendRequest(queryClient, e.sender.id);
       });

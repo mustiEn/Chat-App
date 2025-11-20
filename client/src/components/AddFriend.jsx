@@ -44,6 +44,7 @@ const AddFriend = () => {
 
         addFriends(queryClient, [{ ...receiver, chatId: res.chatIds[0] }]);
         removeReceivedFriendRequest(queryClient, receiver.id);
+        toast.success("Friend added");
       }
     );
   };

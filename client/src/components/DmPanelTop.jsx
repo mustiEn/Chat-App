@@ -65,13 +65,6 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
     (e) => e.id == receiverId
   );
 
-  useEffect(() => {
-    console.log("allFriends", allFriends);
-    console.log("sentFriendRequests", sentFriendRequests);
-    console.log("receivedFriendRequests", receivedFriendRequests);
-    console.log("friendRequests", friendRequests);
-  }, [allFriends, sentFriendRequests, receivedFriendRequests, friendRequests]);
-
   const handleRemoveFriend = () => {
     socket.emit("send removed friends", receiverId, (err, res) => {
       if (err || res.status === "duplicated" || res.status === "error") {
