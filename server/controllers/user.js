@@ -9,6 +9,7 @@ import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
 import { ChatId } from "../models/ChatId.js";
 import { Friend } from "../models/Friend.js";
+import { BlockedUser } from "../models/BlockedUser.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -18,16 +19,6 @@ export const getInitialDmData = async (req, res, next) => {
     const result = validationResult(req);
     const userId = req.session.passport.user;
 
-    const isReceiverBlockedSql = `
-      SELECT 
-        COUNT(*) val 
-      FROM 
-        blocked_users 
-      WHERE 
-        blocked_by_id = :userId 
-        AND
-        blocked_id = :receiverId
-    `;
     const hasChatHistorySql = `
       SELECT 
         COUNT(*) val 
@@ -65,6 +56,14 @@ export const getInitialDmData = async (req, res, next) => {
 
     const { user_id, receiver_id } = chat;
     const receiverId = user_id == userId ? receiver_id : user_id;
+    const isReceiverBlocked = await BlockedUser.findOne({
+      where: {
+        [Op.or]: [
+          { blocked_by_id: userId, blocked_id: receiverId },
+          { blocked_by_id: receiverId, blocked_id: userId },
+        ],
+      },
+    });
 
     receiver = await User.findByPk(receiverId, {
       attributes: [
@@ -83,16 +82,10 @@ export const getInitialDmData = async (req, res, next) => {
 
     //* do who blocked who
 
-    const [isReceiverBlocked] = await sequelize.query(isReceiverBlockedSql, {
-      type: QueryTypes.SELECT,
-      replacements: {
-        userId,
-        receiverId,
-      },
-    });
-
-    if (isReceiverBlocked.val) {
-      receiver["is_blocked"] = true;
+    if (isReceiverBlocked) {
+      receiver["isBlocked"] = true;
+      receiver["blockedBy"] =
+        isReceiverBlocked.blocked_by_id == userId ? "me" : "receiver";
     } else {
       friendStatus = await Friend.findOne({
         where: {
@@ -460,40 +453,6 @@ export const getMessageRequests = async (req, res, next) => {
     next(error);
   }
 };
-export const getMessageRequested = async (req, res, next) => {
-  try {
-    const userId = req.session.passport.user;
-    const messageRequestsSql = `
-      SELECT 
-        dm.id,
-        sender.id, 
-        sender.display_name, 
-        sender.username, 
-        sender.profile, 
-        dm.clientOffset, 
-        dm.message, 
-        dm.request_state, 
-        dm.createdAt created_at 
-      FROM 
-        direct_messages dm 
-        INNER JOIN users sender ON sender.id = dm.from_id 
-      WHERE 
-        dm.request_state = 1 
-        AND dm.is_deleted = 0 
-        AND dm.to_id = :userId
-    `;
-    const messageRequests = await sequelize.query(messageRequestsSql, {
-      type: QueryTypes.SELECT,
-      replacements: {
-        userId,
-      },
-    });
-
-    res.status(200).json(messageRequests);
-  } catch (error) {
-    next(error);
-  }
-};
 export const getAllFriends = async (req, res, next) => {
   try {
     const userId = req.session.passport.user;
@@ -617,7 +576,6 @@ export const getFriendRequests = async (req, res, next) => {
         },
       }),
     ]);
-    logger.log("sentFriendRequestsSql", sentFriendRequests);
     res.status(200).json({ receivedFriendRequests, sentFriendRequests });
   } catch (error) {
     next(error);

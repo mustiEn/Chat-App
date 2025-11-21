@@ -34,6 +34,8 @@ const MainPanel = () => {
     (s) => s.addToNewPinnedMsgExists
   );
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
+  const blockReceiver = useReceiverStore((s) => s.blockReceiver);
+  const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
   const [groupChat, setGroupChat] = useState({});
 
   const scrollElementRef = useRef(null);
@@ -249,6 +251,41 @@ const MainPanel = () => {
     const handleUserStatus = (res) => {
       console.log("result", res);
     };
+    const handleBlockedUsers = ({ result }) => {
+      const receivers = useReceiverStore.getState().receivers;
+
+      result.forEach(({ blockedBy }) => {
+        const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
+        const allFriends = allFriendsQuery
+          ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
+          : [];
+        const isFriend = allFriends.some(({ id }) => id == blockedBy);
+
+        if (receivers[blockedBy]) {
+          blockReceiver(blockedBy, "receiver");
+
+          socket.emit("leave room", blockedBy);
+        }
+        if (isFriend) removeFriend(queryClient, blockedBy);
+      });
+    };
+    const handleUnblockedUsers = ({ result }) => {
+      const receivers = useReceiverStore.getState().receivers;
+
+      result.forEach((id) => {
+        const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
+        const allFriends = allFriendsQuery
+          ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
+          : [];
+        const isFriend = allFriends.some(({ id }) => id == id);
+
+        if (receivers[id]) {
+          unblockReceiver(id, "receiver");
+          socket.emit("leave room", id);
+        }
+        if (isFriend) removeFriend(queryClient, id);
+      });
+    };
 
     socket.connect();
     socket.on("connect", onConnect);
@@ -262,6 +299,8 @@ const MainPanel = () => {
     socket.on("receive pinned msgs", handlePinnedMessages);
     socket.on("receive removed friends", handleRemovedFriends);
     socket.on("receive friend requests", handleFriendRequests);
+    socket.on("receive blocked users", handleBlockedUsers);
+    socket.on("receive unblocked users", handleUnblockedUsers);
     socket.on(
       "receive friend request acceptance",
       handleFriendRequestAcceptance
@@ -287,6 +326,8 @@ const MainPanel = () => {
       socket.off("receive pinned msgs", handlePinnedMessages);
       socket.off("receive removed friends", handleRemovedFriends);
       socket.off("receive friend requests", handleFriendRequests);
+      socket.off("receive blocked users", handleBlockedUsers);
+      socket.off("receive unblocked users", handleUnblockedUsers);
       socket.off(
         "receive friend request acceptance",
         handleFriendRequestAcceptance

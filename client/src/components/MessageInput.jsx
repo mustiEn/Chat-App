@@ -40,6 +40,7 @@ const MessageInput = () => {
   const msgToReply = useMsgToReplyStore((s) => s.msgToReply);
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const receivers = useReceiverStore((s) => s.receivers);
+  const receiver = receivers[receiverId];
   const addToPendingMsgs = usePendingMsgStore((s) => s.addToPendingMsgs);
   const removeFromPendingMsgs = usePendingMsgStore(
     (s) => s.removeFromPendingMsgs
@@ -72,7 +73,7 @@ const MessageInput = () => {
       addSentMessageRequests(queryClient, res.result);
 
       if (!isUserInDmHistory && dmHistoryUsers.length)
-        addDmHistoryUsers(queryClient, [receivers[receiverId]]);
+        addDmHistoryUsers(queryClient, [receiver]);
     }
 
     if (pendingMsgs[chatId])
@@ -111,7 +112,7 @@ const MessageInput = () => {
         acceptance,
         (err, res) => handleEmitCallback(err, res, "acceptance")
       );
-    } else if (!messages.length && receivers[receiverId].with_in_no_contact) {
+    } else if (!messages.length && receiver.with_in_no_contact) {
       socket.emit("send msg requests", emitData, (err, res) =>
         handleEmitCallback(err, res, "request")
       );
@@ -140,8 +141,12 @@ const MessageInput = () => {
 
   return (
     <Box w={"100%"} px={"xs"} mt={"auto"} mb={"sm"}>
-      {receivers[receiverId]?.is_blocked ? (
-        <div>You blocked this user</div>
+      {receiver?.isBlocked ? (
+        receiver.blockedBy === "receiver" ? (
+          <div>You've been blocked</div>
+        ) : (
+          <div>You blocked this user</div>
+        )
       ) : sentMessageRequests.some(({ to_id }) => to_id == receiverId) ? (
         <h4>Your msg been sent waiting for acceptance</h4>
       ) : (

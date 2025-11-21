@@ -26,6 +26,7 @@ import { useFriendRequests } from "../custom-hooks/useFriendRequests.js";
 import { addFriends, removeFriend } from "../utils/friends.js";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
+import {} from "module";
 
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { chatId } = useParams();
@@ -42,7 +43,9 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
 
   const allFriends =
     allFriendsData?.pages.flatMap(({ friends }) => friends) ?? [];
-  const receiver = useReceiverStore((s) => s.receivers[receiverId]);
+  const receivers = useReceiverStore((s) => s.receivers);
+  const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
+  const receiver = receivers[receiverId];
   const { sentFriendRequests = [], receivedFriendRequests = [] } =
     friendRequests ?? {};
 
@@ -76,7 +79,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       toast.success("Friend removed");
     });
   };
-  const sendFriendRequest = () => {
+  const handleSendFriendRequest = () => {
     socket.emit("send friend requests", receiverId, (err, res) => {
       if (err || res.status === "duplicated" || res.status === "error") {
         toast.error(res.error);
@@ -109,6 +112,22 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         removeReceivedFriendRequest(queryClient, receiverId);
       }
     );
+  };
+  const handleUnblockUser = () => {
+    const isUserBlocked = receiver.isBlocked;
+
+    if (!isUserBlocked) return;
+
+    socket.emit("send unblocked users", receiverId, (err, res) => {
+      if (err || res.status === "error") {
+        console.log(res);
+
+        toast.error(res.error);
+        return;
+      }
+
+      unblockReceiver(queryClient, receiverId);
+    });
   };
 
   const { refetch } = usePinnedMessages(chatId);
@@ -205,20 +224,39 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
               }
               position="bottom"
             />
-            <PopoverComponent
-              content={
-                <div className="fw-bold popover-content">
-                  {isFriend ? "Remove Friend" : "Add friend"}
-                </div>
-              }
-              trigger={
-                <FaUserFriends
-                  className={`me-1 fs-5 ${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
-                  onClick={open}
-                />
-              }
-              position="bottom"
-            />
+            {!receiver?.isBlocked ? (
+              <PopoverComponent
+                content={
+                  <div className="fw-bold popover-content">
+                    {isFriend ? "Remove Friend" : "Add friend"}
+                  </div>
+                }
+                trigger={
+                  <FaUserFriends
+                    className={`me-1 fs-5 ${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    onClick={open}
+                  />
+                }
+                position="bottom"
+              />
+            ) : receiver?.blockedBy === "me" ? (
+              <PopoverComponent
+                content={
+                  <div className="fw-bold popover-content">
+                    {isFriend ? "Remove Friend" : "Add friend"}
+                  </div>
+                }
+                trigger={
+                  <FaUserFriends
+                    className={`me-1 fs-5 ${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    onClick={open}
+                  />
+                }
+                position="bottom"
+              />
+            ) : (
+              ""
+            )}
 
             <div className="position-relative">
               <Form.Control
@@ -314,7 +352,12 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 handleMessageRequestAcceptance("accepted");
                 return;
               }
-              isFriend ? handleRemoveFriend() : sendFriendRequest();
+              if (isFriend) {
+                handleRemoveFriend();
+              } else {
+                handleSendFriendRequest();
+                handleUnblockUser();
+              }
             }}
             disabled={isFriendRequestSent}
           >

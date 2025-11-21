@@ -34,15 +34,10 @@ const DmPanel = () => {
 
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
   const [showOffset, setShowOffset] = useState(false);
-  // const [activeMsg, setActiveMsg] = useState({
-  //   msg: null,
-  //   type: null,
-  // });
   const activeMsg = useRef({
     msg: null,
     type: null,
   });
-  // const [opened, { open, close }] = useDisclosure(false);
 
   //* dont allow user to search blocked one up,but show the msgs still.
 
@@ -51,18 +46,16 @@ const DmPanel = () => {
   useEffect(() => {
     if (!isInitialDmDataSuccess) return;
 
-    const { receiver, nextId, friendStatus } = initialDmData;
+    const { receiver, friendStatus } = initialDmData;
     const isUserInReceiversObj = receivers[receiver.id];
     const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
     const isUserInDmHistory =
       dmHistoryUsers && dmHistoryUsers.some((e) => e.id == receiver.id);
 
     if (!isUserInDmHistory)
-      addDmHistoryUsers(queryClient, [
-        { ...receiver, receiverId: receiver.id },
-      ]);
+      addDmHistoryUsers(queryClient, [{ ...receiver, chatId }]);
     if (!isUserInReceiversObj)
-      addToReceivers(receiver.id, { ...receiver, receiverId: receiver.id });
+      addToReceivers(receiver.id, { ...receiver, chatId });
     if (friendStatus?.request_state === "pending") {
       friendStatus.user_id == receiver.id
         ? addReceivedFriendRequest(queryClient, [receiver])

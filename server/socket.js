@@ -6,6 +6,7 @@ import { sequelize } from "./models/db.js";
 import { User } from "./models/User.js";
 import { Friend } from "./models/Friend.js";
 import { ChatId } from "./models/ChatId.js";
+import { BlockedUser } from "./models/BlockedUser.js";
 
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
@@ -557,8 +558,19 @@ export const setUpSocket = (io) => {
             request_state: "accepted",
           },
         });
+        const isFriendBlocked = await BlockedUser.findOne({
+          blocked_by_id: userId,
+          blocked_id: friend.id,
+        });
 
         if (isFriend) throw new Error("You're already friends with this user");
+        if (isFriendBlocked)
+          await BlockedUser.destroy({
+            where: {
+              blocked_by_id: userId,
+              blocked_id: friend.id,
+            },
+          });
 
         await Friend.create({
           user_id: userId,
@@ -658,6 +670,96 @@ export const setUpSocket = (io) => {
         logger.log("friend req accepted");
       }
     );
+    socket.on("send blocked users", async (blockedUserId, chatId, done) => {
+      try {
+        const user = await User.findByPk(blockedUserId);
+
+        if (!user) throw new Error("User not found");
+
+        const isFriend = await Friend.findOne({
+          where: {
+            [Op.or]: [
+              {
+                user_id: userId,
+                friend_id: blockedUserId,
+              },
+              {
+                user_id: blockedUserId,
+                friend_id: userId,
+              },
+            ],
+            request_state: "accepted",
+          },
+        });
+        await BlockedUser.create({
+          blocked_by_id: userId,
+          blocked_id: blockedUserId,
+        });
+
+        if (isFriend)
+          await Friend.destroy({
+            where: {
+              [Op.or]: [
+                {
+                  user_id: userId,
+                  friend_id: blockedUserId,
+                },
+                {
+                  user_id: blockedUserId,
+                  friend_id: userId,
+                },
+              ],
+            },
+          });
+      } catch (error) {
+        logger.log("error", error.message);
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+
+      done({
+        status: "ok",
+        result: [{ blockedUserId, chatId }],
+      });
+      logger.log("done");
+      socket.leave(chatId);
+
+      io.emit("receive blocked users", {
+        result: [{ blockedBy: userId, chatId }],
+      });
+    });
+    socket.on("send unblocked users", async (unblockedUserId, done) => {
+      try {
+        const user = await User.findByPk(unblockedUserId);
+
+        if (!user) throw new Error("User not found");
+
+        await BlockedUser.destroy({
+          where: {
+            blocked_by_id: userId,
+            blocked_id: unblockedUserId,
+          },
+        });
+      } catch (error) {
+        logger.log("error", error.message);
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+
+      done({
+        status: "ok",
+        result: [unblockedUserId],
+      });
+      logger.log("done");
+
+      io.emit("receive unblocked users", {
+        result: [userId],
+      });
+    });
 
     if (!socket.recovered) {
       const userLastDisconnect = lastDisconnect.get(userId);
@@ -918,6 +1020,7 @@ export const setUpSocket = (io) => {
             friendRequestsAcceptance,
             msgRequestAcceptance,
             msgRequests,
+            blockedUsers,
           ] = await Promise.all([
             sequelize.query(friendRequestsSql, {
               type: QueryTypes.SELECT,
@@ -946,6 +1049,14 @@ export const setUpSocket = (io) => {
                 userId,
                 lastDisconnect: userLastDisconnect,
               },
+            }),
+            BlockedUser.findAll({
+              attributes: ["blocked_id"],
+              blocked_by_id: userId,
+              updatedAt: {
+                [Op.gte]: userLastDisconnect,
+              },
+              raw: true,
             }),
           ]);
 
@@ -1007,6 +1118,11 @@ export const setUpSocket = (io) => {
             socket.emit("receive friend requests", {
               sender,
               result: friendRequests,
+            });
+          }
+          if (blockedUsers.length) {
+            socket.emit("receive blocked users", {
+              result: blockedUsers,
             });
           }
         }

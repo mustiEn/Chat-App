@@ -3,6 +3,8 @@ import { DirectMessage } from "../DirectMessage.js";
 import { User } from "../User.js";
 import { Friend } from "../Friend.js";
 import { ChatId } from "../ChatId.js";
+import { BlockedUser } from "../BlockedUser.js";
+import { DirectMessageHistory } from "../DirectMessageHistory.js";
 
 export const setUpAssociation = () => {
   DirectMessage.belongsTo(User, {
@@ -42,7 +44,7 @@ export const setUpAssociation = () => {
   });
 
   User.belongsToMany(User, {
-    through: "direct_message_history",
+    through: DirectMessageHistory,
     as: "directMessageHistory",
     foreignKey: "user_id",
     otherKey: "dm_history_user_id",
@@ -50,7 +52,7 @@ export const setUpAssociation = () => {
   });
 
   User.belongsToMany(User, {
-    through: "blocked_users",
+    through: BlockedUser,
     as: "blockedUsers",
     foreignKey: "blocked_id",
     otherKey: "blocked_by_id",

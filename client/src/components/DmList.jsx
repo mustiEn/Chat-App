@@ -146,43 +146,44 @@ const DmList = () => {
           ) : (
             ""
           )}
-          {hasMoreUp[chatId] && messages.length && (
+          {/* {hasMoreUp[chatId] && messages.length && (
             <div className="mb-4" ref={ref}>
               <PulseLoader color={"white"} />
             </div>
-          )}
-          <Box
+          )} */}
+          {/* <Box
             h={rowVirtualizer.getTotalSize()}
             style={{
               position: "relative",
               minHeight: 355,
             }}
             p={"xs"}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const item = items[virtualRow.index];
-              return (
-                <Box
-                  key={virtualRow.key}
-                  w={"100%"}
-                  top={0}
-                  left={0}
-                  style={{
-                    position: "absolute",
-
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  data-index={virtualRow.index}
-                  ref={rowVirtualizer.measureElement}
-                >
-                  {/* <Box w={"100%"} p={"xs"}>
-                    {virtualRow.index}
-                  </Box> */}
-                  <DmItem msg={item} />
-                </Box>
-              );
-            })}
-          </Box>
+          > */}
+          {
+            // rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            //   const item = items[virtualRow.index];
+            //   return (
+            //     <Box
+            //       key={virtualRow.key}
+            //       w={"100%"}
+            //       top={0}
+            //       left={0}
+            //       style={{
+            //         position: "absolute",
+            //         transform: `translateY(${virtualRow.start}px)`,
+            //       }}
+            //       data-index={virtualRow.index}
+            //       ref={rowVirtualizer.measureElement}
+            //     >
+            //       {/* <Box w={"100%"} p={"xs"}>
+            //         {virtualRow.index}
+            //       </Box> */}
+            //       <DmItem msg={item} />
+            //     </Box>
+            //   );
+            // })
+          }
+          {/* </Box> */}
         </MyLoader>
       )}
     </>

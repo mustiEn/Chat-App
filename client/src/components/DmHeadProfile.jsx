@@ -4,12 +4,50 @@ import { useParams } from "react-router-dom";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Box, Button, Flex, Image, Text } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
+import { socket } from "../socket.js";
+import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const DmHeadProfile = () => {
+  const { chatId } = useParams();
   const { receiverId } = useContext(DmPanelContext);
-  const receivers = useReceiverStore((s) => s.receivers);
-  const receiver = receivers[receiverId];
+  const receiver = useReceiverStore((s) => s.receivers[receiverId]);
+  const blockReceiver = useReceiverStore((s) => s.blockReceiver);
+  const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
+  const queryClient = useQueryClient();
 
+  const handleBlockUser = () => {
+    socket.emit("send blocked users", receiverId, chatId, (err, res) => {
+      if (err || res.status === "error") {
+        console.log(res);
+
+        toast.error(res.error);
+        return;
+      }
+
+      blockReceiver(receiverId, "me");
+      toast.success("User blocked");
+    });
+  };
+  const handleUnblockUser = () => {
+    const isUserBlocked = receiver.isBlocked;
+
+    if (!isUserBlocked) return;
+
+    socket.emit("send unblocked users", receiverId, (err, res) => {
+      if (err || res.status === "error") {
+        console.log(res);
+
+        toast.error(res.error);
+        return;
+      }
+
+      unblockReceiver(receiverId);
+    });
+  };
+  useEffect(() => {
+    console.log(receiver, receiver.blockedBy);
+  }, [receiver]);
   return (
     <>
       <Box m={"xs"}>
@@ -36,10 +74,22 @@ const DmHeadProfile = () => {
         </Text>
         <Flex align={"center"} gap={"xs"}>
           <Text>No Mutual Groups</Text>
-          <LuDot />
-          <Button color="dark" size="sm">
-            Block
-          </Button>
+          {receiver?.blockedBy === "receiver" ? (
+            ""
+          ) : (
+            <>
+              <LuDot />
+              <Button
+                color="dark"
+                size="sm"
+                onClick={() =>
+                  receiver.isBlocked ? handleUnblockUser() : handleBlockUser()
+                }
+              >
+                {receiver.isBlocked ? "Unblock" : "Block"}
+              </Button>
+            </>
+          )}
         </Flex>
       </Box>
     </>
