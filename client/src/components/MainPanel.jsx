@@ -239,6 +239,16 @@ const MainPanel = () => {
     };
     const handleFriendRequests = ({ result }) => {
       addReceivedFriendRequest(queryClient, result);
+
+      const receivers = useReceiverStore.getState().receivers;
+      console.log("receivers", receivers);
+      console.log("result", result);
+
+      result.forEach(({ id }) => {
+        if (receivers[id]) {
+          unblockReceiver(id);
+        }
+      });
     };
     const handleFriendRequestAcceptance = ({ result, chatIds }) => {
       result.forEach((e, i) => {
@@ -255,18 +265,19 @@ const MainPanel = () => {
       const receivers = useReceiverStore.getState().receivers;
 
       result.forEach(({ blockedBy }) => {
-        const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
-        const allFriends = allFriendsQuery
-          ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
-          : [];
-        const isFriend = allFriends.some(({ id }) => id == blockedBy);
+        // const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
+        // const allFriends = allFriendsQuery
+        //   ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
+        //   : [];
+        // const isFriend = allFriends.some(({ id }) => id == blockedBy);
 
         if (receivers[blockedBy]) {
           blockReceiver(blockedBy, "receiver");
 
           socket.emit("leave room", blockedBy);
         }
-        if (isFriend) removeFriend(queryClient, blockedBy);
+        // if (isFriend)
+        removeFriend(queryClient, blockedBy);
       });
     };
     const handleUnblockedUsers = ({ result }) => {
@@ -280,7 +291,7 @@ const MainPanel = () => {
         const isFriend = allFriends.some(({ id }) => id == id);
 
         if (receivers[id]) {
-          unblockReceiver(id, "receiver");
+          unblockReceiver(id);
           socket.emit("leave room", id);
         }
         if (isFriend) removeFriend(queryClient, id);

@@ -7,16 +7,24 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { socket } from "../socket.js";
 import toast from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { removeFriend } from "../utils/friends.js";
 
 const DmHeadProfile = () => {
   const { chatId } = useParams();
   const { receiverId } = useContext(DmPanelContext);
-  const receiver = useReceiverStore((s) => s.receivers[receiverId]);
+  const receivers = useReceiverStore((s) => s.receivers);
+  const receiver = receivers[receiverId];
   const blockReceiver = useReceiverStore((s) => s.blockReceiver);
   const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
   const queryClient = useQueryClient();
 
   const handleBlockUser = () => {
+    const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
+    const allFriends = allFriendsQuery
+      ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
+      : [];
+    const isFriend = allFriends.some(({ id }) => id == id);
+
     socket.emit("send blocked users", receiverId, chatId, (err, res) => {
       if (err || res.status === "error") {
         console.log(res);
@@ -26,6 +34,7 @@ const DmHeadProfile = () => {
       }
 
       blockReceiver(receiverId, "me");
+      if (isFriend) removeFriend(queryClient, receiverId);
       toast.success("User blocked");
     });
   };

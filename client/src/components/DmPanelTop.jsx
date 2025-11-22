@@ -80,6 +80,13 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
     });
   };
   const handleSendFriendRequest = () => {
+    const recevierBlockedMe = receivers[receiverId].blockedBy === "receiver";
+
+    if (recevierBlockedMe) {
+      toast.error("Something went wrong, im blocked");
+      return;
+    }
+
     socket.emit("send friend requests", receiverId, (err, res) => {
       if (err || res.status === "duplicated" || res.status === "error") {
         toast.error(res.error);
@@ -89,6 +96,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       addSentFriendRequest(queryClient, [
         { id: receiverId, username: receiver.username },
       ]);
+      unblockReceiver(receiverId);
       toast.success("Friend request sent");
     });
   };
@@ -126,7 +134,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         return;
       }
 
-      unblockReceiver(queryClient, receiverId);
+      unblockReceiver(receiverId);
     });
   };
 

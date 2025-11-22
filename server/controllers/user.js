@@ -576,6 +576,7 @@ export const getFriendRequests = async (req, res, next) => {
         },
       }),
     ]);
+    logger.log("receivedFriendRequests: ", receivedFriendRequests);
     res.status(200).json({ receivedFriendRequests, sentFriendRequests });
   } catch (error) {
     next(error);

@@ -558,13 +558,15 @@ export const setUpSocket = (io) => {
             request_state: "accepted",
           },
         });
-        const isFriendBlocked = await BlockedUser.findOne({
-          blocked_by_id: userId,
-          blocked_id: friend.id,
+        const isFriendBlockedByMe = await BlockedUser.findOne({
+          where: {
+            blocked_by_id: userId,
+            blocked_id: friend.id,
+          },
         });
 
         if (isFriend) throw new Error("You're already friends with this user");
-        if (isFriendBlocked)
+        if (isFriendBlockedByMe)
           await BlockedUser.destroy({
             where: {
               blocked_by_id: userId,

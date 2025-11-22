@@ -11,13 +11,32 @@ import {
 } from "../utils/friendRequests";
 import { useFriendRequests } from "../custom-hooks/useFriendRequests";
 import { addFriends } from "../utils/friends";
+import { useReceiverStore } from "../stores/useReceiverStore";
 
 const AddFriend = () => {
   const [inp, setInp] = useState("");
   const { data } = useFriendRequests();
   const { receivedFriendRequests } = data ?? {};
+  const receivers = useReceiverStore((s) => s.receivers);
+  const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
   const queryClient = useQueryClient();
-  const sendFriendRequest = () => {
+
+  const handleSendFriendRequest = () => {
+    let recevierBlockedMe = false;
+
+    for (const key in receivers) {
+      const { id, username, blockedBy } = receivers[key];
+      if (username === inp && blockedBy === "receiver") {
+        recevierBlockedMe = true;
+        break;
+      }
+    }
+
+    if (recevierBlockedMe) {
+      toast.error("Something went wrong, im blocked");
+      return;
+    }
+
     socket.emit("send friend requests", inp, (err, res) => {
       if (err || res.status === "error") {
         toast.error(res.error);
@@ -27,6 +46,7 @@ const AddFriend = () => {
       addSentFriendRequest(queryClient, [
         { id: res.friend.id, username: res.friend.username },
       ]);
+      unblockReceiver(res.friend.id);
       toast.success("Friend request sent");
     });
   };
@@ -78,7 +98,7 @@ const AddFriend = () => {
 
                     friendRequestReceived
                       ? handleFriendRequestAcceptance(friendRequestReceived)
-                      : sendFriendRequest();
+                      : handleSendFriendRequest();
                     setInp("");
                   }}
                 >

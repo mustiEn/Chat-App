@@ -37,7 +37,7 @@ export const removeSentFriendRequest = (queryClient, userId) => {
 };
 export const removeReceivedFriendRequest = (queryClient, userId) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
-    const vals = olderData?.receivedRequest ?? [];
+    const vals = olderData?.receivedFriendRequests ?? [];
     const filtered = vals.length ? vals.filter(({ id }) => id != userId) : [];
 
     return {

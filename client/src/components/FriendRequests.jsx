@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import FriendRequestsTop from "./FriendRequestsTop";
 import { Box, Flex, Image, Stack, Text } from "@mantine/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,10 @@ const FriendRequests = () => {
 
   const { data, isLoading } = useFriendRequests();
   const { receivedFriendRequests = [] } = data ?? {};
+
+  useEffect(() => {
+    console.log("friend reqs", data);
+  }, [data]);
 
   return (
     <>
