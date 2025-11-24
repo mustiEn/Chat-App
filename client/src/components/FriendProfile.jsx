@@ -3,9 +3,9 @@ import Badge from "react-bootstrap/esm/Badge";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import Dropdown from "react-bootstrap/Dropdown";
 import { Link } from "react-router-dom";
-import styles from "../css/dm_panel.module.css";
 import { Box, Flex, Image } from "@mantine/core";
 import UserStatus from "./UserStatus";
+import styles from "../css/friend_profile.module.css";
 
 const FriendProfile = ({ showOffset, friend }) => {
   return (

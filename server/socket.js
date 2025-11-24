@@ -18,6 +18,7 @@ export const setUpSocket = (io) => {
         "id",
         "display_name",
         "username",
+        "email",
         "profile",
         "createdAt",
         "about_me",

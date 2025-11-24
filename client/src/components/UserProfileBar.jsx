@@ -20,7 +20,7 @@ const UserProfileBar = () => {
   const [opened, { open, close }] = useDisclosure(false);
   const [activeModalLink, setActiveModalLink] = useState({
     i: 0,
-    key: "",
+    key: "My Account",
   });
 
   return (
@@ -90,18 +90,30 @@ const UserProfileBar = () => {
         size={"80%"}
         opened={opened}
         onClose={close}
+        className="aaaa"
         title="User Settings"
         styles={{
           body: {
             padding: 0,
+            height: "calc(100% - 60px)",
           },
           header: {
             backgroundColor: "#1a1a1e",
           },
+          content: {
+            height: "100%",
+          },
         }}
       >
-        <Flex w={"100%"}>
-          <Box w={250} h={500} bg={"#1a1a1e"} p={"sm"}>
+        <Flex w={"100%"} h={"100%"}>
+          <Box
+            w={250}
+            bg={"#1a1a1e"}
+            p={"sm"}
+            style={{
+              flexGrow: 1,
+            }}
+          >
             <Flex mb={"xs"} align={"center"} gap={"xs"} h={75}>
               <Image
                 src="https://placehold.co/50"
@@ -142,7 +154,7 @@ const UserProfileBar = () => {
               ))}
             </Flex>
           </Box>
-          <Box w={"100%"} h={500} bg={"#202024"}>
+          <Box w={"100%"} m={"xl"}>
             {Object.entries(modalComponents).map(([key, Component]) =>
               key === activeModalLink.key ? <Component key={key} /> : ""
             )}

@@ -9,24 +9,6 @@
   /* padding-bottom: 6rem; */
 }
 
-.offCanvas {
-  width: rem(350px);
-  transition: 0.7s;
-}
-
-.offCanvas:not(.show) {
-  transform: translateX(rem(350px));
-  margin-left: rem(-350px);
-}
-
-.show {
-  transform: translateX(0);
-}
-
-.friend-profile-bg {
-  height: rem(150px);
-}
-
 .options-tab {
   transform: translateY(rem(10px));
   display: none;
