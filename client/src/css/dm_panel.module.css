@@ -75,7 +75,7 @@
 }
 
 .message-form {
-  background-color: rgb(39 38 38);
+  background-color: rgb(32, 31, 31);
   border: 1px solid rgba(128, 128, 128, 0.5);
   min-height: rem(60px);
   max-height: rem(600px);

@@ -1,6 +1,11 @@
 :root {
   --panel-top-height: rem(58px);
   --header-height: rem(32px);
+  --text-muted: #afafaf;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
 }
 
 * {
@@ -34,7 +39,7 @@ a {
 }
 
 .text-muted {
-  color: #afafaf !important;
+  color: var(--text-muted);
 }
 
 .panel-top {
@@ -75,4 +80,12 @@ a {
 
 .timestamp {
   font-size: 11px;
+}
+
+.user-status {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  border: 1px solid #2c2c30;
+  border-radius: 100%;
 }

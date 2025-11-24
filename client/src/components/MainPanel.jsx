@@ -27,15 +27,19 @@ import {
   editMessage,
   setIsMessagePinned,
 } from "../utils/chatMessages.js";
+import UserProfileBar from "./UserProfileBar.jsx";
+import { UserContext } from "../contexts/UserContext.jsx";
 
 const MainPanel = () => {
   const queryClient = useQueryClient();
+  const [user, setUser] = useState();
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.addToNewPinnedMsgExists
   );
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const blockReceiver = useReceiverStore((s) => s.blockReceiver);
   const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
+  const setStatus = useReceiverStore((s) => s.setStatus);
   const [groupChat, setGroupChat] = useState({});
 
   const scrollElementRef = useRef(null);
@@ -61,7 +65,8 @@ const MainPanel = () => {
     };
     const getInitial = (user) => {
       socket.auth.user = user;
-      // console.log(userId);
+      setUser(user);
+      console.log(user);
     };
     const onDisconnect = (reason) => {
       console.log("❌ Socket disconnected, ", reason);
@@ -258,8 +263,13 @@ const MainPanel = () => {
         removeSentFriendRequest(queryClient, e.sender.id);
       });
     };
-    const handleUserStatus = (res) => {
+    const handleUserStatus = ({ result }) => {
       console.log("result", res);
+      const receivers = useReceiverStore.getState().receivers;
+
+      result.forEach(({ userId, status }) => {
+        if (receivers[userId]) setStatus(userId, status);
+      });
     };
     const handleBlockedUsers = ({ result }) => {
       const receivers = useReceiverStore.getState().receivers;
@@ -316,7 +326,7 @@ const MainPanel = () => {
       "receive friend request acceptance",
       handleFriendRequestAcceptance
     );
-    socket.on("status", handleUserStatus);
+    socket.on("receive user status", handleUserStatus);
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", (err) =>
       console.error("⚠️ Connect error:", err)
@@ -343,7 +353,7 @@ const MainPanel = () => {
         "receive friend request acceptance",
         handleFriendRequestAcceptance
       );
-      socket.off("status", handleUserStatus);
+      socket.off("receive user status", handleUserStatus);
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
 
@@ -354,27 +364,30 @@ const MainPanel = () => {
 
   return (
     <>
-      <Flex w={"100%"}>
-        <Sidebar />
-        <Flex
-          direction={"column"}
-          // w={"100%"}
-          style={{
-            borderLeft: "none",
-            borderRight: "none",
-            flex: "1 0 auto",
-          }}
-        >
-          <Outlet
-            context={{
-              groupChat,
-              setGroupChat,
-              scrollElementRef,
-              dmChatRef,
+      <UserContext value={{ user }}>
+        <UserProfileBar />
+        <Flex w={"100%"}>
+          <Sidebar />
+          <Flex
+            direction={"column"}
+            // w={"100%"}
+            style={{
+              borderLeft: "none",
+              borderRight: "none",
+              flex: "1 0 auto",
             }}
-          />
+          >
+            <Outlet
+              context={{
+                groupChat,
+                setGroupChat,
+                scrollElementRef,
+                dmChatRef,
+              }}
+            />
+          </Flex>
         </Flex>
-      </Flex>
+      </UserContext>
     </>
   );
 };

@@ -1,0 +1,37 @@
+@import "../index.css";
+
+.settings-icon {
+  transition: 1.3s;
+}
+
+.settings-icon:hover {
+  transform: rotateZ(260deg);
+  cursor: pointer;
+}
+
+.username {
+  transition: 0.5s;
+}
+
+.user-profile-bar:hover .username {
+  transform: translateY(-15px);
+}
+
+.active-modal-link {
+  color: white;
+  background-color: rgb(55, 53, 53);
+  /* border: 1px solid rgb(55, 53, 53); */
+  border-radius: var(--mantine-radius-md);
+}
+
+.modal-link {
+  color: var(--text-muted);
+}
+
+.modal-link:hover {
+  color: white;
+  background-color: rgb(19, 19, 19);
+  cursor: pointer;
+  /* border: 1px solid rgb(19, 19, 19); */
+  border-radius: var(--mantine-radius-md);
+}

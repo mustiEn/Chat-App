@@ -107,7 +107,7 @@ const DmPanel = () => {
               </Flex>
 
               <FriendProfile
-                friend={receivers[initialDmData.receiver.id]}
+                friend={initialDmData.receiver}
                 showOffset={showOffset}
               />
             </Flex>

@@ -19,5 +19,9 @@ export const useReceiverStore = create(
         state.receivers[receiverId].isBlocked = false;
         delete state.receivers[receiverId].blockedBy;
       }),
+    setStatus: (receiverId, status) =>
+      set((state) => {
+        state.receivers[receiverId].status = status;
+      }),
   }))
 );

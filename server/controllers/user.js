@@ -74,14 +74,12 @@ export const getInitialDmData = async (req, res, next) => {
         "background_color",
         "about_me",
         "createdAt",
+        "status",
       ],
       raw: true,
     });
 
     if (!receiver) throw new Error("Receiver not found");
-
-    //* do who blocked who
-
     if (isReceiverBlocked) {
       receiver["isBlocked"] = true;
       receiver["blockedBy"] =
@@ -118,7 +116,7 @@ export const getInitialDmData = async (req, res, next) => {
         receiver["with_in_no_contact"] = true;
       }
     }
-    logger.log("friendStatus", friendStatus);
+
     res.status(200).json({ receiver, friendStatus });
   } catch (error) {
     next(error);
@@ -250,7 +248,8 @@ export const getDmHistory = async (req, res, next) => {
             SELECT 
               u.id, 
               u.display_name, 
-              u.profile, 
+              u.profile,
+              u.status, 
               c.chat_id chatId, 
               dmh.createdAt created_at 
             FROM 
@@ -264,7 +263,8 @@ export const getDmHistory = async (req, res, next) => {
             SELECT 
               u.id, 
               u.display_name, 
-              u.profile, 
+              u.profile,
+              u.status, 
               c.chat_id, 
               dmh.createdAt created_at 
             FROM 
@@ -470,7 +470,8 @@ export const getAllFriends = async (req, res, next) => {
         IF(f.user_id = :userId, friend_id, user_id) id, 
         u.username, 
         u.display_name, 
-        u.profile 
+        u.profile,
+        u.status 
       FROM 
         friends f 
         INNER JOIN users u ON u.id = IF(f.user_id = :userId, friend_id, user_id)
@@ -576,7 +577,6 @@ export const getFriendRequests = async (req, res, next) => {
         },
       }),
     ]);
-    logger.log("receivedFriendRequests: ", receivedFriendRequests);
     res.status(200).json({ receivedFriendRequests, sentFriendRequests });
   } catch (error) {
     next(error);

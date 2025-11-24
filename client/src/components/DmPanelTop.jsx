@@ -26,7 +26,7 @@ import { useFriendRequests } from "../custom-hooks/useFriendRequests.js";
 import { addFriends, removeFriend } from "../utils/friends.js";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import {} from "module";
+import UserStatus from "../components/UserStatus.jsx";
 
 const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const { chatId } = useParams();
@@ -164,16 +164,25 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
 
   return (
     <>
-      <div
+      <Box
         className={stylesPanelTop["custom-overlay"]}
         ref={customOverlayRef}
-      ></div>
+      ></Box>
       <Box className={"panel-top"}>
         <Flex h={"100%"} w={"100%"} c={"white"} pr={10} pl={10}>
-          <div className="d-flex align-items-center gap-2">
-            <img src="https://placehold.co/25" alt="" />
-            <div className="fs-6">{receiver?.display_name}</div>
-          </div>
+          <Box className="d-flex align-items-center gap-2">
+            <Box
+              style={{
+                position: "relative",
+              }}
+            >
+              <Image src="https://placehold.co/25" radius={"xl"} alt="" />
+              {receiver?.status && (
+                <UserStatus status={receiver.status} w={10} h={10} />
+              )}
+            </Box>
+            <Box className="fs-6">{receiver?.display_name}</Box>
+          </Box>
           <div className="d-flex align-items-center gap-2 ms-auto">
             <PopoverComponent
               content={

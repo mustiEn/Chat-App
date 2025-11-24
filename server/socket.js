@@ -1,4 +1,4 @@
-import { Op, QueryTypes, fn } from "sequelize";
+import { Op, QueryTypes, col, fn, literal } from "sequelize";
 import { DirectMessage } from "./models/DirectMessage.js";
 import dayjs from "dayjs";
 import { logger, lastDisconnect } from "./utils/index.js";
@@ -7,6 +7,8 @@ import { User } from "./models/User.js";
 import { Friend } from "./models/Friend.js";
 import { ChatId } from "./models/ChatId.js";
 import { BlockedUser } from "./models/BlockedUser.js";
+
+let usersWithInContact = [];
 
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
@@ -20,28 +22,23 @@ export const setUpSocket = (io) => {
         "createdAt",
         "about_me",
         "background_color",
+        "status",
       ],
       raw: true,
     });
-    // const usersWithInContactSql = `
-    //   SELECT
-    //     chat_id
-    //   FROM
-    //     chat_ids
-    //   WHERE
-    //     from_id = :userId
-    //     OR to_id = :userId
 
-    // `;
-    // const usersWithInContact = await sequelize.query(usersWithInContactSql, {
-    //   type: QueryTypes.SELECT,
-    //   replacements: {
-    //     userId,
-    //   },
-    // });
-
-    const usersWithInContact = await ChatId.findAll({
-      attributes: ["chat_id"],
+    usersWithInContact = await ChatId.findAll({
+      attributes: [
+        [
+          fn(
+            "IF",
+            literal(`user_id = ${userId}`),
+            col("receiver_id"),
+            col("user_id")
+          ),
+          "id",
+        ],
+      ],
       where: {
         [Op.or]: [
           {
@@ -71,10 +68,10 @@ export const setUpSocket = (io) => {
 
     //* in groups,no access to anyone regadless of friendship,only allow a msg input.
 
-    usersWithInContact.forEach(({ chat_id }) => {
-      const roomExists = Array.from(socket.rooms).includes(chat_id);
+    usersWithInContact.forEach(({ id }) => {
+      const roomExists = Array.from(socket.rooms).includes(id);
 
-      if (!roomExists) socket.join(chat_id);
+      if (!roomExists) socket.join(id);
     });
 
     // logger.log("rooms: ", socket.rooms);
@@ -99,13 +96,19 @@ export const setUpSocket = (io) => {
         status: "ok",
       });
     });
-    // socket.on("send user status", (userId, status, done) => {
-    //   userId = Number(userId);
-    //   socket.broadcast.emit("status", { userId, status });
-    //   done({
-    //     status: "ok",
-    //   });
-    // });
+    socket.on("send user status", (userId, status, done) => {
+      userId = Number(userId);
+      const result = {
+        userId,
+        status,
+      };
+      usersWithInContact.forEach(({ id }) => {
+        io.to(id).emit("receive user status", { result });
+      });
+      done({
+        status: "ok",
+      });
+    });
     socket.on("send edited msgs", async (msg, chatId, done) => {
       let message;
 
@@ -160,11 +163,6 @@ export const setUpSocket = (io) => {
 
       try {
         const msgReq = await DirectMessage.create(msgObj, { raw: true });
-        chatId = await ChatId.create({
-          user_id: userId,
-          receiver_id: receiverId,
-        });
-
         const resultSql = `
           SELECT
             dm.id,
@@ -189,6 +187,11 @@ export const setUpSocket = (io) => {
           WHERE
             dm.id = :msgReqId
         `;
+
+        chatId = await ChatId.create({
+          user_id: userId,
+          receiver_id: receiverId,
+        });
 
         result = await sequelize.query(resultSql, {
           type: QueryTypes.SELECT,
@@ -295,8 +298,9 @@ export const setUpSocket = (io) => {
           chatIds: [chatId],
         });
         socket.join(chatId);
-        // logger.log("Joined chatId: ", chatId);
-        // logger.log("sender", userId);
+
+        if (!usersWithInContact[receiverId])
+          usersWithInContact.push(receiverId);
       }
 
       logger.log("Emit receive msg request acceptance");
@@ -667,7 +671,11 @@ export const setUpSocket = (io) => {
           chatIds: [chat?.chat_id ?? null],
         });
 
-        if (status === "accepted" && chatIdCreated) socket.join(chatId);
+        if (status === "accepted" && chatIdCreated) {
+          socket.join(chat?.chat_id);
+          if (!usersWithInContact[receiverId])
+            usersWithInContact.push(receiverId);
+        }
 
         logger.log("friend req accepted");
       }

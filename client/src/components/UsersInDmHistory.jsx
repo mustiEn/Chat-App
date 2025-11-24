@@ -4,6 +4,7 @@ import HeaderContext from "../contexts/HeaderContext";
 import DmHistorySkeleton from "./DmHistorySkeleton";
 import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 import { useDmHistory } from "../custom-hooks/useDmHistory.js";
+import UserStatus from "./UserStatus.jsx";
 // import DmHistorySkeleton from "./DmHistorySkeleton";
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
@@ -62,11 +63,22 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
                       zIndex: 1,
                     }}
                   >
-                    <Image
-                      src={e.profile ?? "https://placehold.co/32"}
-                      radius={"xl"}
-                      alt=""
-                    />
+                    <div
+                      style={{
+                        position: "relative",
+                        width: 32,
+                        height: 32,
+                      }}
+                    >
+                      <Image
+                        src={e.profile ?? "https://placehold.co/32"}
+                        radius={"xl"}
+                        alt=""
+                      />
+                      {e?.status && (
+                        <UserStatus status={e.status} w={12} h={12} />
+                      )}
+                    </div>
                     <Text>
                       {e.display_name?.length > 15
                         ? e.display_name.slice(15).concat("...")
