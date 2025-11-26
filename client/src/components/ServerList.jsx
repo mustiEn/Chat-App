@@ -3,13 +3,12 @@ import { NavLink, useLoaderData, useLocation } from "react-router-dom";
 import { TbActivity } from "react-icons/tb";
 import { IoAddCircleSharp } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
-import Button from "react-bootstrap/Button";
 import PopoverComponent from "./PopoverComponent";
 import "../css/server_list.css";
 import AppsModal from "./AppsModal";
 import AddServerModal from "./AddServerModal";
 import HeaderContext from "../contexts/HeaderContext";
-import { Flex } from "@mantine/core";
+import { Flex, Stack, Button, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 
 const ServerList = memo(function Serverlist() {
@@ -45,24 +44,36 @@ const ServerList = memo(function Serverlist() {
   };
   const popOverContent = (content) => {
     return (
-      <div className="d-flex flex-column">
-        <div className="fw-bold popover-content">
+      <Stack>
+        <Text fw={"bold"} className=" popover-content">
           {typeof content == "number" ? "Jack daniels" : content}
-        </div>
+        </Text>
         {content && content?.is_muted && (
           <span className="text-muted" style={{ fontSize: "10px" }}>
             {content.is_muted}
           </span>
         )}
-      </div>
+      </Stack>
     );
   };
   const popOverTrigger = (link, server = null, icon = null) => {
     return (
       <Button
-        variant={"dark"}
-        className={"d-flex justify-content-center align-items-center mx-1 p-0"}
-        style={{ width: 40, height: 35, fontSize: 20 }}
+        color={"dark"}
+        // className={"d-flex justify-content-center align-items-center mx-1 p-0"}
+        // style={{ width: 40, height: 35, fontSize: 20 }}
+        mx={"xs"}
+        p={0}
+        styles={{
+          root: {
+            width: 40,
+            height: 35,
+            fontSize: 16,
+          },
+          label: {
+            overflow: "unset",
+          },
+        }}
         // onClick={() => setHeader(content)}
         as={NavLink}
         to={link}
@@ -86,10 +97,20 @@ const ServerList = memo(function Serverlist() {
   const popOverModalTrigger = (icon, toggler) => {
     return (
       <Button
-        variant={"dark"}
-        className={"d-flex justify-content-center align-items-center mx-1 p-0"}
-        style={{ width: 40, height: 35, fontSize: 20 }}
+        color={"dark"}
+        mx={"xs"}
+        p={0}
         onClick={toggler}
+        styles={{
+          root: {
+            width: 40,
+            height: 35,
+            fontSize: 16,
+          },
+          label: {
+            overflow: "unset",
+          },
+        }}
       >
         {icon}
       </Button>
@@ -101,9 +122,9 @@ const ServerList = memo(function Serverlist() {
         id="serverList"
         direction={"column"}
         gap={"xs"}
-        mr={"auto"}
-        ps={"xs"}
-        pl={"xs"}
+        ms={"auto"}
+        // ps={"xs"}
+        // pl={"xs"}
       >
         <PopoverComponent
           content={popOverContent("Direct Messages")}

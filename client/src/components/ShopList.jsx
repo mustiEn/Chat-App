@@ -1,17 +1,22 @@
 import React, { useState } from "react";
-import styles from "../css/shop_list.module.css";
 import ProductBackground from "./ProductBackground";
 import ProductProfileIcons from "./ProductProfileIcons";
 import ProductAnimatedView from "./ProductAnimatedView";
+import { Box, Flex, Grid, Group, Stack } from "@mantine/core";
 
 const ShopList = () => {
+  // const arr = [
+  //   <ProductBackground />,
+  //   <ProductProfileIcons />,
+  //   <ProductAnimatedView />,
+  // ];
   return (
     <>
-      <div className="d-flex flex-wrap gap-2">
-        <ProductBackground styles={styles} />
-        <ProductProfileIcons styles={styles} />
-        <ProductAnimatedView styles={styles} />
-      </div>
+      <Flex wrap={"wrap"} justify={"space-between"} gap={"md"}>
+        <ProductBackground />
+        <ProductProfileIcons />
+        <ProductAnimatedView />
+      </Flex>
     </>
   );
 };

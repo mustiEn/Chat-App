@@ -1,21 +1,32 @@
-import { Box, Flex, Image, Text, Modal, Button } from "@mantine/core";
+import {
+  Box,
+  Flex,
+  Image,
+  Text,
+  Modal,
+  Button,
+  UnstyledButton,
+} from "@mantine/core";
 import UserStatus from "./UserStatus";
 import { CiSettings } from "react-icons/ci";
-import styles from "../css/user_profile_bar.module.css";
 import { useDisclosure } from "@mantine/hooks";
 import { UserContext } from "../contexts/UserContext.jsx";
 import { useContext } from "react";
 import { useState } from "react";
 import SettingsModalMyAccount from "../components/SettingsModalMyAccount.jsx";
 import SettingsModalSecurity from "../components/SettingsModalSecurity.jsx";
+import SettingsModalLanguage from "../components/SettingsModalLanguage.jsx";
+import styles from "../css/user_profile_bar.module.css";
+import UserProfileBarDropdown from "./UserProfileBarDropdown.jsx";
 
 const modalLinks = ["My Account", "Security", "Billings", "Language"];
 const modalComponents = {
   "My Account": SettingsModalMyAccount,
   Security: SettingsModalSecurity,
+  Language: SettingsModalLanguage,
 };
 
-const UserProfileBar = () => {
+const UserProfileBar = ({ ref }) => {
   const { user } = useContext(UserContext);
   const [opened, { open, close }] = useDisclosure(false);
   const [activeModalLink, setActiveModalLink] = useState({
@@ -25,6 +36,7 @@ const UserProfileBar = () => {
 
   return (
     <>
+      {/* <UserProfileBarDropdown /> */}
       <Flex
         className={styles["user-profile-bar"]}
         w={250}
@@ -33,48 +45,9 @@ const UserProfileBar = () => {
         ms={"xs"}
         px={"xs"}
         align={"center"}
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          backgroundColor: "rgb(32, 31, 31)",
-          border: "1px solid rgba(128, 128, 128, 0.5)",
-          minHeight: 60,
-        }}
       >
-        <Flex w={"100%"} align={"center"} gap={"xs"}>
-          <Box
-            style={{
-              position: "relative",
-            }}
-            w={32}
-            h={32}
-          >
-            <Image src="https://placehold.co/32" radius={"xl"} alt="" />
-            {user?.status && <UserStatus status={user.status} w={10} h={10} />}
-          </Box>
-          <Box>
-            <Text fw={"bold"}>{user?.display_name}</Text>
-            <Box
-              style={{
-                width: 50,
-                height: 15,
-                position: "relative",
-                overflow: "clip",
-              }}
-            >
-              <Flex
-                direction={"column"}
-                className={styles.username}
-                style={{
-                  position: "absolute",
-                }}
-              >
-                <Text fz={10}>{user?.status}</Text>
-                <Text fz={10}>{user?.username}</Text>
-              </Flex>
-            </Box>
-          </Box>
+        <Flex w={"100%"} align={"center"}>
+          <UserProfileBarDropdown />
           <Text ms={"auto"}>
             <CiSettings
               className={styles["settings-icon"]}
@@ -86,6 +59,7 @@ const UserProfileBar = () => {
           </Text>
         </Flex>
       </Flex>
+      {/* </UserProfileBarDropdown> */}
       <Modal
         size={"80%"}
         opened={opened}
@@ -105,7 +79,12 @@ const UserProfileBar = () => {
           },
         }}
       >
-        <Flex w={"100%"} h={"100%"}>
+        <Flex
+          w={"100%"}
+          style={{
+            minHeight: "100%",
+          }}
+        >
           <Box
             w={250}
             bg={"#1a1a1e"}

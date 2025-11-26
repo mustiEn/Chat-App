@@ -1,23 +1,24 @@
 import React from "react";
 import Card from "react-bootstrap/Card";
 import Skeleton from "react-loading-skeleton";
+import styles from "../css/shop_list.module.css";
 
-const ProductProfileIcons = ({ styles }) => {
-  const icons = [
-    "alien.gif",
-    "angel.gif",
-    "smiling-face.gif",
-    "uranus.gif",
-    "valentines-day.gif",
-    "shooting-star.gif",
-    "rocket-launch.gif",
-    "mars.gif",
-    "galaxy.gif",
-    "meteor-rain.gif",
-    "core-value.gif",
-    "core-values.gif",
-    "star.gif",
-  ];
+const icons = [
+  "alien.gif",
+  "angel.gif",
+  "smiling-face.gif",
+  "uranus.gif",
+  "valentines-day.gif",
+  "shooting-star.gif",
+  "rocket-launch.gif",
+  "mars.gif",
+  "galaxy.gif",
+  "meteor-rain.gif",
+  "core-value.gif",
+  "core-values.gif",
+  "star.gif",
+];
+const ProductProfileIcons = () => {
   return (
     <>
       {icons.map((icon, i) => (
@@ -37,14 +38,14 @@ const ProductProfileIcons = ({ styles }) => {
               className="position-absolute translate-middle top-50 start-50"
             />
             <img
-              src={"/mona.jpg"}
+              src={"/images/mona.jpg"}
               className={`${styles.profile} rounded-circle position-absolute translate-middle top-50 start-50 z-1`}
               width={150}
               height={150}
               alt=""
             />
             <img
-              src={`/${icon}`}
+              src={`/images/${icon}`}
               width={50}
               height={50}
               style={{ transform: "translate(-65px, 40px)" }}

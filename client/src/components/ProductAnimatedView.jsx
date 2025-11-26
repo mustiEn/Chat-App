@@ -1,6 +1,7 @@
 import React from "react";
 import ProductAnimatedViewSkeleton from "./ProductAnimatedViewSkeleton";
 import Card from "react-bootstrap/Card";
+import styles from "../css/shop_list.module.css";
 
 const animatedViews = [
   "atomic.gif",
@@ -14,8 +15,7 @@ const animatedViews = [
   "particles.gif",
   "silky-blue.gif",
 ];
-
-const ProductAnimatedView = ({ styles }) => {
+const ProductAnimatedView = () => {
   return (
     <>
       {animatedViews.map((view, i) => (

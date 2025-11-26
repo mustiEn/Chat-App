@@ -1,8 +1,9 @@
 import React from "react";
 import ProductBackgroundSkeleton from "./ProductBackgroundSkeleton";
 import Card from "react-bootstrap/Card";
+import styles from "../css/shop_list.module.css";
 
-const ProductBackground = ({ styles }) => {
+const ProductBackground = () => {
   const bgs = [
     "kaneki.gif",
     "kaneki-2.gif",
@@ -24,7 +25,7 @@ const ProductBackground = ({ styles }) => {
             <div
               className={`${styles["product-bg"]} position-absolute z-0 top-0 w-100 h-100`}
               style={{
-                backgroundImage: `url(/${bg})`,
+                backgroundImage: `url(/images/${bg})`,
               }}
             ></div>
           </div>

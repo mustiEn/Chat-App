@@ -18,8 +18,10 @@ const ProductProfileSkeleton = () => {
             width: 55,
             height: 55,
             transform: "translateY(-55%)",
+            position: "relative",
+            marginLeft: 5,
+            zIndex: 1,
           }}
-          className="position-relative ms-2 z-1"
         >
           <Skeleton circle width={55} height={55} />
           <div

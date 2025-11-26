@@ -1,16 +1,40 @@
-import { Button, Flex, Modal, Stack, Text } from "@mantine/core";
-import React from "react";
-import { useDisclosure } from "@mantine/hooks";
+import { Group, Radio, Stack, Text, Title } from "@mantine/core";
+import styles from "../css/settings_modal_language.module.css";
+import { useState } from "react";
 
-const SettingsModalSecurity = () => {
-  const [opened, { open, close }] = useDisclosure(false);
+const langs = {
+  en: "English",
+  tr: "Turkish",
+  sp: "Spanish",
+  jpn: "Japanese",
+  fr: "French",
+};
 
+const SettingsModalLanguage = () => {
   return (
     <>
-      <div>Language</div>
-      <Stack></Stack>
+      <Title order={4}>Select a language</Title>
+      <Radio.Group>
+        <Stack mt={"md"}>
+          {Object.entries(langs).map(([key, val]) => (
+            <Radio.Card
+              className={styles.lang}
+              radius="md"
+              value={key}
+              key={key}
+              name="lang"
+              p={"xs"}
+            >
+              <Group>
+                <Radio.Indicator size="md" color="red" variant="outline" />
+                <Text>{val}</Text>
+              </Group>
+            </Radio.Card>
+          ))}
+        </Stack>
+      </Radio.Group>
     </>
   );
 };
 
-export default SettingsModalSecurity;
+export default SettingsModalLanguage;

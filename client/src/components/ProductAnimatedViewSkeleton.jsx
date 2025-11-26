@@ -6,7 +6,7 @@ const ProductAnimatedViewSkeleton = ({ styles, animatedViewName }) => {
   const middleView = (num) => {
     return num == 2
       ? {
-          backgroundImage: `url(/${animatedViewName})`,
+          backgroundImage: `url(/images/${animatedViewName})`,
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
           backgroundPosition: "100% 30%",

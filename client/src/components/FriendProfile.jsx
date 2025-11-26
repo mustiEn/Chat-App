@@ -1,7 +1,4 @@
 import React from "react";
-import Badge from "react-bootstrap/esm/Badge";
-import DropdownButton from "react-bootstrap/DropdownButton";
-import Dropdown from "react-bootstrap/Dropdown";
 import { Link } from "react-router-dom";
 import { Box, Flex, Image } from "@mantine/core";
 import UserStatus from "./UserStatus";
@@ -68,7 +65,7 @@ const FriendProfile = ({ showOffset, friend }) => {
               <Box>24 May 2025</Box>
             </Flex>
           </Box>
-          <DropdownButton
+          {/* <DropdownButton
             id="dropdown-basic-button"
             title="Dropdown button"
             variant="dark"
@@ -77,7 +74,7 @@ const FriendProfile = ({ showOffset, friend }) => {
             <Dropdown.Item as={Link}>Action</Dropdown.Item>
             <Dropdown.Item as={Link}>Another action</Dropdown.Item>
             <Dropdown.Item as={Link}>Something else</Dropdown.Item>
-          </DropdownButton>
+          </DropdownButton> */}
         </Box>
         <Box
           className={`${styles["friend-profile-bg"]} position-absolute z-0 top-0 h-100`}

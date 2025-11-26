@@ -5,18 +5,28 @@ import DmHistorySkeleton from "./DmHistorySkeleton";
 import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 import { useDmHistory } from "../custom-hooks/useDmHistory.js";
 import UserStatus from "./UserStatus.jsx";
+import { useTranslation } from "react-i18next";
+import { useState } from "react";
 // import DmHistorySkeleton from "./DmHistorySkeleton";
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
+  const { t, i18n } = useTranslation();
   const setHeader = useContext(HeaderContext);
   const { data, isLoading } = useDmHistory();
+  const [lng, setLng] = useState("en");
+  const handleLangSwitch = (lng) => {
+    i18n.changeLanguage(lng);
+    setLng(lng);
+  };
+
+  console.log(data);
 
   return (
     <>
       <Stack gap={"xs"}>
         {isLoading ? (
           <DmHistorySkeleton />
-        ) : !data.length ? (
+        ) : !data?.length ? (
           <DmHistorySkeleton />
         ) : (
           data.map((e, i) => (
@@ -91,6 +101,9 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
           ))
         )}
       </Stack>
+      <Button onClick={() => handleLangSwitch("tr")}>turkish</Button>
+      <Button onClick={() => handleLangSwitch("en")}>english</Button>
+      <div>{t("hi")}</div>
     </>
   );
 });

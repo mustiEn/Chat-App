@@ -374,7 +374,8 @@ const MainPanel = () => {
             style={{
               borderLeft: "none",
               borderRight: "none",
-              flex: "1 0 auto",
+              flexGrow: 1,
+              maxWidth: "100%",
             }}
           >
             <Outlet

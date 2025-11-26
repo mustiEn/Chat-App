@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
-import Form from "react-bootstrap/Form";
 import { RxCross2, RxDrawingPin } from "react-icons/rx";
 import { FaUserFriends } from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
@@ -275,7 +274,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
               ""
             )}
 
-            <div className="position-relative">
+            {/* <div className="position-relative">
               <Form.Control
                 type="search"
                 size="sm"
@@ -300,7 +299,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 }
                 onClick={() => setSearch("")}
               />
-            </div>
+            </div> */}
           </div>
         </Flex>
         <PinnedMsgsBox
