@@ -1,3 +1,4 @@
+import { Box } from "@mantine/core";
 import React, { useEffect } from "react";
 
 import { useOutletContext, useParams } from "react-router-dom";
@@ -9,17 +10,18 @@ const InfiniteLoader = ({ children }) => {
 
   return (
     <>
-      <div
+      <Box
         style={{
           height: "100%",
           overflowY: "auto",
         }}
         id={"scrollableRef"}
         ref={scrollElementRef}
-        className="custom-scrollbar px-2"
+        className="custom-scrollbar "
+        px={2}
       >
         {children}
-      </div>
+      </Box>
     </>
   );
 };

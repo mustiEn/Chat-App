@@ -9,7 +9,7 @@ import { useOutletContext, useParams } from "react-router-dom";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
-import { Box, Flex, Modal, Button, Image, Text } from "@mantine/core";
+import { Box, Flex, Modal, Button, Image, Text, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { socket } from "../socket.js";
 import toast from "react-hot-toast";
@@ -169,7 +169,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
       ></Box>
       <Box className={"panel-top"}>
         <Flex h={"100%"} w={"100%"} c={"white"} pr={10} pl={10}>
-          <Box className="d-flex align-items-center gap-2">
+          <Flex align={"center"} gap={"md"}>
             <Box
               style={{
                 position: "relative",
@@ -180,16 +180,18 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 <UserStatus status={receiver.status} w={10} h={10} />
               )}
             </Box>
-            <Box className="fs-6">{receiver?.display_name}</Box>
-          </Box>
-          <div className="d-flex align-items-center gap-2 ms-auto">
+            <Title order={6}>{receiver?.display_name}</Title>
+          </Flex>
+          <Flex align={"center"} gap={"md"} ms={"auto"}>
             <PopoverComponent
               content={
-                <div className="fw-bold popover-content">Pinned Messages</div>
+                <Text fw={700} className="popover-content">
+                  Pinned Messages
+                </Text>
               }
               trigger={
-                <div
-                  className="position-relative"
+                <Box
+                  pos="relative"
                   onClick={(e) => {
                     if (!showPinnedMsgBox[chatId]) e.stopPropagation();
 
@@ -204,52 +206,57 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 >
                   <RxDrawingPin
                     id="drawingPin"
-                    className={`ms-auto fs-5 ${
-                      showPinnedMsgBox[chatId] && stylesPanelTop["active"]
-                    } ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    className={`${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    style={{ marginLeft: "auto", fontSize: "1.25rem" }} // fs-5
                   />
+
                   {newPinnedMsgExists[chatId] && (
-                    <div
-                      className="position-absolute rounded-circle"
+                    <Box
+                      pos="absolute"
                       style={{
                         border: "1px solid black",
                         backgroundColor: "red",
                         width: 10,
                         height: 10,
+                        borderRadius: "50%",
                         transform: "translate(10px, -10px)",
                       }}
-                    ></div>
+                    />
                   )}
-                </div>
+                </Box>
               }
               position="bottom"
             />
+
             <PopoverComponent
               content={
-                <div className="fw-bold popover-content">
+                <Text fw={700} className="popover-content">
                   {showOffset ? "Hide" : "Show"} User Profile
-                </div>
+                </Text>
               }
               trigger={
                 <CgProfile
-                  className={`me-1 fs-5 ${
-                    showOffset && stylesPanelTop["active"]
-                  } ${stylesPanelTop["dm-panel-top-icon"]}`}
+                  className={`${showOffset && stylesPanelTop["active"]} ${
+                    stylesPanelTop["dm-panel-top-icon"]
+                  }`}
+                  style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
                   onClick={handleOffsetToggle}
                 />
               }
               position="bottom"
             />
+
             {!receiver?.isBlocked ? (
               <PopoverComponent
                 content={
-                  <div className="fw-bold popover-content">
+                  <Text fw={700} className="popover-content">
                     {isFriend ? "Remove Friend" : "Add friend"}
-                  </div>
+                  </Text>
                 }
                 trigger={
                   <FaUserFriends
-                    className={`me-1 fs-5 ${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    className={`${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
                     onClick={open}
                   />
                 }
@@ -258,13 +265,14 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
             ) : receiver?.blockedBy === "me" ? (
               <PopoverComponent
                 content={
-                  <div className="fw-bold popover-content">
+                  <Text fw={700} className="popover-content">
                     {isFriend ? "Remove Friend" : "Add friend"}
-                  </div>
+                  </Text>
                 }
                 trigger={
                   <FaUserFriends
-                    className={`me-1 fs-5 ${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    className={`${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
+                    style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
                     onClick={open}
                   />
                 }
@@ -300,7 +308,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
                 onClick={() => setSearch("")}
               />
             </div> */}
-          </div>
+          </Flex>
         </Flex>
         <PinnedMsgsBox
           customOverlayRef={customOverlayRef}

@@ -1,5 +1,6 @@
 import React from "react";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import { Flex, Box, Image } from "@mantine/core";
 import "react-loading-skeleton/dist/skeleton.css";
 
 const ProductAnimatedViewSkeleton = ({ styles, animatedViewName }) => {
@@ -20,69 +21,78 @@ const ProductAnimatedViewSkeleton = ({ styles, animatedViewName }) => {
 
   return (
     <>
-      <div className="d-flex flex-column justify-content-center h-100 p-2">
-        <SkeletonTheme
-          baseColor="#36363a"
-          enableAnimation={false}
-          borderRadius={20}
-        >
-          {Array.from({ length: 5 }, (_, i) => (
-            <div
-              className={
-                i == 2
-                  ? "border border-opacity-10 border-secondary p-2 position-relative rounded-2 position-relative"
-                  : "position-relative p-2"
-              }
-              key={i}
+      <Flex direction="column" justify="center" h="100%" p="sm">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Box
+            key={i}
+            pos="relative"
+            p="sm"
+            style={{
+              border: i === 2 ? "1px solid rgba(108,117,125,0.1)" : "none",
+              borderRadius: i === 2 ? 8 : 0,
+            }}
+          >
+            <Flex
+              align="center"
+              gap="sm"
+              pos="relative"
+              style={{ lineHeight: 0, height: 32, zIndex: 1 }}
             >
-              <div
-                className="d-flex align-items-center gap-2 position-relative z-1"
-                style={{
-                  lineHeight: 0,
-                  height: 32,
-                }}
-              >
-                {i == 2 && (
-                  <div
-                    className={`d-flex align-items-center gap-2 ${styles["profile"]} position-absolute z-2`}
-                  >
-                    <img
-                      src="/mona.jpg"
-                      width={32}
-                      height={32}
-                      className="rounded-circle"
-                      alt=""
-                    />
-                    <div className="text-white">Hack Daniels</div>
-                  </div>
-                )}
-                <Skeleton
-                  circle
-                  width={32}
-                  height={32}
-                  className={i == 2 && `${styles["profile-skeleton"]}`}
-                />
-                <Skeleton
-                  width={200}
-                  height={15}
-                  className={i == 2 && `${styles["profile-skeleton"]}`}
-                />
-              </div>
-              <div
-                className={
-                  i == 2
-                    ? `h-100 position-absolute start-0 top-0 w-100 z-0 rounded-1 ${styles["product-animated-view"]}`
-                    : "h-100 position-absolute start-0 top-0 w-100 z-0 rounded-1"
-                }
-                style={middleView(i)}
-              ></div>
-            </div>
-          ))}
-          <div
-            className={`${styles["filter"]} h-100 position-absolute start-0 top-0 w-100 z-2`}
-          ></div>
-        </SkeletonTheme>
-      </div>
+              {i === 2 && (
+                <Flex
+                  align="center"
+                  gap="sm"
+                  pos="absolute"
+                  style={{ zIndex: 2 }}
+                  className={styles["profile"]}
+                >
+                  <Image
+                    src="/images/mona.jpg"
+                    w={32}
+                    h={32}
+                    style={{ borderRadius: "50%" }}
+                  />
+                  <div className="text-white">Hack Daniels</div>
+                </Flex>
+              )}
+
+              {/* Skeletons unchanged */}
+              <Skeleton
+                circle
+                width={32}
+                height={32}
+                className={i === 2 && styles["profile-skeleton"]}
+              />
+              <Skeleton
+                width={200}
+                height={15}
+                className={i === 2 && styles["profile-skeleton"]}
+              />
+            </Flex>
+
+            <Box
+              pos="absolute"
+              top={0}
+              left={0}
+              w="100%"
+              h="100%"
+              style={middleView(i)}
+              className={i === 2 ? styles["product-animated-view"] : ""}
+            />
+          </Box>
+        ))}
+
+        <Box
+          pos="absolute"
+          top={0}
+          left={0}
+          w="100%"
+          h="100%"
+          className={styles["filter"]}
+          style={{ zIndex: 2 }}
+        />
+      </Flex>
+      ;
     </>
   );
 };

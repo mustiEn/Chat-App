@@ -1,3 +1,4 @@
+import { Box, Flex } from "@mantine/core";
 import React from "react";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -10,21 +11,22 @@ const DmHistorySkeleton = () => {
       height={20}
       borderRadius={20}
     >
-      <div className="d-flex flex-column gap-3">
+      <Flex direction="column" gap="md">
         {Array.from({ length: 6 }, (_, i) => (
-          <div className="d-flex align-items-center gap-2" key={i}>
+          <Flex align="center" gap="sm" key={i}>
             <Skeleton circle width={32} height={32} />
-            <div
+
+            <Box
               style={{
                 width: "150px",
                 display: "block",
               }}
             >
               <Skeleton />
-            </div>
-          </div>
+            </Box>
+          </Flex>
         ))}
-      </div>
+      </Flex>
     </SkeletonTheme>
   );
 };

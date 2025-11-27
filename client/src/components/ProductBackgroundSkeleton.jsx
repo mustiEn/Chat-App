@@ -1,3 +1,4 @@
+import { Box, Flex } from "@mantine/core";
 import React from "react";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 
@@ -9,11 +10,12 @@ const ProductProfileSkeleton = () => {
         enableAnimation={false}
         borderRadius={20}
       >
-        <div
-          className="w-100"
+        <Box
+          w="100%"
           style={{ height: 100, backgroundColor: "rgb(39 39 45)" }}
-        ></div>
-        <div
+        />
+
+        <Box
           style={{
             width: 55,
             height: 55,
@@ -24,29 +26,37 @@ const ProductProfileSkeleton = () => {
           }}
         >
           <Skeleton circle width={55} height={55} />
-          <div
-            className="bg-success position-absolute top-100 translate-middle rounded-circle"
+
+          <Box
+            bg="green"
+            pos="absolute"
+            top="100%"
             style={{
               left: "85%",
+              transform: "translate(-50%, -50%)",
               width: 15,
               height: 15,
+              borderRadius: "50%",
             }}
           >
             &nbsp;
-          </div>
-          <div className="mt-2">
+          </Box>
+
+          <Box mt="xs">
             <Skeleton width={125} height={30} />
-            <div className="d-flex gap-2 my-2">
+
+            <Flex gap="sm" my="xs">
               <Skeleton width={175} height={30} />
               <Skeleton width={75} height={30} />
-            </div>
-            <div className="d-flex gap-2">
+            </Flex>
+
+            <Flex gap="sm">
               <Skeleton width={45} height={30} />
               <Skeleton width={45} height={30} />
               <Skeleton width={125} height={30} />
-            </div>
-          </div>
-        </div>
+            </Flex>
+          </Box>
+        </Box>
       </SkeletonTheme>
     </>
   );

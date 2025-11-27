@@ -1,5 +1,6 @@
 import React from "react";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import { Box, Flex } from "@mantine/core";
 
 const ChatSkeleton = () => {
   const rowVariants = [
@@ -19,31 +20,38 @@ const ChatSkeleton = () => {
         borderRadius={20}
         // width={100}
       >
-        <div className="w-100 d-flex flex-column gap-4">
+        <Flex w={"100%"} direction={"column"} gap={"xl"}>
           {rowVariants.map((variant, i) => (
-            <div className="d-flex gap-2 ms-2 z-1" key={i}>
+            <Flex
+              gap={"md"}
+              ms={"md"}
+              key={i}
+              style={{
+                zIndex: 1,
+              }}
+            >
               <Skeleton circle width={40} height={40} />
-              <div className="mt-2">
+              <Box mt={"md"}>
                 {/* Name */}
                 <Skeleton width={variant.name} height={15} baseColor="white" />
 
                 {/* First row */}
-                <div className="d-flex gap-2 my-2">
+                <Flex gap={"md"} my={"md"}>
                   {variant.row1.map((w, j) => (
                     <Skeleton key={j} width={w} height={20} />
                   ))}
-                </div>
+                </Flex>
 
                 {/* Second row */}
-                <div className="d-flex gap-2">
+                <Flex gap={"md"}>
                   {variant.row2.map((w, j) => (
                     <Skeleton key={j} width={w} height={20} />
                   ))}
-                </div>
-              </div>
-            </div>
+                </Flex>
+              </Box>
+            </Flex>
           ))}
-        </div>
+        </Flex>
       </SkeletonTheme>
     </>
   );

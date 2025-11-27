@@ -48,15 +48,16 @@ const UserProfileBar = ({ ref }) => {
       >
         <Flex w={"100%"} align={"center"}>
           <UserProfileBarDropdown />
-          <Text ms={"auto"}>
-            <CiSettings
-              className={styles["settings-icon"]}
-              style={{
-                fontSize: 24,
-              }}
-              onClick={open}
-            />
-          </Text>
+          {/* <Box ms={"auto"}> */}
+          <CiSettings
+            className={styles["settings-icon"]}
+            style={{
+              fontSize: 24,
+              marginLeft: "auto",
+            }}
+            onClick={open}
+          />
+          {/* </Box> */}
         </Flex>
       </Flex>
       {/* </UserProfileBarDropdown> */}

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Box, Text } from "@mantine/core";
 
 const GroupChatPanel = () => {
   const parentRef = useRef(null);
@@ -11,23 +12,25 @@ const GroupChatPanel = () => {
   });
   return (
     <>
-      <div className="text-white fs-3">GroupChatPanel</div>
+      <Text c="white" fz="xl">
+        GroupChatPanel
+      </Text>
 
-      <div
+      <Box
         ref={parentRef}
-        className="text-white"
+        color="white"
         style={{
           height: 900,
           overflow: "auto",
         }}
       >
-        <div
+        <Box
           style={{
             height: rowVirtualizer.getTotalSize(),
             position: "relative",
           }}
         >
-          <div
+          <Box
             style={{
               position: "absolute",
               top: 0,
@@ -39,28 +42,24 @@ const GroupChatPanel = () => {
             }}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => (
-              <div
+              <Box
                 key={virtualRow.key}
                 style={{
-                  // position: "absolute",
                   width: "100%",
-                  // top: 0,
-                  // left: 0,
-                  // transform: `translateY(${virtualRow.start}px)`,
                 }}
                 data-index={virtualRow.index}
                 ref={virtualRow.measureElement}
-                className="mt-3"
+                mt="md"
               >
-                Row
-                {virtualRow.index % 2 == 0
+                Row{" "}
+                {virtualRow.index % 2 === 0
                   ? virtualRow.index + " row lorem 🧠 "
                   : virtualRow.index}
-              </div>
+              </Box>
             ))}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
     </>
   );
 };

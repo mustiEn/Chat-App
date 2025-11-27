@@ -16,14 +16,7 @@ const SettingsModalMyAccount = () => {
 
   return (
     <>
-      <Flex
-        h={"100%"}
-        direction={"column"}
-        bdrs={"md"}
-        style={{
-          position: "relative",
-        }}
-      >
+      <Flex pos={"relative"} h={"100%"} direction={"column"} bdrs={"md"}>
         <Box
           w={"100%"}
           bg={"dark"}
@@ -36,10 +29,10 @@ const SettingsModalMyAccount = () => {
           }}
         ></Box>
         <Box
+          pos={"relative"}
           h={"100%"}
           px={"sm"}
           pb={"sm"}
-          className="position-relative z-1"
           // style={{
           //   backgroundColor: "transparent",
           // }}
@@ -47,15 +40,17 @@ const SettingsModalMyAccount = () => {
             backgroundColor: "rgb(27 26 26)",
             borderRadius:
               "0 0 var(--mantine-radius-md) var(--mantine-radius-md) ",
+            zIndex: 1,
           }}
         >
           <Flex
+            pos={"relative"}
             gap={"xs"}
             align={"center"}
             style={{
               transform: "translateY(-25%)",
+              zIndex: 1,
             }}
-            className="position-relative z-1"
           >
             <Image
               w={80}

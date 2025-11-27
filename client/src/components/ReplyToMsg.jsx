@@ -23,7 +23,7 @@ const ReplyToMsg = ({ toWho }) => {
       }}
     >
       <Text c="white">
-        Replying to <span className="fw-bold">{toWho}</span>
+        Replying to <Text fw={"bold"}>{toWho}</Text>
       </Text>
       <RxCrossCircled
         className={`${styles["icon"]}`}

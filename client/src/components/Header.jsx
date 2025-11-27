@@ -1,14 +1,18 @@
+import { Box, Center } from "@mantine/core";
 import React from "react";
 
 const Header = ({ content }) => {
   return (
     <>
-      <div
-        className="w-100 text-center text-white fs-5"
-        style={{ backgroundColor: "#121214", height: "var(--header-height)" }}
+      <Box
+        w={"100%"}
+        h={"var(--header-height)"}
+        color="white"
+        fz={5}
+        style={{ backgroundColor: "#121214" }}
       >
-        {content}
-      </div>
+        <Center>{content}</Center>
+      </Box>
     </>
   );
 };

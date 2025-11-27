@@ -67,19 +67,25 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
         align={"center"}
         p={"sm"}
         gap={"sm"}
+        bdrs={"lg"}
         className={`${styles["message-form"]} ${
           editedMessage.id != null
             ? editedMessage.id != msg.id
               ? "d-none"
               : ""
             : "d-none"
-        } rounded-3 custom-scrollbar`}
+        } custom-scrollbar`}
       >
         <TextareaAutosize
           maxRows={20}
           ref={editInpRef}
           id={styles["edit-input"]}
-          className={`border-0 bg-transparent text-white w-100`}
+          style={{
+            border: "0",
+            background: "transparent",
+            color: "white",
+            width: "100%",
+          }}
           value={editedMessage.message}
           onChange={(e) => {
             setEditedMessage((prev) => ({

@@ -8,16 +8,14 @@ import HeaderContext from "../contexts/HeaderContext";
 import { Stack, Button, Flex, Text, Box } from "@mantine/core";
 import styles from "../css/dm_sidebar_nav_top.module.css";
 
-const links = [
-  { content: "Friends", icon: <FaUsers />, link: "/@me/friends" },
-  { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
-  { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
-  { content: "Requests", icon: <FaRegEnvelope />, link: "requests" },
-];
-
 const DmSidebarNavTop = () => {
   const setHeader = useContext(HeaderContext);
-
+  const links = [
+    { content: "Friends", icon: <FaUsers />, link: "/@me/friends" },
+    { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
+    { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
+    { content: "Requests", icon: <FaRegEnvelope />, link: "requests" },
+  ];
   return (
     <>
       <Box w={"100%"}>

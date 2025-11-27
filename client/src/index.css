@@ -90,3 +90,7 @@ a {
   border: 1px solid #2c2c30;
   border-radius: 100%;
 }
+
+.translate-middle {
+  transform: translate(-50%, -50%);
+}

@@ -1,6 +1,6 @@
 import React from "react";
 import ShopList from "./ShopList";
-import { Box, Flex } from "@mantine/core";
+import { Box, Flex, Title } from "@mantine/core";
 import ShopTop from "./ShopTop";
 
 const Shop = () => {
@@ -15,7 +15,9 @@ const Shop = () => {
             overflow: "auto",
           }}
         >
-          <h1 className="my-5">Shop</h1>
+          <Title order={1} my={"xl"}>
+            Shop
+          </Title>
           <ShopList />
         </Box>
       </Flex>
