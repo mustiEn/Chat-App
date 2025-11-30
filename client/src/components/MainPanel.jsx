@@ -29,6 +29,13 @@ import {
 } from "../utils/chatMessages.js";
 import UserProfileBar from "./UserProfileBar.jsx";
 import { UserContext } from "../contexts/UserContext.jsx";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import { returnLocalNow } from "../utils/index.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const MainPanel = () => {
   const queryClient = useQueryClient();
@@ -55,6 +62,7 @@ const MainPanel = () => {
     },
     msgAddedOrDeleted: {},
   });
+  const lastActivity = useRef();
 
   useEffect(() => {
     const onConnect = () => {
@@ -64,8 +72,12 @@ const MainPanel = () => {
       console.error("❌ Socket connection error:", err);
     };
     const getInitial = (user) => {
+      const now = returnLocalNow();
+
       socket.auth.user = user;
+      lastActivity.current = now.valueOf();
       setUser(user);
+
       console.log(user);
     };
     const onDisconnect = (reason) => {
@@ -256,15 +268,16 @@ const MainPanel = () => {
       });
     };
     const handleFriendRequestAcceptance = ({ result, chatIds }) => {
-      result.forEach((e, i) => {
-        if (e.status === "accepted")
-          addFriends(queryClient, [{ ...e.sender, chatId: chatIds[i] }]);
+      result.forEach(({ status, sender }, i) => {
+        if (status === "accepted")
+          addFriends(queryClient, [{ ...sender, chatId: chatIds[i] }]);
+        // setStatus(sender.id, status);
 
-        removeSentFriendRequest(queryClient, e.sender.id);
+        removeSentFriendRequest(queryClient, sender.id);
       });
     };
     const handleUserStatus = ({ result }) => {
-      console.log("result", res);
+      console.log("result", result);
       const receivers = useReceiverStore.getState().receivers;
 
       result.forEach(({ userId, status }) => {
@@ -275,36 +288,36 @@ const MainPanel = () => {
       const receivers = useReceiverStore.getState().receivers;
 
       result.forEach(({ blockedBy }) => {
-        // const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
-        // const allFriends = allFriendsQuery
-        //   ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
-        //   : [];
-        // const isFriend = allFriends.some(({ id }) => id == blockedBy);
+        const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
+        const allFriends = allFriendsQuery
+          ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
+          : [];
+        const isFriend = allFriends.some(({ id }) => id == blockedBy);
 
         if (receivers[blockedBy]) {
           blockReceiver(blockedBy, "receiver");
 
           socket.emit("leave room", blockedBy);
         }
-        // if (isFriend)
-        removeFriend(queryClient, blockedBy);
+        if (isFriend) removeFriend(queryClient, blockedBy);
       });
     };
     const handleUnblockedUsers = ({ result }) => {
       const receivers = useReceiverStore.getState().receivers;
 
       result.forEach((id) => {
-        const allFriendsQuery = queryClient.getQueryData(["allFriends"]);
-        const allFriends = allFriendsQuery
-          ? allFriendsQuery.pages.flatMap(({ friends }) => friends)
-          : [];
-        const isFriend = allFriends.some(({ id }) => id == id);
-
         if (receivers[id]) {
           unblockReceiver(id);
-          socket.emit("leave room", id);
+          // socket.emit("join room", id);
         }
-        if (isFriend) removeFriend(queryClient, id);
+      });
+    };
+    const handleUserActivity = ({ result }) => {
+      console.log("result", result);
+      const receivers = useReceiverStore.getState().receivers;
+
+      result.forEach((id) => {
+        if (receivers[id]) setStatus(id, "Idle");
       });
     };
 
@@ -326,7 +339,8 @@ const MainPanel = () => {
       "receive friend request acceptance",
       handleFriendRequestAcceptance
     );
-    socket.on("receive user status", handleUserStatus);
+    socket.on("receive changed user status", handleUserStatus);
+    socket.on("receive user activity", handleUserActivity);
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", (err) =>
       console.error("⚠️ Connect error:", err)
@@ -353,7 +367,9 @@ const MainPanel = () => {
         "receive friend request acceptance",
         handleFriendRequestAcceptance
       );
-      socket.off("receive user status", handleUserStatus);
+      socket.off("receive changed user status", handleUserStatus);
+      socket.off("receive user activity", handleUserActivity);
+
       socket.off("disconnect", onDisconnect);
       socket.disconnect();
 
@@ -361,6 +377,32 @@ const MainPanel = () => {
       console.log("SOCKET DISCONNECTED layout");
     };
   }, []);
+
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     const now = returnLocalNow().valueOf();
+  //     console.log("interval", now);
+
+  //     if (now - lastActivity.current >= 3 * 60 * 1000)
+  //       console.log("interval socket");
+
+  //     socket.emit("send user activity", (err, res) => {
+  //       console.log(res);
+  //     });
+  //   }, 60 * 1000 * 3);
+  //   const updateLastActivity = () => {
+  //     lastActivity.current = returnLocalNow();
+  //   };
+
+  //   document.addEventListener("mousemove", updateLastActivity);
+  //   document.addEventListener("keydown", updateLastActivity);
+
+  //   return () => {
+  //     if (timer) clearInterval(timer);
+  //     document.removeEventListener("mousemove", updateLastActivity);
+  //     document.removeEventListener("keydown", updateLastActivity);
+  //   };
+  // }, []);
 
   return (
     <>

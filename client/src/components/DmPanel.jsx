@@ -32,8 +32,8 @@ const DmPanel = () => {
     dmDataQuery(chatId)
   );
 
-  const handleOffsetToggle = () => setShowOffset((prev) => !prev);
   const [showOffset, setShowOffset] = useState(false);
+  const handleOffsetToggle = () => setShowOffset((prev) => !prev);
   const activeMsg = useRef({
     msg: null,
     type: null,

@@ -14,6 +14,8 @@ export const addSentFriendRequest = (queryClient, users) => {
 export const addReceivedFriendRequest = (queryClient, users) => {
   queryClient.setQueryData(["friendRequests"], (olderData) => {
     const vals = olderData?.receivedFriendRequests ?? [];
+    console.log("users in func", users);
+
     const uniqueUsers = vals.length
       ? users.filter((user) => !vals.some((e) => e == user.id))
       : users;

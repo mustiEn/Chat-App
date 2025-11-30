@@ -63,49 +63,45 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
 
   return (
     <>
-      <Flex
-        align={"center"}
-        p={"sm"}
-        gap={"sm"}
-        bdrs={"lg"}
-        className={`${styles["message-form"]} ${
-          editedMessage.id != null
-            ? editedMessage.id != msg.id
-              ? "d-none"
-              : ""
-            : "d-none"
-        } custom-scrollbar`}
-      >
-        <TextareaAutosize
-          maxRows={20}
-          ref={editInpRef}
-          id={styles["edit-input"]}
-          style={{
-            border: "0",
-            background: "transparent",
-            color: "white",
-            width: "100%",
-          }}
-          value={editedMessage.message}
-          onChange={(e) => {
-            setEditedMessage((prev) => ({
-              ...prev,
-              message: e.target.value,
-            }));
-          }}
-          // onHeightChange={scrollbottom}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleEdit();
-            } else if (e.key === "Escape") {
-              setEditedMessage({
-                id: null,
-                message: "",
-              });
-            }
-          }}
-        />
-      </Flex>
+      {editedMessage?.id === msg.id && (
+        <Flex
+          align={"center"}
+          p={"sm"}
+          gap={"sm"}
+          bdrs={"lg"}
+          className={`${styles["message-form"]} custom-scrollbar`}
+        >
+          <TextareaAutosize
+            maxRows={20}
+            ref={editInpRef}
+            id={styles["edit-input"]}
+            style={{
+              border: "0",
+              background: "transparent",
+              color: "white",
+              width: "100%",
+            }}
+            value={editedMessage.message}
+            onChange={(e) => {
+              setEditedMessage((prev) => ({
+                ...prev,
+                message: e.target.value,
+              }));
+            }}
+            // onHeightChange={scrollbottom}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleEdit();
+              } else if (e.key === "Escape") {
+                setEditedMessage({
+                  id: null,
+                  message: "",
+                });
+              }
+            }}
+          />
+        </Flex>
+      )}
     </>
   );
 };

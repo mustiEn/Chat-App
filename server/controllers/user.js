@@ -10,6 +10,7 @@ import timezone from "dayjs/plugin/timezone.js";
 import { ChatId } from "../models/ChatId.js";
 import { Friend } from "../models/Friend.js";
 import { BlockedUser } from "../models/BlockedUser.js";
+import { client } from "../server.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -153,6 +154,7 @@ export const getDmData = async (req, res, next) => {
 
     const { user_id, receiver_id } = chat;
     const receiverId = user_id == userId ? receiver_id : user_id;
+    const cachedStatus = await client.get(String(receiverId));
 
     nextId = Number(nextId);
     receiver = await User.findByPk(receiverId, {
@@ -161,6 +163,7 @@ export const getDmData = async (req, res, next) => {
         "display_name",
         "username",
         "profile",
+        "status",
         "background_color",
         "about_me",
         "createdAt",
@@ -169,6 +172,11 @@ export const getDmData = async (req, res, next) => {
     });
 
     if (!receiver) throw new Error("Receiver not found");
+    if (!cachedStatus) {
+      await client.set(String(receiverId), receiver.status);
+    } else {
+      receiver.status = cachedStatus;
+    }
 
     const dmsSql = ` 
       SELECT 
@@ -278,10 +286,23 @@ export const getDmHistory = async (req, res, next) => {
         ORDER BY 
           t.created_at DESC
     `;
-    const dmHistory = await sequelize.query(dmHistorySql, {
+    let dmHistory = await sequelize.query(dmHistorySql, {
       type: QueryTypes.SELECT,
       replacements: { userId },
     });
+
+    const dmHistoryMapped = dmHistory.map(async (e) => {
+      const cachedStatus = await client.get(String(e.id));
+
+      if (cachedStatus) {
+        return { ...e, status: cachedStatus };
+      } else {
+        await client.set(String(e.id), e.status);
+        return e;
+      }
+    });
+
+    dmHistory = await Promise.all(dmHistoryMapped);
 
     res.status(200).json(dmHistory);
   } catch (error) {
@@ -507,6 +528,7 @@ export const getAllFriends = async (req, res, next) => {
       },
       raw: true,
     });
+
     if (chatIds.length) {
       const findChatId = (friendId) => {
         const key = [userId, friendId].sort((a, b) => a - b).join("-");
@@ -519,6 +541,19 @@ export const getAllFriends = async (req, res, next) => {
 
     const next =
       friends.length < limit ? null : friends.length + Number(offset);
+    const friendsMapped = friends.map(async (e) => {
+      const cachedStatus = await client.get(String(e.id));
+
+      if (cachedStatus) {
+        return { ...e, status: cachedStatus };
+      } else {
+        await client.set(String(e.id), e.status);
+        return e;
+      }
+    });
+
+    friends = await Promise.all(friendsMapped);
+
     res.status(200).json({ friends, next });
   } catch (error) {
     next(error);

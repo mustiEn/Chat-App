@@ -38,85 +38,87 @@ const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
 
   return (
     <>
-      <Paper
-        ref={ref}
-        withBorder
-        shadow="xl"
-        radius={"lg"}
-        pb={"1rem"}
-        className={showPinnedMsgBox[chatId] ? `${styles.paper}` : "d-none"}
-      >
-        <Flex
-          align={"center"}
-          gap={"xs"}
-          my={"sm"}
-          pb={"sm"}
-          className={styles["modal-header"]}
+      {showPinnedMsgBox[chatId] && (
+        <Paper
+          ref={ref}
+          withBorder
+          shadow="xl"
+          radius={"lg"}
+          pb={"1rem"}
+          className={styles.paper}
         >
-          <RxDrawingPin className={styles["header-icon"]} />
-          <Title order={3} fw={"600"}>
-            Pinned Messages
-          </Title>
-        </Flex>
-        {!pinnedMsgs ? (
-          <PulseLoader color={"white"} />
-        ) : !pinnedMsgs?.length ? (
-          <>
-            <TbHeartBroken className={styles["no-data"]} />
-            <Center mb={"xl"}>
-              <Text mt={"lg"}>
-                This chat doesnt have any pinned messages yet.
-              </Text>
-            </Center>
-          </>
-        ) : (
-          <Stack
+          <Flex
+            align={"center"}
             gap={"xs"}
-            py={"xs"}
-            className={`${styles["stack"]} custom-scrollbar`}
+            my={"sm"}
+            pb={"sm"}
+            className={styles["modal-header"]}
           >
-            {pinnedMsgs.map((msg, i) => (
-              <Flex
-                align={"center"}
-                gap={"xs"}
-                p={"xs"}
-                bd={"1px solid rgb(255,255,255,25%)"}
-                bdrs={"sm"}
-                mx={"xs"}
-                key={msg.id}
-                className={`${styles["pinned-msg"]}`}
-              >
-                <Image
-                  src="https://placehold.co/40"
-                  radius={"xl"}
-                  height={40}
-                  styles={{
-                    root: {
-                      width: 40,
-                      alignSelf: "baseline",
-                    },
-                  }}
-                />
-                <Flex direction={"column"}>
-                  <Flex align={"center"} gap={"xs"}>
-                    <Text fw={"bold"}>{msg.display_name}</Text>
-                    <span className={`timestamp text-muted`}>
-                      {formatDate(msg.created_at)}
-                      {/* 12/05/2023, 10:03 */}
-                    </span>
-                  </Flex>
-                  <Text className={`message-content`}>{msg.message}</Text>
-                </Flex>
-                <Box className={styles.cross}>
-                  <RxCross2
-                    onClick={() => handleDmModalNotifier(msg, "Unpin")}
+            <RxDrawingPin className={styles["header-icon"]} />
+            <Title order={3} fw={"600"}>
+              Pinned Messages
+            </Title>
+          </Flex>
+          {!pinnedMsgs ? (
+            <PulseLoader color={"white"} />
+          ) : !pinnedMsgs?.length ? (
+            <>
+              <TbHeartBroken className={styles["no-data"]} />
+              <Center mb={"xl"}>
+                <Text mt={"lg"}>
+                  This chat doesnt have any pinned messages yet.
+                </Text>
+              </Center>
+            </>
+          ) : (
+            <Stack
+              gap={"xs"}
+              py={"xs"}
+              className={`${styles["stack"]} custom-scrollbar`}
+            >
+              {pinnedMsgs.map((msg, i) => (
+                <Flex
+                  align={"center"}
+                  gap={"xs"}
+                  p={"xs"}
+                  bd={"1px solid rgb(255,255,255,25%)"}
+                  bdrs={"sm"}
+                  mx={"xs"}
+                  key={msg.id}
+                  className={`${styles["pinned-msg"]}`}
+                >
+                  <Image
+                    src="https://placehold.co/40"
+                    radius={"xl"}
+                    height={40}
+                    styles={{
+                      root: {
+                        width: 40,
+                        alignSelf: "baseline",
+                      },
+                    }}
                   />
-                </Box>
-              </Flex>
-            ))}
-          </Stack>
-        )}
-      </Paper>
+                  <Flex direction={"column"}>
+                    <Flex align={"center"} gap={"xs"}>
+                      <Text fw={"bold"}>{msg.display_name}</Text>
+                      <span className={`timestamp text-muted`}>
+                        {formatDate(msg.created_at)}
+                        {/* 12/05/2023, 10:03 */}
+                      </span>
+                    </Flex>
+                    <Text className={`message-content`}>{msg.message}</Text>
+                  </Flex>
+                  <Box className={styles.cross}>
+                    <RxCross2
+                      onClick={() => handleDmModalNotifier(msg, "Unpin")}
+                    />
+                  </Box>
+                </Flex>
+              ))}
+            </Stack>
+          )}
+        </Paper>
+      )}
     </>
   );
 };

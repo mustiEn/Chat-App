@@ -14,6 +14,8 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { removeFriend } from "../utils/friends.js";
 import styles from "../css/all_friends.module.css";
+import UserStatus from "./UserStatus.jsx";
+import { useReceiverStore } from "../stores/useReceiverStore.js";
 
 const AllFriends = () => {
   const queryClient = useQueryClient();
@@ -34,7 +36,8 @@ const AllFriends = () => {
       toast.success("Friend removed");
     });
   };
-  const { data, isLoading, hasNextPage, fetchNextPage } = useAllFriends();
+  const { data, isLoading, hasNextPage, fetchNextPage, isSuccess } =
+    useAllFriends();
 
   useEffect(() => {
     if (inView) {
@@ -54,6 +57,16 @@ const AllFriends = () => {
     estimateSize: () => 65,
     overscan: 5,
   });
+
+  const addReceiver = useReceiverStore((s) => s.addToReceivers);
+  const receivers = useReceiverStore((s) => s.receivers);
+
+  useEffect(() => {
+    if (!isSuccess) return;
+    if (!data) return;
+
+    newdata.forEach((e) => addReceiver(e.id, e));
+  }, [newdata]);
 
   return (
     <>
@@ -101,15 +114,25 @@ const AllFriends = () => {
                       }}
                     >
                       <Flex align={"center"} gap={"xs"} p={7} key={friend.id}>
-                        <Image
-                          src={friend.profile ?? "https://placehold.co/40"}
-                          radius={"xl"}
-                          w={40}
-                          h={40}
-                          style={{
-                            alignSelf: "baseline",
-                          }}
-                        />
+                        <Box pos={"relative"}>
+                          <Image
+                            src={friend.profile ?? "https://placehold.co/40"}
+                            radius={"xl"}
+                            w={40}
+                            h={40}
+                            style={{
+                              alignSelf: "baseline",
+                            }}
+                          />
+                          {receivers[friend.id]?.status && (
+                            <UserStatus
+                              status={receivers[friend.id].status}
+                              w={15}
+                              h={15}
+                              absolute={true}
+                            />
+                          )}
+                        </Box>
                         <Flex direction={"column"} w={"100%"}>
                           <Flex align={"center"} gap={"xs"}>
                             <Text c={"white"} fw={"bold"}>
@@ -121,8 +144,7 @@ const AllFriends = () => {
                           </Flex>
 
                           <Text fz={13} c={"gray.6"}>
-                            Online
-                            {/* {friend.status} */}
+                            {receivers[friend.id]?.status}
                           </Text>
                         </Flex>
                         <PopoverComponent

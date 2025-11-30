@@ -1,22 +1,13 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { HiMagnifyingGlass } from "react-icons/hi2";
-import { RxCross2, RxDrawingPin } from "react-icons/rx";
-import { FaUserFriends } from "react-icons/fa";
-import { CgProfile } from "react-icons/cg";
 import PinnedMsgsBox from "./PinnedMsgsBox";
-import PopoverComponent from "./PopoverComponent";
 import { useOutletContext, useParams } from "react-router-dom";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
-import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Box, Flex, Modal, Button, Image, Text, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { socket } from "../socket.js";
 import toast from "react-hot-toast";
-import stylesPanelTop from "../css/dm_panel_top.module.css";
-import styles from "../css/dm_panel.module.css";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePinnedMessages } from "../custom-hooks/usePinnedMessages.js";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   addSentFriendRequest,
   removeReceivedFriendRequest,
@@ -26,19 +17,22 @@ import { addFriends, removeFriend } from "../utils/friends.js";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import UserStatus from "../components/UserStatus.jsx";
+import DmPanelTopIcons from "./DmPanelTopIcons.jsx";
+import stylesPanelTop from "../css/dm_panel_top.module.css";
 
-const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
+const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
   const { chatId } = useParams();
   const queryClient = useQueryClient();
   const { data: allFriendsData } = useAllFriends();
   const { data: friendRequests } = useFriendRequests();
   const { dmChatRef } = useOutletContext();
   const { receiverId } = useContext(DmPanelContext);
-  const { isPinnedMessagesFetched } = dmChatRef.current;
-  const [opened, { open, close }] = useDisclosure(false);
+  const [
+    isFriendModalOpened,
+    { open: openFriendModal, close: closeFriendModal },
+  ] = useDisclosure(false);
   const customOverlayRef = useRef();
   const pinnedMsgsBoxRef = useRef(null);
-  const [search, setSearch] = useState("");
 
   const allFriends =
     allFriendsData?.pages.flatMap(({ friends }) => friends) ?? [];
@@ -51,12 +45,6 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
   const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
   const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
     (s) => s.addToShowPinnedMsgBox
-  );
-  const newPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (s) => s.newPinnedMsgExists
-  );
-  const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (s) => s.addToNewPinnedMsgExists
   );
 
   const isFriend = allFriends.some((e) => e.id == receiverId);
@@ -91,6 +79,7 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         toast.error(res.error);
         return;
       }
+      console.log("send friend req ack", res);
 
       addSentFriendRequest(queryClient, [
         { id: receiverId, username: receiver.username },
@@ -137,8 +126,6 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
     });
   };
 
-  const { refetch } = usePinnedMessages(chatId);
-
   useEffect(() => {
     if (showPinnedMsgBox[chatId])
       customOverlayRef.current.style.display = "block";
@@ -177,138 +164,22 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
             >
               <Image src="https://placehold.co/25" radius={"xl"} alt="" />
               {receiver?.status && (
-                <UserStatus status={receiver.status} w={10} h={10} />
+                <UserStatus
+                  status={receiver.status}
+                  w={10}
+                  h={10}
+                  absolute={true}
+                />
               )}
             </Box>
             <Title order={6}>{receiver?.display_name}</Title>
           </Flex>
-          <Flex align={"center"} gap={"md"} ms={"auto"}>
-            <PopoverComponent
-              content={
-                <Text fw={700} className="popover-content">
-                  Pinned Messages
-                </Text>
-              }
-              trigger={
-                <Box
-                  pos="relative"
-                  onClick={(e) => {
-                    if (!showPinnedMsgBox[chatId]) e.stopPropagation();
-
-                    addToShowPinnedMsgBox(chatId, true);
-                    addToNewPinnedMsgExists(chatId, false);
-
-                    if (!isPinnedMessagesFetched[chatId]) {
-                      isPinnedMessagesFetched[chatId] = true;
-                      refetch();
-                    }
-                  }}
-                >
-                  <RxDrawingPin
-                    id="drawingPin"
-                    className={`${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
-                    style={{ marginLeft: "auto", fontSize: "1.25rem" }} // fs-5
-                  />
-
-                  {newPinnedMsgExists[chatId] && (
-                    <Box
-                      pos="absolute"
-                      style={{
-                        border: "1px solid black",
-                        backgroundColor: "red",
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        transform: "translate(10px, -10px)",
-                      }}
-                    />
-                  )}
-                </Box>
-              }
-              position="bottom"
-            />
-
-            <PopoverComponent
-              content={
-                <Text fw={700} className="popover-content">
-                  {showOffset ? "Hide" : "Show"} User Profile
-                </Text>
-              }
-              trigger={
-                <CgProfile
-                  className={`${showOffset && stylesPanelTop["active"]} ${
-                    stylesPanelTop["dm-panel-top-icon"]
-                  }`}
-                  style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
-                  onClick={handleOffsetToggle}
-                />
-              }
-              position="bottom"
-            />
-
-            {!receiver?.isBlocked ? (
-              <PopoverComponent
-                content={
-                  <Text fw={700} className="popover-content">
-                    {isFriend ? "Remove Friend" : "Add friend"}
-                  </Text>
-                }
-                trigger={
-                  <FaUserFriends
-                    className={`${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
-                    style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
-                    onClick={open}
-                  />
-                }
-                position="bottom"
-              />
-            ) : receiver?.blockedBy === "me" ? (
-              <PopoverComponent
-                content={
-                  <Text fw={700} className="popover-content">
-                    {isFriend ? "Remove Friend" : "Add friend"}
-                  </Text>
-                }
-                trigger={
-                  <FaUserFriends
-                    className={`${stylesPanelTop["active"]} ${stylesPanelTop["dm-panel-top-icon"]}`}
-                    style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
-                    onClick={open}
-                  />
-                }
-                position="bottom"
-              />
-            ) : (
-              ""
-            )}
-
-            {/* <div className="position-relative">
-              <Form.Control
-                type="search"
-                size="sm"
-                data-bs-theme="dark"
-                placeholder="Search"
-                onChange={(e) => setSearch(e.target.value)}
-                value={search}
-              />
-              <HiMagnifyingGlass
-                className={
-                  search != ""
-                    ? "d-none"
-                    : "position-absolute top-50 end-0 translate-middle-y me-3"
-                }
-              />
-              <RxCross2
-                id={`${styles["cross"]}`}
-                className={
-                  search == ""
-                    ? "d-none"
-                    : "position-absolute top-50 end-0 translate-middle-y me-3"
-                }
-                onClick={() => setSearch("")}
-              />
-            </div> */}
-          </Flex>
+          <DmPanelTopIcons
+            showOffset={showOffset}
+            handleOffsetToggle={handleOffsetToggle}
+            openFriendModal={openFriendModal}
+            isFriendModalOpened={isFriendModalOpened}
+          />
         </Flex>
         <PinnedMsgsBox
           customOverlayRef={customOverlayRef}
@@ -316,8 +187,8 @@ const DmPanelTop = ({ handleOffsetToggle, showOffset }) => {
         />
       </Box>
       <Modal
-        opened={opened}
-        onClose={close}
+        opened={isFriendModalOpened}
+        onClose={closeFriendModal}
         radius={"md"}
         title={isFriend ? "Remove Friend" : "Add Friend"}
         styles={{

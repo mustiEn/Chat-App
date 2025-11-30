@@ -7,19 +7,27 @@ import { useDmHistory } from "../custom-hooks/useDmHistory.js";
 import UserStatus from "./UserStatus.jsx";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { useReceiverStore } from "../stores/useReceiverStore.js";
 // import DmHistorySkeleton from "./DmHistorySkeleton";
 
 const UsersInDmHistory = memo(function UsersInDmHistory() {
   const { t, i18n } = useTranslation();
   const setHeader = useContext(HeaderContext);
-  const { data, isLoading } = useDmHistory();
+  const { data, isLoading, isSuccess } = useDmHistory();
   const [lng, setLng] = useState("en");
   const handleLangSwitch = (lng) => {
     i18n.changeLanguage(lng);
     setLng(lng);
   };
+  const addReceiver = useReceiverStore((s) => s.addToReceivers);
+  const receivers = useReceiverStore((s) => s.receivers);
 
-  console.log(data);
+  useEffect(() => {
+    if (!isSuccess) return;
+    if (!data) return;
+
+    data.forEach((e) => addReceiver(e.id, e));
+  }, [data]);
 
   return (
     <>
@@ -85,8 +93,13 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
                         radius={"xl"}
                         alt=""
                       />
-                      {e?.status && (
-                        <UserStatus status={e.status} w={12} h={12} />
+                      {receivers[e.id]?.status && (
+                        <UserStatus
+                          status={receivers[e.id].status}
+                          w={12}
+                          h={12}
+                          absolute={true}
+                        />
                       )}
                     </div>
                     <Text>

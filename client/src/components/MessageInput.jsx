@@ -197,6 +197,10 @@ const MessageInput = () => {
                 style={{
                   whiteSpace: "pre-wrap",
                   maxBlockSize: 350,
+                  border: "0",
+                  backgroundColor: "transparent",
+                  color: "white",
+                  width: "100%",
                 }}
                 // onHeightChange={}
                 onChange={(e) => {

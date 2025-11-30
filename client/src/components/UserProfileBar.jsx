@@ -47,7 +47,7 @@ const UserProfileBar = ({ ref }) => {
         align={"center"}
       >
         <Flex w={"100%"} align={"center"}>
-          <UserProfileBarDropdown />
+          <UserProfileBarDropdown open={open} />
           {/* <Box ms={"auto"}> */}
           <CiSettings
             className={styles["settings-icon"]}

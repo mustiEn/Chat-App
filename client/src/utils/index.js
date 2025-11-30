@@ -22,3 +22,5 @@ export const formatDate = (date) => {
   }
   return format;
 };
+export const returnLocalNow = () =>
+  dayjs().tz(dayjs.tz.guess()).format("YYYY-MM-DD HH:mm:ss");

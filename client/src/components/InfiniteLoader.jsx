@@ -1,12 +1,9 @@
 import { Box } from "@mantine/core";
-import React, { useEffect } from "react";
 
 import { useOutletContext, useParams } from "react-router-dom";
 
 const InfiniteLoader = ({ children }) => {
   const { scrollElementRef } = useOutletContext();
-
-  // console.log("dm loader");
 
   return (
     <>
@@ -17,8 +14,8 @@ const InfiniteLoader = ({ children }) => {
         }}
         id={"scrollableRef"}
         ref={scrollElementRef}
-        className="custom-scrollbar "
-        px={2}
+        className="custom-scrollbar"
+        px={"md"}
       >
         {children}
       </Box>

@@ -2,8 +2,8 @@ import { Box, Flex, Image, Text } from "@mantine/core";
 import React from "react";
 import { UserContext } from "../contexts/UserContext";
 import { useContext } from "react";
-import UserStatus from "./UserStatus";
 import styles from "../css/user_profile_bar.module.css";
+import UserStatus from "../components/UserStatus.jsx";
 
 const UserProfileBarButton = ({ ref, ...props }) => {
   const { user } = useContext(UserContext);
@@ -30,7 +30,9 @@ const UserProfileBarButton = ({ ref, ...props }) => {
             radius={"xl"}
             alt=""
           />
-          {user?.status && <UserStatus status={user.status} w={10} h={10} />}
+          {user?.status && (
+            <UserStatus status={user.status} w={10} h={10} absolute={true} />
+          )}
         </Box>
         <Box>
           <Text fw={"bold"}>{user?.display_name}</Text>

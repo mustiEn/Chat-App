@@ -24,9 +24,9 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
-// export const client = createClient({
-//   enable_offline_queue: false,
-// });
+export const client = createClient({
+  enable_offline_queue: false,
+});
 const app = express();
 const sqlStore = SequelizeStore(session.Store);
 const sessionStore = new sqlStore({
@@ -52,10 +52,10 @@ export const io = new Server(server, {
   },
 });
 
-// client.on("error", (err) => logger.log("Redis Client Error", err));
+client.on("error", (err) => logger.log("Redis Client Error", err));
 
-// await client.connect();
-// logger.log("Redis connected");
+await client.connect();
+logger.log("Redis connected");
 
 try {
   await sequelize.authenticate();

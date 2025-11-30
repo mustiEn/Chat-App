@@ -7,6 +7,7 @@ import { User } from "./models/User.js";
 import { Friend } from "./models/Friend.js";
 import { ChatId } from "./models/ChatId.js";
 import { BlockedUser } from "./models/BlockedUser.js";
+import { client } from "./server.js";
 
 let usersWithInContact = [];
 
@@ -27,6 +28,9 @@ export const setUpSocket = (io) => {
       ],
       raw: true,
     });
+    const cachedStatus = await client.get(String(userId));
+
+    if (!cachedStatus) await client.set(String(userId), sender.status);
 
     usersWithInContact = await ChatId.findAll({
       attributes: [
@@ -39,6 +43,7 @@ export const setUpSocket = (io) => {
           ),
           "id",
         ],
+        "chat_id",
       ],
       where: {
         [Op.or]: [
@@ -51,12 +56,9 @@ export const setUpSocket = (io) => {
       raw: true,
     });
 
-    // if (userLastDisconnect) lastDisconnect.delete(userId);
-
     logger.log(`User with id => ${userId} connected`);
 
     socket.emit("initial", sender);
-    // socket.broadcast.emit("status", { userId, status: "status1" });
     socket.join(userId);
 
     //^ on login, get all withincontact users which are dmhistoryusers with the logged in user and friends
@@ -69,19 +71,16 @@ export const setUpSocket = (io) => {
 
     //* in groups,no access to anyone regadless of friendship,only allow a msg input.
 
-    usersWithInContact.forEach(({ id }) => {
-      const roomExists = Array.from(socket.rooms).includes(id);
+    usersWithInContact.forEach(({ chat_id }) => {
+      const roomExists = Array.from(socket.rooms).includes(chat_id);
 
-      if (!roomExists) socket.join(id);
+      if (!roomExists) socket.join(chat_id);
     });
 
     // logger.log("rooms: ", socket.rooms);
 
-    socket.on("join room", (receiverId, done) => {
-      receiverId = Number(receiverId);
-      const key = [userId, receiverId];
-      const room = key.sort((a, b) => a - b).join("_");
-      socket.join(room);
+    socket.on("join room", (chatId, done) => {
+      socket.join(chatId);
       logger.log("Joined room:", room);
       logger.log("sender", userId);
       done({
@@ -97,17 +96,44 @@ export const setUpSocket = (io) => {
         status: "ok",
       });
     });
-    socket.on("send user status", (userId, status, done) => {
-      userId = Number(userId);
-      const result = {
-        userId,
-        status,
-      };
-      usersWithInContact.forEach(({ id }) => {
-        io.to(id).emit("receive user status", { result });
-      });
+    socket.on("send user activity", async (done) => {
+      await client.set(String(userId), "Idle");
+
       done({
         status: "ok",
+      });
+
+      usersWithInContact.forEach(({ id }) => {
+        io.to(id).emit("receive user activity", { result: [userId] });
+      });
+    });
+    socket.on("send changed user status", async (status, done) => {
+      const result = [
+        {
+          userId,
+          status,
+        },
+      ];
+      await Promise.all([
+        User.update(
+          {
+            status,
+          },
+          {
+            where: {
+              id: userId,
+            },
+          }
+        ),
+        client.set(String(userId), status),
+      ]);
+
+      done({
+        status: "ok",
+      });
+
+      usersWithInContact.forEach(({ id }) => {
+        io.to(id).emit("receive changed user status", { result });
       });
     });
     socket.on("send edited msgs", async (msg, chatId, done) => {
@@ -513,7 +539,6 @@ export const setUpSocket = (io) => {
     });
     socket.on("send friend requests", async (friendInfo, done) => {
       let friend;
-
       try {
         if (friendInfo === sender.username)
           throw new Error("Something went wrong");
@@ -584,7 +609,6 @@ export const setUpSocket = (io) => {
           friend_id: friend.id,
           request_state: "pending",
         });
-        console.log(friend);
       } catch (error) {
         logger.log(error);
         return done({
@@ -597,7 +621,10 @@ export const setUpSocket = (io) => {
         friend: friend,
       });
 
-      io.to(friend.id).emit("receive friend requests", {
+      logger.log(socket.rooms);
+      logger.log(friendInfo);
+      logger.log({ friend }, friend.id);
+      socket.to(friend.id).emit("receive friend requests", {
         result: [sender],
       });
     });
@@ -722,6 +749,10 @@ export const setUpSocket = (io) => {
               ],
             },
           });
+
+        usersWithInContact = usersWithInContact.filter(
+          ({ id }) => id != blockedUserId
+        );
       } catch (error) {
         logger.log("error", error.message);
         return done({
@@ -737,7 +768,7 @@ export const setUpSocket = (io) => {
       logger.log("done");
       socket.leave(chatId);
 
-      io.emit("receive blocked users", {
+      io.to(blockedUserId).emit("receive blocked users", {
         result: [{ blockedBy: userId, chatId }],
       });
     });
@@ -767,7 +798,7 @@ export const setUpSocket = (io) => {
       });
       logger.log("done");
 
-      io.emit("receive unblocked users", {
+      io.to(unblockedUserId).emit("receive unblocked users", {
         result: [userId],
       });
     });
@@ -1136,6 +1167,8 @@ export const setUpSocket = (io) => {
               result: blockedUsers,
             });
           }
+
+          logger.log("friendRequests offline", friendRequests);
         }
       } catch (e) {
         logger.log("recovery error", e);

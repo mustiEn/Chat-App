@@ -54,9 +54,7 @@ const DmHeadProfile = () => {
       unblockReceiver(receiverId);
     });
   };
-  useEffect(() => {
-    console.log(receiver, receiver.blockedBy);
-  }, [receiver]);
+
   return (
     <>
       <Box m={"xs"}>

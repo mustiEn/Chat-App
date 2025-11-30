@@ -3,15 +3,17 @@ import { Link } from "react-router-dom";
 import { Box, Flex, Image, Text } from "@mantine/core";
 import UserStatus from "./UserStatus";
 import styles from "../css/friend_profile.module.css";
+import { useReceiverStore } from "../stores/useReceiverStore";
 
 const FriendProfile = ({ showOffset, friend }) => {
+  const receivers = useReceiverStore((s) => s.receivers);
+  const receiverStatus = receivers[friend.id]?.status;
+
   return (
     <>
       <Flex
         color="white"
-        className={`${styles["offCanvas"]}= ${
-          showOffset ? styles["show"] : ""
-        }`}
+        className={`${styles["offCanvas"]} ${showOffset ? styles["show"] : ""}`}
         direction={"column"}
         style={{
           flexShrink: 0,
@@ -51,8 +53,13 @@ const FriendProfile = ({ showOffset, friend }) => {
               h={80}
             >
               <Image src={"https://placehold.co/80"} radius={"100%"} />
-              {friend?.status && (
-                <UserStatus status={friend.status} w={22} h={22} />
+              {receiverStatus && (
+                <UserStatus
+                  status={receiverStatus}
+                  w={22}
+                  h={22}
+                  absolute={true}
+                />
               )}
             </Box>
           </Box>
