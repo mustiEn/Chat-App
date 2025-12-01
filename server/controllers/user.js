@@ -154,7 +154,7 @@ export const getDmData = async (req, res, next) => {
 
     const { user_id, receiver_id } = chat;
     const receiverId = user_id == userId ? receiver_id : user_id;
-    const cachedStatus = await client.get(String(receiverId));
+    const cachedStatus = await client.get(`user:${receiverId}:status`);
 
     nextId = Number(nextId);
     receiver = await User.findByPk(receiverId, {
@@ -173,7 +173,7 @@ export const getDmData = async (req, res, next) => {
 
     if (!receiver) throw new Error("Receiver not found");
     if (!cachedStatus) {
-      await client.set(String(receiverId), receiver.status);
+      await client.set(`user:${receiverId}:status`, receiver.status);
     } else {
       receiver.status = cachedStatus;
     }
@@ -292,12 +292,12 @@ export const getDmHistory = async (req, res, next) => {
     });
 
     const dmHistoryMapped = dmHistory.map(async (e) => {
-      const cachedStatus = await client.get(String(e.id));
+      const cachedStatus = await client.get(`user:${e.id}:status`);
 
       if (cachedStatus) {
         return { ...e, status: cachedStatus };
       } else {
-        await client.set(String(e.id), e.status);
+        await client.set(`user:${e.id}:status`, e.status);
         return e;
       }
     });
@@ -542,12 +542,12 @@ export const getAllFriends = async (req, res, next) => {
     const next =
       friends.length < limit ? null : friends.length + Number(offset);
     const friendsMapped = friends.map(async (e) => {
-      const cachedStatus = await client.get(String(e.id));
+      const cachedStatus = await client.get(`user:${e.id}:status`);
 
       if (cachedStatus) {
         return { ...e, status: cachedStatus };
       } else {
-        await client.set(String(e.id), e.status);
+        await client.set(`user:${e.id}:status`, e.status);
         return e;
       }
     });

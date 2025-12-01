@@ -1,5 +1,5 @@
 import React, { memo, useContext, useMemo, useState } from "react";
-import { NavLink, useLoaderData, useLocation } from "react-router-dom";
+import { useLoaderData, useLocation } from "react-router-dom";
 import { TbActivity } from "react-icons/tb";
 import { IoAddCircleSharp } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
@@ -8,7 +8,7 @@ import "../css/server_list.css";
 import AppsModal from "./AppsModal";
 import AddServerModal from "./AddServerModal";
 import HeaderContext from "../contexts/HeaderContext";
-import { Flex, Stack, Button, Text } from "@mantine/core";
+import { Flex, Stack, Button, Text, NavLink } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 
 const ServerList = memo(function Serverlist() {
@@ -58,7 +58,7 @@ const ServerList = memo(function Serverlist() {
   };
   const popOverTrigger = (link, server = null, icon = null) => {
     return (
-      <Button
+      <NavLink
         color={"dark"}
         // className={"d-flex justify-content-center align-items-center mx-1 p-0"}
         // style={{ width: 40, height: 35, fontSize: 20 }}
@@ -75,23 +75,25 @@ const ServerList = memo(function Serverlist() {
           },
         }}
         // onClick={() => setHeader(content)}
-        as={NavLink}
-        to={link}
-      >
-        {server ? (
-          server?.image ? (
-            <img
-              src={server?.image}
-              alt={server?.name}
-              style={{ width: "30px", height: "30px", borderRadius: "50%" }}
-            />
+        // as={NavLink}
+
+        href={link}
+        label={
+          server ? (
+            server?.image ? (
+              <img
+                src={server?.image}
+                alt={server?.name}
+                style={{ width: "30px", height: "30px", borderRadius: "50%" }}
+              />
+            ) : (
+              concatFirstLetters("Jack daniels")
+            )
           ) : (
-            concatFirstLetters("Jack daniels")
+            icon
           )
-        ) : (
-          icon
-        )}
-      </Button>
+        }
+      />
     );
   };
   const popOverModalTrigger = (icon, toggler) => {

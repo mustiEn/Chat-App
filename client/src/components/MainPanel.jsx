@@ -63,6 +63,7 @@ const MainPanel = () => {
     msgAddedOrDeleted: {},
   });
   const lastActivity = useRef();
+  const allFriendsLastUpdatedAt = useRef(0);
 
   useEffect(() => {
     const onConnect = () => {
@@ -276,8 +277,10 @@ const MainPanel = () => {
         removeSentFriendRequest(queryClient, sender.id);
       });
     };
-    const handleUserStatus = ({ result }) => {
+    const handleUserStatus = ({ result, id }) => {
       console.log("result", result);
+      console.log("id:", id);
+
       const receivers = useReceiverStore.getState().receivers;
 
       result.forEach(({ userId, status }) => {
@@ -426,6 +429,7 @@ const MainPanel = () => {
                 setGroupChat,
                 scrollElementRef,
                 dmChatRef,
+                allFriendsLastUpdatedAt,
               }}
             />
           </Flex>

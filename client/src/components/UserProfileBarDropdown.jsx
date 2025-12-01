@@ -19,6 +19,9 @@ const UserProfileBarDropdown = ({ open }) => {
         toast.error(res.status);
         return;
       }
+
+      user.status = status;
+      console.log(res);
     });
   };
 

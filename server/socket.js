@@ -9,8 +9,6 @@ import { ChatId } from "./models/ChatId.js";
 import { BlockedUser } from "./models/BlockedUser.js";
 import { client } from "./server.js";
 
-let usersWithInContact = [];
-
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
     const userId = socket.request.session?.passport?.user;
@@ -28,11 +26,7 @@ export const setUpSocket = (io) => {
       ],
       raw: true,
     });
-    const cachedStatus = await client.get(String(userId));
-
-    if (!cachedStatus) await client.set(String(userId), sender.status);
-
-    usersWithInContact = await ChatId.findAll({
+    const usersWithInContact = await ChatId.findAll({
       attributes: [
         [
           fn(
@@ -55,6 +49,15 @@ export const setUpSocket = (io) => {
       },
       raw: true,
     });
+    const cachedStatus = await client.get(`user:${userId}:status`);
+    const cachedContacts = await client.get(`user:${userId}:contacts`);
+
+    if (!cachedStatus) await client.set(`user:${userId}:status`, sender.status);
+    if (!cachedContacts)
+      await client.set(
+        `user:${userId}:contacts`,
+        JSON.stringify(usersWithInContact)
+      );
 
     logger.log(`User with id => ${userId} connected`);
 
@@ -71,13 +74,14 @@ export const setUpSocket = (io) => {
 
     //* in groups,no access to anyone regadless of friendship,only allow a msg input.
 
-    usersWithInContact.forEach(({ chat_id }) => {
-      const roomExists = Array.from(socket.rooms).includes(chat_id);
+    const allContactsStr = await client.get(`user:${userId}:contacts`);
+    const allContactsParsed = JSON.parse(allContactsStr);
 
-      if (!roomExists) socket.join(chat_id);
+    allContactsParsed.forEach(({ chat_id, id }) => {
+      socket.join(chat_id);
+      // socket.join(id);
     });
-
-    // logger.log("rooms: ", socket.rooms);
+    logger.log(allContactsParsed);
 
     socket.on("join room", (chatId, done) => {
       socket.join(chatId);
@@ -97,7 +101,7 @@ export const setUpSocket = (io) => {
       });
     });
     socket.on("send user activity", async (done) => {
-      await client.set(String(userId), "Idle");
+      await client.set(`user:${userId}:status`, "Idle");
 
       done({
         status: "ok",
@@ -108,33 +112,44 @@ export const setUpSocket = (io) => {
       });
     });
     socket.on("send changed user status", async (status, done) => {
-      const result = [
-        {
-          userId,
-          status,
-        },
-      ];
-      await Promise.all([
-        User.update(
+      let result;
+      try {
+        result = [
           {
+            userId,
             status,
           },
-          {
-            where: {
-              id: userId,
+        ];
+        await Promise.all([
+          User.update(
+            {
+              status: status,
             },
-          }
-        ),
-        client.set(String(userId), status),
-      ]);
+            {
+              where: {
+                id: userId,
+              },
+            }
+          ),
+          client.set(`user:${userId}:status`, status),
+        ]);
 
-      done({
-        status: "ok",
-      });
-
-      usersWithInContact.forEach(({ id }) => {
-        io.to(id).emit("receive changed user status", { result });
-      });
+        done({
+          status: "ok",
+        });
+        logger.log("user status changed: ", userId);
+        // logger.log(io.sockets.adapter.rooms.entries());
+        allContactsParsed.forEach(({ id }) => {
+          // logger.log(io.sockets.adapter.rooms.has(id));
+          logger.log(id);
+          socket.to(id).emit("receive changed user status", { result, id });
+        });
+      } catch (error) {
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
     });
     socket.on("send edited msgs", async (msg, chatId, done) => {
       let message;
@@ -243,7 +258,7 @@ export const setUpSocket = (io) => {
         chatId: chatId.chat_id,
       });
 
-      io.to(receiverId).emit("receive msg requests", {
+      socket.to(receiverId).emit("receive msg requests", {
         result,
         chatIds: [chatId.chat_id],
       });
@@ -320,7 +335,7 @@ export const setUpSocket = (io) => {
       }
 
       if (answer.status == "accepted") {
-        io.to(chatId).emit("receive msg request acceptance", {
+        socket.to(chatId).emit("receive msg request acceptance", {
           result,
           chatIds: [chatId],
         });
@@ -532,7 +547,7 @@ export const setUpSocket = (io) => {
       done({
         status: "ok",
       });
-      io.to(friendId).emit("receive removed friends", {
+      socket.to(friendId).emit("receive removed friends", {
         result: [userId],
       });
       logger.log("Deleted friend:", friendId);
@@ -689,7 +704,7 @@ export const setUpSocket = (io) => {
           chatIds: [chat?.chat_id ?? null],
         });
 
-        io.to(friendId).emit("receive friend request acceptance", {
+        socket.to(friendId).emit("receive friend request acceptance", {
           result: [
             {
               status,
@@ -768,7 +783,7 @@ export const setUpSocket = (io) => {
       logger.log("done");
       socket.leave(chatId);
 
-      io.to(blockedUserId).emit("receive blocked users", {
+      socket.to(blockedUserId).emit("receive blocked users", {
         result: [{ blockedBy: userId, chatId }],
       });
     });
@@ -798,7 +813,7 @@ export const setUpSocket = (io) => {
       });
       logger.log("done");
 
-      io.to(unblockedUserId).emit("receive unblocked users", {
+      socket.to(unblockedUserId).emit("receive unblocked users", {
         result: [userId],
       });
     });

@@ -55,6 +55,8 @@ export const io = new Server(server, {
 client.on("error", (err) => logger.log("Redis Client Error", err));
 
 await client.connect();
+await client.flushAll();
+
 logger.log("Redis connected");
 
 try {

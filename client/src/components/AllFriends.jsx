@@ -19,6 +19,7 @@ import { useReceiverStore } from "../stores/useReceiverStore.js";
 
 const AllFriends = () => {
   const queryClient = useQueryClient();
+  const { allFriendsLastUpdatedAt } = useOutletContext();
   const navigate = useNavigate();
   const { inView, ref } = useInView({
     threshold: 0.4,
@@ -36,8 +37,14 @@ const AllFriends = () => {
       toast.success("Friend removed");
     });
   };
-  const { data, isLoading, hasNextPage, fetchNextPage, isSuccess } =
-    useAllFriends();
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isSuccess,
+    dataUpdatedAt,
+  } = useAllFriends();
 
   useEffect(() => {
     if (inView) {
@@ -64,9 +71,17 @@ const AllFriends = () => {
   useEffect(() => {
     if (!isSuccess) return;
     if (!data) return;
+    if (dataUpdatedAt === allFriendsLastUpdatedAt.current) return;
+
+    allFriendsLastUpdatedAt.current = dataUpdatedAt;
+    // console.log();
 
     newdata.forEach((e) => addReceiver(e.id, e));
   }, [newdata]);
+
+  useEffect(() => {
+    console.log("receivers", receivers);
+  }, [receivers]);
 
   return (
     <>

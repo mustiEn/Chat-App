@@ -22,6 +22,7 @@ export const useReceiverStore = create(
     setStatus: (receiverId, status) =>
       set((state) => {
         state.receivers[receiverId].status = status;
+        state.receivers[receiverId].okey = 1111;
       }),
   }))
 );

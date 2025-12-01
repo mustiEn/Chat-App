@@ -24,10 +24,16 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
 
   useEffect(() => {
     if (!isSuccess) return;
-    if (!data) return;
+    if (!data || !data.length) return;
+    if (receivers[data[0].id]) return;
+    console.log(data);
 
     data.forEach((e) => addReceiver(e.id, e));
   }, [data]);
+
+  useEffect(() => {
+    console.log(receivers);
+  }, [receivers]);
 
   return (
     <>
