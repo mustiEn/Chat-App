@@ -1,19 +1,26 @@
-import React, { memo, useContext, useMemo, useState } from "react";
-import { useLoaderData, useLocation } from "react-router-dom";
+import React, { memo, useContext } from "react";
 import { TbActivity } from "react-icons/tb";
 import { IoAddCircleSharp } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
 import PopoverComponent from "./PopoverComponent";
-import "../css/server_list.css";
 import AppsModal from "./AppsModal";
 import AddServerModal from "./AddServerModal";
 import HeaderContext from "../contexts/HeaderContext";
-import { Flex, Stack, Button, Text, NavLink } from "@mantine/core";
+import { Flex, Stack, Button, Text } from "@mantine/core";
+import {
+  NavLink as ReactNavLink,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useDisclosure } from "@mantine/hooks";
+import styles from "../css/server_list.module.css";
+import { CiLogout } from "react-icons/ci";
 
 const ServerList = memo(function Serverlist() {
   // const servers = useLoaderData();
   // const servers = Array.from({length:5})
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const setHeader = useContext(HeaderContext);
   const [isAppModalOpened, { open: openAppModal, close: closeAppModal }] =
     useDisclosure(false);
@@ -58,56 +65,49 @@ const ServerList = memo(function Serverlist() {
   };
   const popOverTrigger = (link, server = null, icon = null) => {
     return (
-      <NavLink
-        color={"dark"}
-        // className={"d-flex justify-content-center align-items-center mx-1 p-0"}
-        // style={{ width: 40, height: 35, fontSize: 20 }}
-        mx={"xs"}
-        p={0}
-        styles={{
-          root: {
-            width: 40,
-            height: 35,
-            fontSize: 16,
-          },
-          label: {
-            overflow: "unset",
-          },
-        }}
+      <button
+        // color={"dark"}
+        className={
+          pathname.includes(link)
+            ? [styles.btn, styles.active].join(" ")
+            : styles.btn
+        }
         // onClick={() => setHeader(content)}
-        // as={NavLink}
-
-        href={link}
-        label={
-          server ? (
+        onClick={() => navigate(link)}
+      >
+        <Flex justify={"center"} align={"center"} w={"100%"} h={"100%"}>
+          {server ? (
             server?.image ? (
-              <img
+              <Image
                 src={server?.image}
                 alt={server?.name}
-                style={{ width: "30px", height: "30px", borderRadius: "50%" }}
+                w={30}
+                h={30}
+                radius={"50%"}
               />
             ) : (
               concatFirstLetters("Jack daniels")
             )
           ) : (
             icon
-          )
-        }
-      />
+          )}
+        </Flex>
+      </button>
     );
   };
   const popOverModalTrigger = (icon, toggler) => {
     return (
       <Button
-        color={"dark"}
+        color={"gray.8"}
         mx={"xs"}
         p={0}
         onClick={toggler}
+        className={styles.btn}
         styles={{
           root: {
             width: 40,
             height: 35,
-            fontSize: 16,
+            fontSize: "var(--mantine-font-size-lg)",
           },
           label: {
             overflow: "unset",
@@ -118,10 +118,11 @@ const ServerList = memo(function Serverlist() {
       </Button>
     );
   };
+
   return (
     <>
       <Flex
-        id="serverList"
+        id={styles.serverList}
         direction={"column"}
         gap={"xs"}
         ms={"auto"}
@@ -132,20 +133,11 @@ const ServerList = memo(function Serverlist() {
           content={popOverContent("Direct Messages")}
           trigger={popOverTrigger("/@me/friends", undefined, <TbActivity />)}
         />
-        <PopoverComponent
-          content={popOverContent("Direct Messages")}
-          trigger={popOverTrigger("/logout", undefined, <TbActivity />)}
-        />
         {Array.from({ length: 5 }, (_, server) => (
           <PopoverComponent
             key={server}
-            content={popOverContent(server + 1)}
-            trigger={popOverTrigger(
-              "/@me/group-chat",
-              server + 1,
-              undefined,
-              "Jack Daniels"
-            )}
+            content={popOverContent("Direct Messages")}
+            trigger={popOverTrigger("/@me/group-chat", server + 1, undefined)}
           />
         ))}
         {modals.map(({ content, icon, modalToggler }, i) => (
@@ -155,14 +147,10 @@ const ServerList = memo(function Serverlist() {
             trigger={popOverModalTrigger(icon, modalToggler)}
           />
         ))}
-        {/* <PopoverComponent
-          content={popOverContent("Add a server")}
-          trigger={popOverModalTrigger(<IoAddCircleSharp />)}
-        />
         <PopoverComponent
-          content={popOverContent("Download Apps")}
-          trigger={popOverModalTrigger(<LiaDownloadSolid />)}
-        /> */}
+          content={popOverContent("Logout")}
+          trigger={popOverTrigger("/logout", undefined, <CiLogout />)}
+        />
       </Flex>
       <AppsModal
         show={openAppModal}

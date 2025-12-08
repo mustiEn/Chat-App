@@ -1,7 +1,7 @@
 import { DataTypes, STRING } from "sequelize";
 import { sequelize } from "./db.js";
 
-export const ChatId = sequelize.define("chat_id", {
+export const OneToOneChat = sequelize.define("one_to_one_chat", {
   chat_id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,

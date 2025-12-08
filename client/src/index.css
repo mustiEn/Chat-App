@@ -23,6 +23,13 @@ body {
   background-color: #171718;
 }
 
+button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+}
+
 ul {
   list-style: none;
   padding: 0;

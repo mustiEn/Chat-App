@@ -5,9 +5,10 @@ import { logger, lastDisconnect } from "./utils/index.js";
 import { sequelize } from "./models/db.js";
 import { User } from "./models/User.js";
 import { Friend } from "./models/Friend.js";
-import { ChatId } from "./models/ChatId.js";
+import { OneToOneChat } from "./models/OneToOneChat.js";
 import { BlockedUser } from "./models/BlockedUser.js";
 import { client } from "./server.js";
+import { DirectMessageHistory } from "./models/DirectMessageHistory.js";
 
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
@@ -26,7 +27,7 @@ export const setUpSocket = (io) => {
       ],
       raw: true,
     });
-    const usersWithInContact = await ChatId.findAll({
+    const usersWithInContact = await OneToOneChat.findAll({
       attributes: [
         [
           fn(
@@ -230,7 +231,7 @@ export const setUpSocket = (io) => {
             dm.id = :msgReqId
         `;
 
-        chatId = await ChatId.create({
+        chatId = await OneToOneChat.create({
           user_id: userId,
           receiver_id: receiverId,
         });
@@ -659,6 +660,7 @@ export const setUpSocket = (io) => {
           if (!friend) throw new Error("Friend not found");
 
           if (status === "accepted") {
+            const chatKey = [userId, friendId].sort((a, b) => a - b).join("-");
             await Friend.update(
               {
                 request_state: status,
@@ -670,7 +672,7 @@ export const setUpSocket = (io) => {
                 },
               }
             );
-            [chat, chatIdCreated] = await ChatId.findCreateFind({
+            [chat, chatIdCreated] = await OneToOneChat.findCreateFind({
               attributes: ["chat_id"],
               where: {
                 [Op.or]: [
@@ -681,9 +683,13 @@ export const setUpSocket = (io) => {
               defaults: {
                 user_id: userId,
                 receiver_id: friendId,
+                chat_key: chatKey,
               },
               raw: true,
             });
+            // await DirectMessageHistory.findCreateFind({
+
+            // })
           } else {
             await Friend.destroy({
               where: {
@@ -716,8 +722,7 @@ export const setUpSocket = (io) => {
 
         if (status === "accepted" && chatIdCreated) {
           socket.join(chat?.chat_id);
-          if (!usersWithInContact[receiverId])
-            usersWithInContact.push(receiverId);
+          if (!usersWithInContact[friendId]) usersWithInContact.push(friendId);
         }
 
         logger.log("friend req accepted");
@@ -835,7 +840,7 @@ export const setUpSocket = (io) => {
             const key = `${[userId, receiverId]
               .sort((a, b) => a - b)
               .join("-")}`;
-            const { chat_id: chatId } = await ChatId.findOne({
+            const { chat_id: chatId } = await OneToOneChat.findOne({
               attributes: ["chat_id"],
               where: {
                 chat_key: key,
@@ -1128,7 +1133,7 @@ export const setUpSocket = (io) => {
             for (const element of msgRequests) {
               const { from_id, to_id } = element;
               const key = [from_id, to_id].sort((a, b) => a - b).join("-");
-              const { chat_id } = await ChatId.findOne({
+              const { chat_id } = await OneToOneChat.findOne({
                 attributes: ["chat_id"],
                 where: {
                   chat_key: key,
@@ -1149,17 +1154,19 @@ export const setUpSocket = (io) => {
             for (const element of friendRequestsAcceptance) {
               const { id: friendId, status } = element;
               const key = [friendId, userId].sort((a, b) => a - b).join("-");
-              const [chatId, chatIdCreated] = await ChatId.findCreateFind({
-                attributes: ["chat_id"],
-                where: {
-                  chat_key: key,
-                },
-                defaults: {
-                  user_id: userId,
-                  receiver_id: friendId,
-                },
-                raw: true,
-              });
+              const [chatId, chatIdCreated] = await OneToOneChat.findCreateFind(
+                {
+                  attributes: ["chat_id"],
+                  where: {
+                    chat_key: key,
+                  },
+                  defaults: {
+                    user_id: userId,
+                    receiver_id: friendId,
+                  },
+                  raw: true,
+                }
+              );
 
               if (status === "accepted" && chatIdCreated)
                 socket.join(chatId.chat_id);

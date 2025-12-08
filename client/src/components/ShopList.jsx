@@ -12,7 +12,7 @@ const ShopList = () => {
   // ];
   return (
     <>
-      <Flex wrap={"wrap"} justify={"space-between"} gap={"md"}>
+      <Flex wrap={"wrap"} justify={"space-evenly"} gap={"md"}>
         <ProductBackground />
         <ProductProfileIcons />
         <ProductAnimatedView />

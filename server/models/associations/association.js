@@ -2,7 +2,7 @@ import { Group } from "../Group.js";
 import { DirectMessage } from "../DirectMessage.js";
 import { User } from "../User.js";
 import { Friend } from "../Friend.js";
-import { ChatId } from "../ChatId.js";
+import { OneToOneChat } from "../OneToOneChat.js";
 import { BlockedUser } from "../BlockedUser.js";
 import { DirectMessageHistory } from "../DirectMessageHistory.js";
 
@@ -60,7 +60,7 @@ export const setUpAssociation = () => {
   });
 
   User.belongsToMany(User, {
-    through: ChatId,
+    through: OneToOneChat,
     as: "chatIds",
     foreignKey: "user_id",
     otherKey: "receiver_id",

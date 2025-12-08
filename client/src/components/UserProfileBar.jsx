@@ -16,8 +16,8 @@ import { useState } from "react";
 import SettingsModalMyAccount from "../components/SettingsModalMyAccount.jsx";
 import SettingsModalSecurity from "../components/SettingsModalSecurity.jsx";
 import SettingsModalLanguage from "../components/SettingsModalLanguage.jsx";
-import styles from "../css/user_profile_bar.module.css";
 import UserProfileBarDropdown from "./UserProfileBarDropdown.jsx";
+import styles from "../css/user_profile_bar.module.css";
 
 const modalLinks = ["My Account", "Security", "Billings", "Language"];
 const modalComponents = {

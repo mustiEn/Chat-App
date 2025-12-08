@@ -19,18 +19,7 @@ const DmSidebarNavTop = () => {
   return (
     <>
       <Box w={"100%"}>
-        <Button
-          mt={10}
-          mb={10}
-          mr={10}
-          ml={10}
-          variant={"filled"}
-          radius={"sm"}
-          color="dark"
-        >
-          Find or start a conversation
-        </Button>
-        <Box className={styles["div-border"]}>
+        <Box>
           <Stack gap={"xs"} mt={"xs"} mb={"xs"} mr={"sm"} ml={"sm"}>
             {links.map((link, i) => (
               <NavLink

@@ -7,7 +7,7 @@ import { sequelize } from "../models/db.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
-import { ChatId } from "../models/ChatId.js";
+import { OneToOneChat } from "../models/OneToOneChat.js";
 import { Friend } from "../models/Friend.js";
 import { BlockedUser } from "../models/BlockedUser.js";
 import { client } from "../server.js";
@@ -45,7 +45,7 @@ export const getInitialDmData = async (req, res, next) => {
     }
 
     const { chatId } = matchedData(req);
-    const chat = await ChatId.findOne({
+    const chat = await OneToOneChat.findOne({
       attributes: ["user_id", "receiver_id"],
       where: {
         chat_id: chatId,
@@ -142,7 +142,7 @@ export const getDmData = async (req, res, next) => {
     }
 
     let { chatId, nextId } = matchedData(req);
-    const chat = await ChatId.findOne({
+    const chat = await OneToOneChat.findOne({
       attributes: ["user_id", "receiver_id"],
       where: {
         chat_id: chatId,
@@ -263,7 +263,7 @@ export const getDmHistory = async (req, res, next) => {
             FROM 
               direct_message_history dmh 
               INNER JOIN users u ON dm_history_user_id = u.id 
-              INNER JOIN chat_ids c ON c.receiver_id = u.id 
+              INNER JOIN one_to_one_chats c ON c.receiver_id = u.id 
               AND c.user_id = :userId 
             WHERE 
               dmh.user_id = :userId 
@@ -278,7 +278,7 @@ export const getDmHistory = async (req, res, next) => {
             FROM 
               direct_message_history dmh 
               INNER JOIN users u ON dm_history_user_id = u.id 
-              INNER JOIN chat_ids c ON c.user_id = u.id 
+              INNER JOIN one_to_one_chats c ON c.user_id = u.id 
               AND c.receiver_id = :userId 
             WHERE 
               dmh.user_id = :userId
@@ -320,7 +320,7 @@ export const getPinnedMessages = async (req, res, next) => {
     }
 
     const { chatId } = matchedData(req);
-    const chat = await ChatId.findOne({
+    const chat = await OneToOneChat.findOne({
       attributes: ["user_id", "receiver_id"],
       where: {
         chat_id: chatId,
@@ -519,7 +519,7 @@ export const getAllFriends = async (req, res, next) => {
     const ids = friends.map(({ id }) =>
       [userId, id].sort((a, b) => a - b).join("-")
     );
-    const chatIds = await ChatId.findAll({
+    const chatIds = await OneToOneChat.findAll({
       attributes: ["chat_id", "chat_key"],
       where: {
         chat_key: {

@@ -13,9 +13,9 @@ import PopoverComponent from "./PopoverComponent";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { removeFriend } from "../utils/friends.js";
-import styles from "../css/all_friends.module.css";
 import UserStatus from "./UserStatus.jsx";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
+import styles from "../css/all_friends.module.css";
 
 const AllFriends = () => {
   const queryClient = useQueryClient();
@@ -67,17 +67,6 @@ const AllFriends = () => {
 
   const addReceiver = useReceiverStore((s) => s.addToReceivers);
   const receivers = useReceiverStore((s) => s.receivers);
-
-  useEffect(() => {
-    if (!isSuccess) return;
-    if (!data) return;
-    if (dataUpdatedAt === allFriendsLastUpdatedAt.current) return;
-
-    allFriendsLastUpdatedAt.current = dataUpdatedAt;
-    // console.log();
-
-    newdata.forEach((e) => addReceiver(e.id, e));
-  }, [newdata]);
 
   useEffect(() => {
     console.log("receivers", receivers);

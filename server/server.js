@@ -24,6 +24,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat.js";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
+
 export const client = createClient({
   enable_offline_queue: false,
 });
@@ -42,7 +43,6 @@ const sessionMiddleware = session({
     maxAge: 1000 * 60 * 60 * 24 * 90,
   },
 });
-
 const server = createServer(app);
 export const io = new Server(server, {
   connectionStateRecovery: {},
@@ -95,7 +95,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(sessionMiddleware);
 app.use(cookieParser());
-
 app.use(passport.initialize());
 app.use(passport.session());
 sessionStore.sync();
