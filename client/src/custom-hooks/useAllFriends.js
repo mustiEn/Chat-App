@@ -19,7 +19,7 @@ const getAllFriends = async ({ pageParam }) => {
     // };
     return data;
   } catch (error) {
-    toast.error(error.message);
+    throw new Error(error.message);
   }
 };
 

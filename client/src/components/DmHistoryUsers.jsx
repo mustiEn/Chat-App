@@ -1,7 +1,7 @@
 import React, { memo, useContext, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import HeaderContext from "../contexts/HeaderContext";
-import DmHistorySkeleton from "./DmHistorySkeleton";
+import HeaderContext from "../contexts/HeaderContext.jsx";
+import DmHistorySkeleton from "./DmHistorySkeleton.jsx";
 import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 import { useDmHistory } from "../custom-hooks/useDmHistory.js";
 import UserStatus from "./UserStatus.jsx";
@@ -10,7 +10,7 @@ import { useState } from "react";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 // import DmHistorySkeleton from "./DmHistorySkeleton";
 
-const UsersInDmHistory = memo(function UsersInDmHistory() {
+const DmHistoryUsers = memo(function DmHistoryUsers() {
   const { t, i18n } = useTranslation();
   const setHeader = useContext(HeaderContext);
   const { data, isLoading, isSuccess } = useDmHistory();
@@ -28,12 +28,12 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
     if (receivers[data[0].id]) return;
     console.log(data);
 
-    data.forEach((e) => addReceiver(e.id, e));
+    data.forEach((e) => {
+      if (!receivers[e.id]) {
+        addReceiver(e.id, e);
+      }
+    });
   }, [data]);
-
-  useEffect(() => {
-    console.log(receivers);
-  }, [receivers]);
 
   return (
     <>
@@ -127,4 +127,4 @@ const UsersInDmHistory = memo(function UsersInDmHistory() {
   );
 });
 
-export default UsersInDmHistory;
+export default DmHistoryUsers;

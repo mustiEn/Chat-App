@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 
 const getDmHistory = async () => {
-  const res = await fetch("/api/dmHistory");
-  const data = await res.json();
+  try {
+    const res = await fetch("/api/dmHistory");
+    const data = await res.json();
 
-  if (!res.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(data.error);
 
-  return data;
+    return data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };
 
 export const useDmHistory = () => {

@@ -5,13 +5,14 @@
   border-right: none;
   border-bottom: none;
   border-top: none;
+  width: 250px;
 }
 
 .dm-sidebar {
   overflow: auto;
 }
 
-.conversation-btn {
+.sidebar-top {
   border: 1px solid rgb(255, 255, 255, 25%);
   border-width: 1px 0 1px 1px;
   flex-shrink: 0;

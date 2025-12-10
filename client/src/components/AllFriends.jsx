@@ -19,8 +19,8 @@ import styles from "../css/all_friends.module.css";
 
 const AllFriends = () => {
   const queryClient = useQueryClient();
-  const { allFriendsLastUpdatedAt } = useOutletContext();
   const navigate = useNavigate();
+  const { allFriendsLastUpdatedAt } = useOutletContext();
   const { inView, ref } = useInView({
     threshold: 0.4,
   });
@@ -46,12 +46,6 @@ const AllFriends = () => {
     dataUpdatedAt,
   } = useAllFriends();
 
-  useEffect(() => {
-    if (inView) {
-      fetchNextPage();
-    }
-  }, [inView]);
-
   const newdata = data?.pages.flatMap(({ friends }) => friends) ?? [];
   const allFriends = newdata.sort((a, b) =>
     a.display_name.localeCompare(b.display_name, undefined, {
@@ -64,14 +58,23 @@ const AllFriends = () => {
     estimateSize: () => 65,
     overscan: 5,
   });
-
-  const addReceiver = useReceiverStore((s) => s.addToReceivers);
   const receivers = useReceiverStore((s) => s.receivers);
+  const addToReceivers = useReceiverStore((s) => s.addToReceivers);
 
   useEffect(() => {
-    console.log("receivers", receivers);
-  }, [receivers]);
+    if (!isSuccess) return;
+    if (!data) return;
+    if (dataUpdatedAt === allFriendsLastUpdatedAt.current) return;
 
+    allFriendsLastUpdatedAt.current = dataUpdatedAt;
+    newdata.forEach((e) => addToReceivers(e.id, e));
+  }, [newdata]);
+
+  useEffect(() => {
+    if (inView) {
+      fetchNextPage();
+    }
+  }, [inView]);
   return (
     <>
       <Flex direction={"column"} p={"sm"} className={styles["all-friends-box"]}>

@@ -12,7 +12,7 @@ const getFriendRequests = async () => {
     return data;
   } catch (error) {
     console.log(error);
-    throw new Error("getFriendRequests failed");
+    throw new Error(error.message);
   }
 };
 export const useFriendRequests = () =>

@@ -20,7 +20,7 @@ const DmSidebarNavTop = () => {
     <>
       <Box w={"100%"}>
         <Box>
-          <Stack gap={"xs"} mt={"xs"} mb={"xs"} mr={"sm"} ml={"sm"}>
+          <Stack gap={"xs"}>
             {links.map((link, i) => (
               <NavLink
                 key={i}

@@ -65,14 +65,6 @@ export const setUpSocket = (io) => {
     socket.emit("initial", sender);
     socket.join(userId);
 
-    //^ on login, get all withincontact users which are dmhistoryusers with the logged in user and friends
-    //^ then send whatever the status is (this will work only if status is online/offline).
-    //^ save all related users in redis so on status change, it can be edited.If someone visits me,
-    //^ receive socket emit, save this visiter so if i change status, they can see it.
-    //^ Visitor will already see my statis through databas first.
-
-    //~ create room ids, if they are friends,create one, if in teh same gruop,create one.
-
     //* in groups,no access to anyone regadless of friendship,only allow a msg input.
 
     const allContactsStr = await client.get(`user:${userId}:contacts`);

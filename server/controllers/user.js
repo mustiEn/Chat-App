@@ -528,7 +528,9 @@ export const getAllFriends = async (req, res, next) => {
       },
       raw: true,
     });
-
+    logger.log("friends: ", friends);
+    logger.log("ids: ", ids);
+    logger.log("chatids: ", chatIds);
     if (chatIds.length) {
       const findChatId = (friendId) => {
         const key = [userId, friendId].sort((a, b) => a - b).join("-");

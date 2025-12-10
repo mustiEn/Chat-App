@@ -14,6 +14,7 @@ const fetchMoreData = async (pageParam, chatId) => {
     return data;
   } catch (error) {
     console.log(error.message);
+    throw new Error(error.message);
   }
 };
 

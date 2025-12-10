@@ -1,6 +1,6 @@
 import PopoverComponent from "./PopoverComponent";
 import { IoAdd } from "react-icons/io5";
-import UsersInDmHistory from "./UsersInDmHistory";
+import DmHistoryUsers from "./DmHistoryUsers";
 import { socket } from "../socket";
 import { Box, Flex, Space, Text } from "@mantine/core";
 
@@ -24,15 +24,15 @@ const DmHistory = () => {
 
   return (
     <>
-      <Box px={"sm"} w={"100%"}>
-        <Flex justify={"space-between"} mb={"xs"} c={"white"}>
+      <Box w={"100%"}>
+        <Flex justify={"space-between"} my={"xs"} c={"white"}>
           <Text>Direct Messages</Text>
           <PopoverComponent
             trigger={popOverTrigger()}
             content={popOverContent()}
           />
         </Flex>
-        <UsersInDmHistory />
+        <DmHistoryUsers />
         <Space h={"lg"}></Space>
         <button
           onClick={() => {

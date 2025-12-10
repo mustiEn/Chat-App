@@ -33,22 +33,23 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { returnLocalNow } from "../utils/index.js";
+import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const MainPanel = () => {
-  const queryClient = useQueryClient();
-  const [user, setUser] = useState();
   const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.addToNewPinnedMsgExists
   );
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
+  const receivers = useReceiverStore((s) => s.receivers);
   const blockReceiver = useReceiverStore((s) => s.blockReceiver);
   const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
   const setStatus = useReceiverStore((s) => s.setStatus);
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState();
   const [groupChat, setGroupChat] = useState({});
-
   const scrollElementRef = useRef(null);
   const dmChatRef = useRef({
     scrollPosition: {},
@@ -64,6 +65,22 @@ const MainPanel = () => {
   });
   const lastActivity = useRef();
   const allFriendsLastUpdatedAt = useRef(0);
+
+  const { data, isSuccess, dataUpdatedAt } = useAllFriends();
+  const newdata = data?.pages.flatMap(({ friends }) => friends) ?? [];
+
+  useEffect(() => {
+    if (!isSuccess) return;
+    if (!data) return;
+    if (dataUpdatedAt === allFriendsLastUpdatedAt.current) return;
+
+    allFriendsLastUpdatedAt.current = dataUpdatedAt;
+    newdata.forEach((e) => {
+      if (!receivers[e.id]) {
+        addToReceivers(e.id, e);
+      }
+    });
+  }, [newdata]);
 
   useEffect(() => {
     const onConnect = () => {
