@@ -51,7 +51,7 @@ function App() {
               ],
             },
             {
-              path: ":chatId",
+              path: "ch/:chatId",
               element: <DmPanel />,
               loader: Loader.loadDmData(queryClient),
             },
@@ -64,7 +64,7 @@ function App() {
               element: <MessageRequests />,
             },
             {
-              path: "group-chat",
+              path: "group-chat/:groupId",
               element: <GroupChatPanel />,
             },
           ],

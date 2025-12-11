@@ -1,0 +1,19 @@
+.modal-footer-input {
+  flex-grow: 1;
+}
+
+.friends-list {
+  overflow: auto;
+}
+
+.friend {
+  border-radius: rem(5px);
+}
+
+.friend:hover {
+  background-color: #363636;
+}
+
+.modal-footer {
+  border-top: rem(1px) solid gray;
+}

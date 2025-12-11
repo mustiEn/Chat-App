@@ -24,3 +24,14 @@ export const formatDate = (date) => {
 };
 export const returnLocalNow = () =>
   dayjs().tz(dayjs.tz.guess()).format("YYYY-MM-DD HH:mm:ss");
+export const isURL = (str) => {
+  const urlRegex = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?(\/\S*)?$/i;
+  return urlRegex.test(str.trim());
+};
+export const normaliseURL = (str) => {
+  const trimmed = str.trim();
+
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  return `https://${trimmed}`;
+};

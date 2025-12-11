@@ -1,10 +1,12 @@
 import React from "react";
 import EditDm from "./EditDm";
-import { formatDate } from "../utils/index.js";
+import { formatDate, isURL, normaliseURL } from "../utils/index.js";
 import MsgRepliedDiv from "../components/MsgRepliedDiv";
-import { Flex, Image, Text } from "@mantine/core";
+import { Anchor, Flex, Image, Text } from "@mantine/core";
 
 const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
+  console.log(isURL(msg.message), normaliseURL(msg.message));
+
   return (
     <>
       {msg.replied_msg_sender && <MsgRepliedDiv msg={msg} />}
@@ -39,15 +41,28 @@ const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
             editedMessage={editedMessage}
             setEditedMessage={setEditedMessage}
           />
-          <Text
-            c={"white"}
-            className={`message-content`}
-            style={{
-              display: editedMessage.id ? "none" : "block",
-            }}
-          >
-            {msg.message}
-          </Text>
+          {isURL(msg.message) ? (
+            <Anchor
+              className={`message-content`}
+              style={{
+                display: editedMessage.id ? "none" : "block",
+              }}
+              href={normaliseURL(msg.message)}
+              target="_blank"
+            >
+              {normaliseURL(msg.message)}
+            </Anchor>
+          ) : (
+            <Text
+              c={"white"}
+              className={`message-content`}
+              style={{
+                display: editedMessage.id ? "none" : "block",
+              }}
+            >
+              {msg.message}
+            </Text>
+          )}
         </Flex>
       </Flex>
     </>
