@@ -20,6 +20,7 @@ import AllFriends from "./components/AllFriends.jsx";
 import AddFriend from "./components/AddFriend.jsx";
 import FriendRequests from "./components/FriendRequests.jsx";
 import toast from "react-hot-toast";
+import CommunityGuidelines from "./components/CommunityGuidelines.jsx";
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -68,8 +69,13 @@ function App() {
               element: <GroupChatPanel />,
             },
           ],
+          loader: Loader.loadGroups(queryClient),
         },
       ],
+    },
+    {
+      path: "/community-guidelines",
+      element: <CommunityGuidelines />,
     },
     {
       path: "/login",

@@ -1,25 +1,6 @@
-const getDmData = async (chatId) => {
-  try {
-    const res = await fetch(`/api/dm/initialChatData/${chatId}`);
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message);
-    }
-
-    return data;
-  } catch (error) {
-    console.log(error);
-    throw new Error("loadDmData failed");
-  }
-};
-
-export const dmDataQuery = (chatId) => ({
-  // queryKey: ["chatMessages", chatId],
-  queryKey: ["initialChatData", chatId],
-  queryFn: () => getDmData(chatId),
-  staleTime: Infinity,
-});
+import { useQuery } from "@tanstack/react-query";
+import { dmDataQuery } from "../custom-hooks/useDmData";
+import { groupsQuery } from "../custom-hooks/useGroups";
 
 export const loadDmData =
   (queryClient) =>
@@ -30,3 +11,9 @@ export const loadDmData =
 
     return null;
   };
+export const loadGroups = (queryClient) => async () => {
+  const query = groupsQuery();
+  await queryClient.ensureQueryData(query);
+
+  return null;
+};

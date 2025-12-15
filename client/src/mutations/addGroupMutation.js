@@ -1,14 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
-const addGroup = async (newGroup) => {
+const addGroup = async (formData) => {
   try {
     const res = await fetch("/api/group/add-group", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: { newGroup },
+      body: formData,
     });
     const data = await res.json();
 
@@ -20,10 +17,13 @@ const addGroup = async (newGroup) => {
   }
 };
 
-export const addGroupMutation = (queryClient) =>
+export const addGroupMutation = (queryClient, close, form) =>
   useMutation({
-    mutationFn: (newGroup) => addGroup(newGroup),
+    mutationFn: (formData) => addGroup(formData),
     onSuccess: () => {
+      toast.success("New group added");
+      close();
+      form.reset();
       queryClient.invalidateQueries({
         queryKey: ["groups"],
       });

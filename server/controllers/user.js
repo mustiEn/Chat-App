@@ -12,6 +12,7 @@ import { Friend } from "../models/Friend.js";
 import { BlockedUser } from "../models/BlockedUser.js";
 import { client } from "../server.js";
 import { GroupChat } from "../models/GroupChat.js";
+import { GroupMember } from "../models/GroupMember.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -411,17 +412,6 @@ export const exploreUsers = async (req, res, next) => {
     next(error);
   }
 };
-export const getGroup = async (req, res, next) => {
-  try {
-    const sql = `SELECT * FROM group_messages`;
-    const result = await sequelize.query(sql, {
-      type: QueryTypes.SELECT,
-    });
-    res.status(200).json({ result: result });
-  } catch (error) {
-    next(error);
-  }
-};
 export const getMessageRequests = async (req, res, next) => {
   try {
     const userId = req.session.passport.user;
@@ -623,23 +613,65 @@ export const getFriendRequests = async (req, res, next) => {
 export const addGroup = async (req, res, next) => {
   try {
     const userId = req.session.passport.user;
-    if (!req?.file) return;
+    // if (!req?.file) return;
     const result = validationResult(req);
 
-    if (!result.isEmpty()) throw new Error(result.array());
-    const { groupName } = matchedData(req);
-
-    if (groupName.length > 75) throw new Error("Name too long");
-
+    if (!result.isEmpty()) throw new Error({ message: result.array() });
+    const { name } = matchedData(req);
     const group = (
       await GroupChat.create({
-        group_name: groupName,
+        group_name: name,
         created_by_id: userId,
       })
     ).toJSON();
+    await GroupMember.create({
+      group_id: group.id,
+      user_id: userId,
+    });
 
     res.status(200).json({ group });
   } catch (error) {
     next(error);
   }
 };
+export const getGroups = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+
+    const groupsSql = `
+      SELECT 
+        gc.* 
+      FROM 
+        group_chats gc 
+        INNER JOIN (
+          SELECT 
+            group_id 
+          FROM 
+            group_members 
+          WHERE 
+            user_id = :userId
+        ) temp ON gc.id = temp.group_id    
+    `;
+    const groups = await sequelize.query(groupsSql, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        userId,
+      },
+    });
+
+    res.status(200).json(groups);
+  } catch (error) {
+    next(error);
+  }
+};
+// export const getGroupMessages = async (req, res, next) => {
+//   try {
+//     const sql = `SELECT * FROM group_messages`;
+//     const result = await sequelize.query(sql, {
+//       type: QueryTypes.SELECT,
+//     });
+//     res.status(200).json({ result: result });
+//   } catch (error) {
+//     next(error);
+//   }
+// };

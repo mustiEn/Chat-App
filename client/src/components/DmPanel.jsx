@@ -4,7 +4,6 @@ import FriendProfile from "./FriendProfile";
 import DmPanelTop from "./DmPanelTop";
 import styles from "../css/dm_panel.module.css";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { dmDataQuery } from "../loaders";
 import toast from "react-hot-toast";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Box, Flex } from "@mantine/core";
@@ -19,6 +18,7 @@ import {
   addSentFriendRequest,
 } from "../utils/friendRequests.js";
 import { useMemo } from "react";
+import { useDmData } from "../custom-hooks/useDmData.js";
 
 const DmPanel = () => {
   const queryClient = useQueryClient();
@@ -28,9 +28,8 @@ const DmPanel = () => {
 
   const receivers = useReceiverStore((s) => s.receivers);
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
-  const { data: initialDmData, isSuccess: isInitialDmDataSuccess } = useQuery(
-    dmDataQuery(chatId)
-  );
+  const { data: initialDmData, isSuccess: isInitialDmDataSuccess } =
+    useDmData(chatId);
 
   const [showOffset, setShowOffset] = useState(false);
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);

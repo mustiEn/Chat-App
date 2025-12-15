@@ -24,18 +24,19 @@ import styles from "../css/sidebar.module.css";
 import groupChatSidebarStyles from "../css/group_chat_sidebar.module.css";
 import { PulseLoader } from "react-spinners";
 import PopoverComponent from "./PopoverComponent";
+import { useGroups } from "../custom-hooks/useGroups";
 
 const GroupChatSidebar = () => {
-  // const {groupId} = useParams()
-
-  // const group = useGroupStore(s => s.groups[groupId])
+  const { groupId } = useParams();
+  const { data: groups } = useGroups();
+  const group = groups?.find(({ id }) => id === Number(groupId)) ?? [];
   const [opened, { open, close }] = useDisclosure(false);
   const [friendInp, setFriendInp] = useState("");
   const [debounceVal, setDebounceVal] = useState("");
   const { data, isLoading } = useSearchFriends(debounceVal);
-
   const debouncedChange = useDebounce((val) => setDebounceVal(val), 700);
 
+  //? dont list those who are alredy in the froup
   return (
     <>
       <Flex
@@ -44,7 +45,7 @@ const GroupChatSidebar = () => {
         px={"xs"}
         className={`${styles["sidebar-top"]}`}
       >
-        <Text>Mf's Server</Text>
+        <Text>{group?.group_name}</Text>
         <Box ms={"auto"}>
           <PopoverComponent
             trigger={<IoPersonAddOutline onClick={open} />}

@@ -62,7 +62,7 @@ logger.log("Redis connected");
 try {
   await sequelize.authenticate();
   setUpAssociation();
-  await sequelize.sync({ alter: true });
+  await sequelize.sync();
   logger.log("Connection has been established successfully.");
   // const time = dayjs.tz("2025-11-17 20:10:55", "Europe/Istanbul");
   // const time2 = dayjs("2025-11-17 20:10:55").tz(`Europe/Istanbul`);

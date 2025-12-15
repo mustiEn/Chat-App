@@ -4,14 +4,32 @@ import { query, body, param, check } from "express-validator";
 import { isAuthenticated } from "../middlewares/check_auth_user.js";
 import multer from "multer";
 
-const upload = multer({ dest: multer.memoryStorage });
+const storage = multer.memoryStorage();
+const fileFilter = (req, file, cb) => {
+  const allowedFileTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+  ];
+  allowedFileTypes.includes(file.mimetype)
+    ? cb(null, true)
+    : cb(new Error("Invalid file type"));
+};
+const upload = multer({ storage, fileFilter });
 const router = express.Router();
 
 router.post(
-  "/server/add-server",
-  [isAuthenticated, upload.single("server-icon")],
+  "/group/add-group",
+  [
+    isAuthenticated,
+    upload.single("icon"),
+    body("name").notEmpty().isLength({ min: 2, max: 75 }),
+  ],
   userController.addGroup
 );
+
+router.get("/group/get-groups", isAuthenticated, userController.getGroups);
 
 router.get(
   "/dm/initialChatData/:chatId",

@@ -15,8 +15,11 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { CiLogout } from "react-icons/ci";
 import styles from "../css/group_list.module.css";
+import { useGroups } from "../custom-hooks/useGroups";
+import { useEffect } from "react";
 
 const GroupList = memo(function Grouplist() {
+  const { data: groups, isLoading } = useGroups();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const setHeader = useContext(HeaderContext);
@@ -38,10 +41,7 @@ const GroupList = memo(function Grouplist() {
   ];
   const concatFirstLetters = (name) => {
     const splitName = name.split(" ");
-    const result = splitName.reduce((acc, curr) => {
-      acc += curr[0];
-      return acc;
-    }, "");
+    const result = splitName[0][0] + splitName.at(-1)[0];
 
     return result;
   };
@@ -60,6 +60,8 @@ const GroupList = memo(function Grouplist() {
     );
   };
   const popOverTrigger = (link, group = null, icon = null) => {
+    // console.log(group);
+
     return (
       <button
         // color={"dark"}
@@ -73,16 +75,16 @@ const GroupList = memo(function Grouplist() {
       >
         <Flex justify={"center"} align={"center"} w={"100%"} h={"100%"}>
           {group ? (
-            group?.image ? (
+            group?.group_icon ? (
               <Image
-                src={group?.image}
-                alt={group?.name}
+                src={group.group_icon}
+                alt={group.group_name}
                 w={30}
                 h={30}
                 radius={"50%"}
               />
             ) : (
-              concatFirstLetters("Jack daniels")
+              concatFirstLetters(group?.group_name ?? "jack d")
             )
           ) : (
             icon
@@ -115,6 +117,8 @@ const GroupList = memo(function Grouplist() {
     );
   };
 
+  useEffect(() => console.log(groups), [groups]);
+
   return (
     <>
       <Flex
@@ -129,13 +133,28 @@ const GroupList = memo(function Grouplist() {
           content={popOverContent("Direct Messages")}
           trigger={popOverTrigger("/@me/friends", undefined, <TbActivity />)}
         />
-        {Array.from({ length: 5 }, (_, group) => (
+        {/* {Array.from({ length: 5 }, (_, group) => (
           <PopoverComponent
             key={group}
             content={popOverContent("Direct Messages")}
-            trigger={popOverTrigger("/@me/group-chat", group + 1, undefined)}
+            trigger={popOverTrigger("/@me/group-chat/1", group + 1, undefined)}
           />
-        ))}
+        ))} */}
+        {isLoading ? (
+          <div>Loading</div>
+        ) : (
+          groups.map((group) => (
+            <PopoverComponent
+              key={group.id}
+              content={popOverContent(group.group_name)}
+              trigger={popOverTrigger(
+                `/@me/group-chat/${group.id}`,
+                group,
+                undefined
+              )}
+            />
+          ))
+        )}
         {modals.map(({ content, icon, modalToggler }, i) => (
           <PopoverComponent
             key={i}

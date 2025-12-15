@@ -1,0 +1,10 @@
+.file-input-stack {
+  border: 1px solid gray;
+  border-width: medium;
+  border-style: dashed;
+  border-radius: 100%;
+}
+
+.file-input-box:hover {
+  cursor: pointer;
+}
