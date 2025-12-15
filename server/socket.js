@@ -66,6 +66,7 @@ export const setUpSocket = (io) => {
     socket.join(userId);
 
     //* in groups,no access to anyone regadless of friendship,only allow a msg input.
+    //^ Group link expiry date, and to who, whenever an invite link ent to chat, cheeck it via req, if its invalid,show its invalid
 
     const allContactsStr = await client.get(`user:${userId}:contacts`);
     const allContactsParsed = JSON.parse(allContactsStr);

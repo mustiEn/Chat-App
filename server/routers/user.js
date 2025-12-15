@@ -2,8 +2,16 @@ import * as express from "express";
 import * as userController from "../controllers/user.js";
 import { query, body, param, check } from "express-validator";
 import { isAuthenticated } from "../middlewares/check_auth_user.js";
+import multer from "multer";
 
+const upload = multer({ dest: multer.memoryStorage });
 const router = express.Router();
+
+router.post(
+  "/server/add-server",
+  [isAuthenticated, upload.single("server-icon")],
+  userController.addGroup
+);
 
 router.get(
   "/dm/initialChatData/:chatId",

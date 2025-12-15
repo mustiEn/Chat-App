@@ -1,12 +1,15 @@
-import { Group } from "../Group.js";
+import { GroupChat } from "../GroupChat.js";
+import { GroupMessage } from "../GroupMessage.js";
 import { DirectMessage } from "../DirectMessage.js";
 import { User } from "../User.js";
 import { Friend } from "../Friend.js";
 import { OneToOneChat } from "../OneToOneChat.js";
 import { BlockedUser } from "../BlockedUser.js";
 import { DirectMessageHistory } from "../DirectMessageHistory.js";
+import { GroupMember } from "../GroupMember.js";
 
 export const setUpAssociation = () => {
+  //* DirectMessages
   DirectMessage.belongsTo(User, {
     foreignKey: "from_id",
   });
@@ -26,15 +29,43 @@ export const setUpAssociation = () => {
     foreignKey: "last_pin_action_by_id",
   });
 
-  User.belongsToMany(Group, {
-    through: "group_members",
+  //* GroupChats
+  User.hasMany(GroupChat, {
+    foreignKey: "created_by_id",
+  });
+  GroupChat.belongsTo(User, {
+    foreignKey: "created_by_id",
+  });
+
+  //* GroupMessages
+  User.hasMany(GroupMessage, {
     foreignKey: "user_id",
   });
-  Group.belongsToMany(User, {
-    through: "group_members",
+  GroupMessage.belongsTo(User, {
+    foreignKey: "user_id",
+  });
+  GroupChat.hasMany(GroupMessage, {
+    foreignKey: "group_id",
+  });
+  GroupMessage.belongsTo(GroupChat, {
     foreignKey: "group_id",
   });
 
+  //* GroupMembers
+  User.belongsToMany(GroupChat, {
+    through: GroupMember,
+    as: "members",
+    foreignKey: "user_id",
+    otherKey: "group_id",
+  });
+  GroupChat.belongsToMany(User, {
+    through: GroupMember,
+    as: "groups",
+    foreignKey: "group_id",
+    otherKey: "user_id",
+  });
+
+  //* Friends
   User.belongsToMany(User, {
     through: Friend,
     as: "userFriends",
@@ -43,6 +74,7 @@ export const setUpAssociation = () => {
     timestamps: true,
   });
 
+  //* DirectMessageHistories
   User.belongsToMany(User, {
     through: DirectMessageHistory,
     as: "directMessageHistory",
@@ -51,6 +83,7 @@ export const setUpAssociation = () => {
     timestamps: true,
   });
 
+  //* BlockedUsers
   User.belongsToMany(User, {
     through: BlockedUser,
     as: "blockedUsers",
@@ -59,6 +92,7 @@ export const setUpAssociation = () => {
     timestamps: true,
   });
 
+  //* OneToOneChats
   User.belongsToMany(User, {
     through: OneToOneChat,
     as: "chatIds",

@@ -4,7 +4,7 @@ import { IoAddCircleSharp } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
 import PopoverComponent from "./PopoverComponent";
 import AppsModal from "./AppsModal";
-import AddServerModal from "./AddServerModal";
+import AddGroupModal from "./AddGroupModal";
 import HeaderContext from "../contexts/HeaderContext";
 import { Flex, Stack, Button, Text } from "@mantine/core";
 import {
@@ -13,26 +13,22 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { useDisclosure } from "@mantine/hooks";
-import styles from "../css/server_list.module.css";
 import { CiLogout } from "react-icons/ci";
+import styles from "../css/group_list.module.css";
 
-const ServerList = memo(function Serverlist() {
-  // const servers = useLoaderData();
-  // const servers = Array.from({length:5})
+const GroupList = memo(function Grouplist() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const setHeader = useContext(HeaderContext);
   const [isAppModalOpened, { open: openAppModal, close: closeAppModal }] =
     useDisclosure(false);
-  const [
-    isServerModalOpened,
-    { open: openServerModal, close: closeServerModal },
-  ] = useDisclosure(false);
+  const [isGroupModalOpened, { open: openGroupModal, close: closeGroupModal }] =
+    useDisclosure(false);
   const modals = [
     {
-      content: "Add a server",
+      content: "Add a group",
       icon: <IoAddCircleSharp />,
-      modalToggler: openServerModal,
+      modalToggler: openGroupModal,
     },
     {
       content: "Download Apps",
@@ -63,7 +59,7 @@ const ServerList = memo(function Serverlist() {
       </Stack>
     );
   };
-  const popOverTrigger = (link, server = null, icon = null) => {
+  const popOverTrigger = (link, group = null, icon = null) => {
     return (
       <button
         // color={"dark"}
@@ -76,11 +72,11 @@ const ServerList = memo(function Serverlist() {
         onClick={() => navigate(link)}
       >
         <Flex justify={"center"} align={"center"} w={"100%"} h={"100%"}>
-          {server ? (
-            server?.image ? (
+          {group ? (
+            group?.image ? (
               <Image
-                src={server?.image}
-                alt={server?.name}
+                src={group?.image}
+                alt={group?.name}
                 w={30}
                 h={30}
                 radius={"50%"}
@@ -122,7 +118,7 @@ const ServerList = memo(function Serverlist() {
   return (
     <>
       <Flex
-        id={styles.serverList}
+        id={styles.groupList}
         direction={"column"}
         gap={"xs"}
         ms={"auto"}
@@ -133,11 +129,11 @@ const ServerList = memo(function Serverlist() {
           content={popOverContent("Direct Messages")}
           trigger={popOverTrigger("/@me/friends", undefined, <TbActivity />)}
         />
-        {Array.from({ length: 5 }, (_, server) => (
+        {Array.from({ length: 5 }, (_, group) => (
           <PopoverComponent
-            key={server}
+            key={group}
             content={popOverContent("Direct Messages")}
-            trigger={popOverTrigger("/@me/group-chat", server + 1, undefined)}
+            trigger={popOverTrigger("/@me/group-chat", group + 1, undefined)}
           />
         ))}
         {modals.map(({ content, icon, modalToggler }, i) => (
@@ -157,13 +153,13 @@ const ServerList = memo(function Serverlist() {
         close={closeAppModal}
         opened={isAppModalOpened}
       />
-      <AddServerModal
-        show={openServerModal}
-        close={closeServerModal}
-        opened={isServerModalOpened}
+      <AddGroupModal
+        show={openGroupModal}
+        close={closeGroupModal}
+        opened={isGroupModalOpened}
       />
     </>
   );
 });
 
-export default ServerList;
+export default GroupList;

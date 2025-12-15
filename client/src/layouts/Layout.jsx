@@ -1,4 +1,4 @@
-import ServerList from "../components/ServerList";
+import GroupList from "../components/GroupList";
 import Header from "../components/Header";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
@@ -16,7 +16,7 @@ const Layout = () => {
 
       <HeaderProvider value={value}>
         <Flex h={"calc(100% - var(--header-height))"}>
-          <ServerList />
+          <GroupList />
           <Outlet />
         </Flex>
       </HeaderProvider>

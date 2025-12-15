@@ -11,6 +11,7 @@ import { OneToOneChat } from "../models/OneToOneChat.js";
 import { Friend } from "../models/Friend.js";
 import { BlockedUser } from "../models/BlockedUser.js";
 import { client } from "../server.js";
+import { GroupChat } from "../models/GroupChat.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -615,6 +616,29 @@ export const getFriendRequests = async (req, res, next) => {
       }),
     ]);
     res.status(200).json({ receivedFriendRequests, sentFriendRequests });
+  } catch (error) {
+    next(error);
+  }
+};
+export const addGroup = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    if (!req?.file) return;
+    const result = validationResult(req);
+
+    if (!result.isEmpty()) throw new Error(result.array());
+    const { groupName } = matchedData(req);
+
+    if (groupName.length > 75) throw new Error("Name too long");
+
+    const group = (
+      await GroupChat.create({
+        group_name: groupName,
+        created_by_id: userId,
+      })
+    ).toJSON();
+
+    res.status(200).json({ group });
   } catch (error) {
     next(error);
   }
