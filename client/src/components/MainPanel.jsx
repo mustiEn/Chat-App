@@ -20,13 +20,13 @@ import {
 import {
   addPinnedMessages,
   removePinnedMessage,
-} from "../utils/pinnedMessages.js";
+} from "../utils/dmPinnedMessages.js";
 import {
   addMessage,
   deleteMessage,
   editMessage,
   setIsMessagePinned,
-} from "../utils/chatMessages.js";
+} from "../utils/directMessages.js";
 import UserProfileBar from "./UserProfileBar.jsx";
 import { UserContext } from "../contexts/UserContext.jsx";
 import dayjs from "dayjs";
@@ -39,8 +39,8 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const MainPanel = () => {
-  const addToNewPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (s) => s.addToNewPinnedMsgExists
+  const setDmPinnedMsgExists = useNewPinnedMsgIndicatorStore(
+    (s) => s.setDmPinnedMsgExists
   );
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const receivers = useReceiverStore((s) => s.receivers);
@@ -57,9 +57,21 @@ const MainPanel = () => {
     isPinnedMessagesFetched: {},
     initialPageParam: {},
     dmPanel: {
-      chatMessagesTopId: {},
-      chatMessagesBottomId: {},
+      directMessagesTopId: {},
+      directMessagesBottomId: {},
       isInitialDmDataFetched: false,
+    },
+    msgAddedOrDeleted: {},
+  });
+  const groupChatRef = useRef({
+    scrollPosition: {},
+    prevTopId: {},
+    isPinnedMessagesFetched: {},
+    initialPageParam: {},
+    groupPanel: {
+      groupMessagesTopId: {},
+      groupMessagesBottomId: {},
+      isInitialGroupDataFetched: false,
     },
     msgAddedOrDeleted: {},
   });
@@ -110,7 +122,7 @@ const MainPanel = () => {
     };
     const handleNewMessages = ({ result, chatId }) => {
       const {
-        dmPanel: { chatMessagesBottomId },
+        dmPanel: { directMessagesBottomId },
         msgAddedOrDeleted,
       } = dmChatRef.current;
       console.log("new msgs: ", result);
@@ -118,23 +130,23 @@ const MainPanel = () => {
       result.forEach((newMsg) => {
         addMessage(queryClient, chatId, newMsg);
         // socket.auth.serverOffset[newMsg.from_id] = newMsg.id;
-        chatMessagesBottomId[chatId] = newMsg.id;
+        directMessagesBottomId[chatId] = newMsg.id;
         msgAddedOrDeleted[chatId] = true;
       });
     };
     const handlePinnedMessages = ({ result, isRecovery, chatId }) => {
-      const { showPinnedMsgBox } = useShowPinnedMsgBoxStore.getState();
+      const { pinnedMsgBoxObj } = useShowPinnedMsgBoxStore.getState();
       console.log(result);
 
       if (!isRecovery) {
         const { last_pin_action_by_id, is_pinned, id } = result;
 
         const isPinnedMessagesQueryFetched = queryClient.getQueryData([
-          "pinnedMessages",
+          "dmPinnedMessages",
           chatId,
         ]);
         const isChatMessagesQueryFetched = queryClient.getQueryData([
-          "chatMessages",
+          "directMessages",
           chatId,
         ]);
 
@@ -142,10 +154,10 @@ const MainPanel = () => {
 
         if (isPinnedMessagesQueryFetched) {
           if (is_pinned) {
-            const val = !showPinnedMsgBox[chatId];
+            const val = !pinnedMsgBoxObj[chatId];
 
             addPinnedMessages(queryClient, chatId, result);
-            addToNewPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
+            setDmPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
           } else {
             removePinnedMessage(queryClient, chatId, id);
           }
@@ -159,11 +171,11 @@ const MainPanel = () => {
 
           const { last_pin_action_by_id, is_pinned, id } = res;
           const isPinnedMessagesQueryFetched = queryClient.getQueryData([
-            "pinnedMessages",
+            "dmPinnedMessages",
             chatId,
           ]);
           const isChatMessagesQueryFetched = queryClient.getQueryData([
-            "chatMessages",
+            "directMessages",
             chatId,
           ]);
 
@@ -171,10 +183,10 @@ const MainPanel = () => {
 
           if (isPinnedMessagesQueryFetched) {
             if (is_pinned) {
-              const val = !showPinnedMsgBox[chatId];
+              const val = !pinnedMsgBoxObj[chatId];
 
               addPinnedMessages(queryClient, chatId, res);
-              addToNewPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
+              setDmPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
             } else {
               removePinnedMessage(queryClient, chatId, id);
             }
@@ -193,7 +205,7 @@ const MainPanel = () => {
         console.log("reqAcceptance", reqAcceptance);
 
         const isQueryFetched = queryClient.getQueryData([
-          "chatMessages",
+          "directMessages",
           chatIds[i],
         ]);
         //^ This is to keep cache empty if undefined cuz on dmpanel mount,its already gonna comeup
@@ -247,11 +259,11 @@ const MainPanel = () => {
       result.forEach(({ id: deletedMsgId }) => {
         const { msgAddedOrDeleted } = dmChatRef.current;
         const isPinnedMsgsQueryFetched = queryClient.getQueryData([
-          "pinnedMessages",
+          "dmPinnedMessages",
           chatId,
         ]);
         const isChatQueryFetched = queryClient.getQueryData([
-          "chatMessages",
+          "directMessages",
           chatId,
         ]);
 
@@ -446,6 +458,7 @@ const MainPanel = () => {
                 setGroupChat,
                 scrollElementRef,
                 dmChatRef,
+                groupChatRef,
                 allFriendsLastUpdatedAt,
               }}
             />

@@ -15,7 +15,7 @@ import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box, Flex } from "@mantine/core";
 import styles from "../css/dm_panel.module.css";
-import { addMessage } from "../utils/chatMessages.js";
+import { addMessage } from "../utils/directMessages.js";
 import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
 import { useMessageRequests } from "../custom-hooks/useMessageRequests.js";
 import {
@@ -41,9 +41,9 @@ const MessageInput = () => {
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const receivers = useReceiverStore((s) => s.receivers);
   const receiver = receivers[receiverId];
-  const addToPendingMsgs = usePendingMsgStore((s) => s.addToPendingMsgs);
+  const addToPendingMsgs = usePendingMsgStore((s) => s.addToDmPendingMsgs);
   const removeFromPendingMsgs = usePendingMsgStore(
-    (s) => s.removeFromPendingMsgs
+    (s) => s.removeFromDmPendingMsgs
   );
   const [message, setMessage] = useState("");
   const fileInpRef = useRef(null);
@@ -81,13 +81,13 @@ const MessageInput = () => {
 
     addMessage(queryClient, chatId, res.result[0]);
     // socket.auth.serverOffset[receiverId] = res.result[0].id;
-    // chatMessagesBottomId[receiverId] = res.result[0].id;
+    // directMessagesBottomId[receiverId] = res.result[0].id;
     msgAddedOrDeleted[chatId] = true;
 
     console.log("Message successful:", res);
   };
   const handleSocketEmit = (clientOffset) => {
-    const data = queryClient.getQueryData(["chatMessages", chatId]);
+    const data = queryClient.getQueryData(["directMessages", chatId]);
     const messages = data.pages.flatMap(({ messages }) => messages);
     const emitData = {
       message: message,

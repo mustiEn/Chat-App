@@ -3,7 +3,7 @@ export const addPinnedMessages = (
   recevierId,
   newPinnedMessage
 ) => {
-  queryClient.setQueryData(["pinnedMessages", recevierId], (olderData) => {
+  queryClient.setQueryData(["dmPinnedMessages", recevierId], (olderData) => {
     const pinnedMsgExists = olderData?.find(
       ({ id }) => id == newPinnedMessage.id
     );
@@ -18,7 +18,7 @@ export const removePinnedMessage = (
   recevierId,
   pinnedMessageId
 ) => {
-  queryClient.setQueryData(["pinnedMessages", recevierId], (olderData) => {
+  queryClient.setQueryData(["dmPinnedMessages", recevierId], (olderData) => {
     const filtered = olderData?.filter(({ id }) => id != pinnedMessageId);
 
     return olderData ? filtered : olderData;

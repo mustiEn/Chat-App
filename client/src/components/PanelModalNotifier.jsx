@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { socket } from "../socket";
+import { socket } from "../socket.js";
 import { formatDate } from "../utils/index.js";
 import { Modal, Button, Text, Flex, Image } from "@mantine/core";
 import { useParams } from "react-router-dom";
@@ -7,17 +7,17 @@ import { useCallback, useContext } from "react";
 import {
   addPinnedMessages,
   removePinnedMessage,
-} from "../utils/pinnedMessages";
-import { deleteMessage, setIsMessagePinned } from "../utils/chatMessages.js";
+} from "../utils/dmPinnedMessages.js";
+import { deleteMessage, setIsMessagePinned } from "../utils/directMessages.js";
 import { useModalStore } from "../stores/useModalStore.js";
 import toast from "react-hot-toast";
-import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 
-const DmModalNotifier = ({ activeMsg, receiverId }) => {
+const PanelModalNotifier = ({ activeMsg, panelName }) => {
   const { msg, type } = activeMsg.current;
-  const { chatId } = useParams();
+  const params = useParams();
+  const paramId = panelName === "group" ? params.groupId : params.chatId;
   const queryClient = useQueryClient();
-  const pinMessage = () => {
+  const pinDmMessage = () => {
     if (!socket.connected) {
       toast.error("We couldn't pin the message");
       return;
@@ -29,7 +29,7 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
         isPinned: true,
         // toId: receiverId,
       },
-      chatId,
+      paramId,
       (err, res) => {
         if (err) {
           console.log("Error: ", err);
@@ -37,14 +37,17 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
           return;
         }
 
-        addPinnedMessages(queryClient, chatId, msg);
-        setIsMessagePinned(queryClient, chatId, msg.id, true);
+        addPinnedMessages(queryClient, paramId, msg);
+        setIsMessagePinned(queryClient, paramId, msg.id, true);
         console.log("Pinned message successfully", res);
       }
     );
   };
-  const handleDeleteMessage = () => {
-    const pinnedMsgData = queryClient.getQueryData(["pinnedMessages", chatId]);
+  const handleDeleteDmMessage = () => {
+    const pinnedMsgData = queryClient.getQueryData([
+      "dmPinnedMessages",
+      paramId,
+    ]);
     const isMsgPinned =
       pinnedMsgData?.findIndex(({ id }) => id == msg.id) ?? -1;
 
@@ -53,13 +56,13 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
       return;
     }
 
-    socket.emit("send deleted msgs", msg, chatId, (err, res) => {
+    socket.emit("send deleted msgs", msg, paramId, (err, res) => {
       if (err) {
         console.log("err", err);
         return;
       }
 
-      deleteMessage(queryClient, chatId, msg.id);
+      deleteMessage(queryClient, paramId, msg.id);
       console.log("Deleted message successfully", res);
     });
 
@@ -77,12 +80,12 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
             return;
           }
 
-          removePinnedMessage(queryClient, chatId, msg.id);
+          removePinnedMessage(queryClient, paramId, msg.id);
         }
       );
     }
   };
-  const unPinMessage = () => {
+  const unPinDmMessage = () => {
     if (!socket.connected) {
       toast.error("We couldn't unpin the message");
       return;
@@ -95,7 +98,7 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
         isPinned: false,
         // toId: receiverId,
       },
-      chatId,
+      paramId,
       (err, res) => {
         if (err) {
           console.log("Error: ", err);
@@ -103,8 +106,104 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
           return;
         }
 
-        removePinnedMessage(queryClient, chatId, msg.id);
-        setIsMessagePinned(queryClient, chatId, msg.id, false);
+        removePinnedMessage(queryClient, paramId, msg.id);
+        setIsMessagePinned(queryClient, paramId, msg.id, false);
+
+        // console.log("Unpinned successfully", res);
+      }
+    );
+  };
+  const pinGroupMessage = () => {
+    if (!socket.connected) {
+      toast.error("We couldn't pin the message");
+      return;
+    }
+    socket.emit(
+      "send pinned msgs",
+      {
+        id: msg.id,
+        isPinned: true,
+        // toId: receiverId,
+      },
+      paramId,
+      (err, res) => {
+        if (err) {
+          console.log("Error: ", err);
+          toast.error(err);
+          return;
+        }
+
+        addPinnedMessages(queryClient, paramId, msg);
+        setIsMessagePinned(queryClient, paramId, msg.id, true);
+        console.log("Pinned message successfully", res);
+      }
+    );
+  };
+  const handleDeleteGroupMessage = () => {
+    const pinnedMsgData = queryClient.getQueryData([
+      "dmPinnedMessages",
+      paramId,
+    ]);
+    const isMsgPinned =
+      pinnedMsgData?.findIndex(({ id }) => id == msg.id) ?? -1;
+
+    if (!socket.connected) {
+      toast.error("We couldn't delete the message");
+      return;
+    }
+
+    socket.emit("send deleted msgs", msg, paramId, (err, res) => {
+      if (err) {
+        console.log("err", err);
+        return;
+      }
+
+      deleteMessage(queryClient, paramId, msg.id);
+      console.log("Deleted message successfully", res);
+    });
+
+    if (isMsgPinned !== -1) {
+      socket.emit(
+        "send pinned msgs",
+        {
+          id: msg.id,
+          isPinned: false,
+          // toId: receiverId,
+        },
+        (err, res) => {
+          if (err) {
+            console.log("err", err);
+            return;
+          }
+
+          removePinnedMessage(queryClient, paramId, msg.id);
+        }
+      );
+    }
+  };
+  const unPinGroupMessage = () => {
+    if (!socket.connected) {
+      toast.error("We couldn't unpin the message");
+      return;
+    }
+
+    socket.emit(
+      "send pinned msgs",
+      {
+        id: msg.id,
+        isPinned: false,
+        // toId: receiverId,
+      },
+      paramId,
+      (err, res) => {
+        if (err) {
+          console.log("Error: ", err);
+          toast.error(err);
+          return;
+        }
+
+        removePinnedMessage(queryClient, paramId, msg.id);
+        setIsMessagePinned(queryClient, paramId, msg.id, false);
 
         // console.log("Unpinned successfully", res);
       }
@@ -112,14 +211,21 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
   };
   const functions = useCallback(
     {
-      Unpin: unPinMessage,
-      Delete: handleDeleteMessage,
-      Pin: pinMessage,
+      dm: {
+        Unpin: unPinDmMessage,
+        Delete: handleDeleteDmMessage,
+        Pin: pinDmMessage,
+      },
+      group: {
+        Unpin: unPinGroupMessage,
+        Delete: handleDeleteGroupMessage,
+        Pin: pinGroupMessage,
+      },
     },
     [msg]
   );
-  const opened = useModalStore((s) => s.dmModalNotifierOpened);
-  const close = useModalStore((s) => s.dmModalNotifierClose);
+  const opened = useModalStore((s) => s.panelModalNotifierOpened);
+  const close = useModalStore((s) => s.closePanelModalNotifier);
 
   return (
     <>
@@ -184,7 +290,7 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
             variant={"filled"}
             color={type == "Delete" ? "red" : "blue"}
             onClick={() => {
-              functions[type]();
+              functions[panelName][type]();
               close();
             }}
           >
@@ -196,4 +302,4 @@ const DmModalNotifier = ({ activeMsg, receiverId }) => {
   );
 };
 
-export default DmModalNotifier;
+export default PanelModalNotifier;

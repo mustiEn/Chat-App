@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-const getPinnedMessages = async (chatId) => {
+const getPinnedMessages = async (groupId) => {
   try {
-    const res = await fetch(`/api/dm/pinned-messages/${chatId}`);
+    const res = await fetch(`/api/group/pinned-messages/${groupId}`);
     const data = await res.json();
 
     if (!res.ok) throw new Error(data.message);
@@ -13,10 +13,10 @@ const getPinnedMessages = async (chatId) => {
   }
 };
 
-export const usePinnedMessages = (chatId) => {
+export const useGroupPinnedMessages = (groupId) => {
   return useQuery({
-    queryKey: ["pinnedMessages", chatId],
-    queryFn: () => getPinnedMessages(chatId),
+    queryKey: ["groupPinnedMessages", groupId],
+    queryFn: () => getPinnedMessages(groupId),
     staleTime: Infinity,
     enabled: false,
   });

@@ -28,6 +28,12 @@ export const setUpAssociation = () => {
   User.hasMany(DirectMessage, {
     foreignKey: "last_pin_action_by_id",
   });
+  DirectMessage.belongsTo(OneToOneChat, {
+    foreignKey: "chat_id",
+  });
+  OneToOneChat.hasMany(DirectMessage, {
+    foreignKey: "chat_id",
+  });
 
   //* GroupChats
   User.hasMany(GroupChat, {

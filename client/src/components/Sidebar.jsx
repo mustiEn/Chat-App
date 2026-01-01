@@ -15,7 +15,7 @@ const Sidebar = () => {
         direction={"column"}
         // className={styles["sidebar"]}
       >
-        {location.pathname.includes("group-chat") ? (
+        {location.pathname.includes("gc") ? (
           <GroupChatSidebar />
         ) : (
           <DmSidebar />

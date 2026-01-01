@@ -16,8 +16,8 @@ import { useModalStore } from "../stores/useModalStore.js";
 const Options = ({ msg, handleEditableMsg }) => {
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const { activeMsg } = useContext(DmPanelContext);
-  const open = useModalStore((s) => s.dmModalNotifierOpen);
-  const handleDmModalNotifier = (msg, type) => {
+  const open = useModalStore((s) => s.openPanelModalNotifier);
+  const handlePanelModalNotifier = (msg, type) => {
     activeMsg.current = {
       msg,
       type,
@@ -41,14 +41,14 @@ const Options = ({ msg, handleEditableMsg }) => {
         name: "Delete",
         icon: <ImBin />,
         func: function (msg) {
-          handleDmModalNotifier(msg, this.name);
+          handlePanelModalNotifier(msg, this.name);
         },
       },
       {
         name: msg.is_pinned ? "Unpin" : "Pin",
         icon: <RxDrawingPin />,
         func: function (msg) {
-          handleDmModalNotifier(msg, this.name);
+          handlePanelModalNotifier(msg, this.name);
         },
       },
     ],

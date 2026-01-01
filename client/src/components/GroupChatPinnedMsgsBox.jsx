@@ -3,8 +3,6 @@ import { RxDrawingPin, RxCross2 } from "react-icons/rx";
 import { formatDate } from "../utils/index.js";
 import { TbHeartBroken } from "react-icons/tb";
 import { PulseLoader } from "react-spinners";
-import PanelModalNotifier from "./PanelModalNotifier";
-import { socket } from "../socket";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
@@ -19,16 +17,18 @@ import {
   Title,
 } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import styles from "../css/pinned_msgs_box.module.css";
-import { useDmPinnedMessages } from "../custom-hooks/useDmPinnedMessages.js";
 import { useModalStore } from "../stores/useModalStore.js";
+import { useGroupPinnedMessages } from "../custom-hooks/useGroupPinnedMessages.js";
+import styles from "../css/pinned_msgs_box.module.css";
 
-const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
+const GroupChatPinnedMsgsBox = ({ customOverlayRef, ref }) => {
   const { activeMsg } = useContext(DmPanelContext);
-  const { chatId } = useParams();
+  const { groupId } = useParams();
   const open = useModalStore((s) => s.openPanelModalNotifier);
-  const { data: pinnedMsgs } = useDmPinnedMessages(chatId);
-  const pinnedMsgBoxObj = useShowPinnedMsgBoxStore((s) => s.pinnedMsgBoxObj.dm);
+  const { data: pinnedMsgs } = useGroupPinnedMessages(groupId);
+  const pinnedMsgBoxObj = useShowPinnedMsgBoxStore(
+    (s) => s.pinnedMsgBoxObj.group
+  );
 
   const handlePanelModalNotifier = (msg, type) => {
     activeMsg.current = { msg, type };
@@ -38,7 +38,7 @@ const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
 
   return (
     <>
-      {pinnedMsgBoxObj[chatId] && (
+      {pinnedMsgBoxObj[groupId] && (
         <Paper
           ref={ref}
           withBorder
@@ -123,4 +123,4 @@ const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
   );
 };
 
-export default PinnedMsgsBox;
+export default GroupChatPinnedMsgsBox;

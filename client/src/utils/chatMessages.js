@@ -1,11 +1,11 @@
 export const addOldMessages = (queryClient, chatId, newMsgs) => {
-  queryClient.setQueryData(["chatMessages", chatId], (olderData) => ({
+  queryClient.setQueryData(["directMessages", chatId], (olderData) => ({
     ...olderData,
     pages: [{ messages: newMsgs }, ...olderData.pages],
   }));
 };
 export const setIsMessagePinned = (queryClient, chatId, msgId, val) => {
-  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
+  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page) => ({
@@ -28,7 +28,7 @@ export const editMessage = (
   editedMessage,
   isPending
 ) => {
-  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
+  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
     const newPages = olderData.pages.map((page) => ({
       ...page,
       messages: page.messages.map((m) => {
@@ -51,7 +51,7 @@ export const editMessage = (
   });
 };
 export const deleteMessage = (queryClient, chatId, msgId) => {
-  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
+  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page) => ({
@@ -70,7 +70,7 @@ export const deleteMessage = (queryClient, chatId, msgId) => {
   });
 };
 export const addMessage = (queryClient, chatId, msg) => {
-  queryClient.setQueryData(["chatMessages", chatId], (olderData) => {
+  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page, i) => ({

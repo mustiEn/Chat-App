@@ -9,7 +9,6 @@ import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Box, Flex } from "@mantine/core";
 import DmList from "./DmList.jsx";
 import MessageInput from "./MessageInput.jsx";
-import DmModalNotifier from "./DmModalNotifier.jsx";
 import { useDisclosure } from "@mantine/hooks";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
@@ -19,17 +18,15 @@ import {
 } from "../utils/friendRequests.js";
 import { useMemo } from "react";
 import { useDmData } from "../custom-hooks/useDmData.js";
+import PanelModalNotifier from "./PanelModalNotifier.jsx";
 
 const DmPanel = () => {
   const queryClient = useQueryClient();
   const { chatId } = useParams();
-  const { dmChatRef } = useOutletContext();
-  const { initialPageParam } = dmChatRef.current;
 
   const receivers = useReceiverStore((s) => s.receivers);
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
-  const { data: initialDmData, isSuccess: isInitialDmDataSuccess } =
-    useDmData(chatId);
+  const { data: initialDmData, isSuccess } = useDmData(chatId);
 
   const [showOffset, setShowOffset] = useState(false);
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
@@ -43,7 +40,7 @@ const DmPanel = () => {
   //^ before fethcing chats,allow socket get msgs and save,then fetch chat and merge then rmeove dups - notification
 
   useEffect(() => {
-    if (!isInitialDmDataSuccess) return;
+    if (!isSuccess) return;
 
     const { receiver, friendStatus } = initialDmData;
     const isUserInReceiversObj = receivers[receiver.id];
@@ -114,10 +111,7 @@ const DmPanel = () => {
         )}
       </DmPanelContext>
       {initialDmData?.receiver.id && (
-        <DmModalNotifier
-          activeMsg={activeMsg}
-          receiverId={initialDmData.receiver.id}
-        />
+        <PanelModalNotifier activeMsg={activeMsg} panelName={"dm"} />
       )}
     </>
   );

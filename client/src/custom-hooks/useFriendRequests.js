@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const getFriendRequests = async () => {
   try {
-    const res = await fetch(`/api/get-friend-requests`);
+    const res = await fetch(`/api/friends/get-friend-requests`);
     const data = await res.json();
 
     if (!res.ok) {

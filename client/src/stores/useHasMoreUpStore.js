@@ -3,10 +3,17 @@ import { immer } from "zustand/middleware/immer";
 
 export const useHasMoreUpStore = create(
   immer((set) => ({
-    hasMoreUp: {},
-    addToHasMoreUp: (chatId, val) =>
+    hasMoreUp: {
+      dm: {},
+      group: {},
+    },
+    addToDmHasMoreUp: (chatId, val) =>
       set((state) => {
-        state.hasMoreUp[chatId] = val;
+        state.hasMoreUp.dm[chatId] = val;
+      }),
+    addToGroupHasMoreUp: (groupId, val) =>
+      set((state) => {
+        state.hasMoreUp.group[groupId] = val;
       }),
   }))
 );

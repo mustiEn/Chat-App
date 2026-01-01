@@ -19,6 +19,72 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 const router = express.Router();
 
+router.get(
+  "/dm/initial-chat-data/:chatId",
+  [isAuthenticated, param("chatId").notEmpty().isString()],
+  userController.getInitialDmData
+);
+
+router.get(
+  "/dm/more-data/:chatId",
+  [
+    isAuthenticated,
+    param("chatId").notEmpty().isString(),
+    query("nextId").notEmpty().isNumeric(),
+  ],
+  userController.getDirectMessages
+);
+
+router.get(
+  "/dm/pinned-messages/:chatId",
+  [isAuthenticated, param("chatId").notEmpty().isString()],
+  userController.getDmPinnedMessages
+);
+
+router.get("/dm-history", isAuthenticated, userController.getDmHistory);
+
+router.get(
+  "/message-requests",
+  isAuthenticated,
+  userController.getMessageRequests
+);
+
+//* Friends
+
+router.get(
+  "/friends/get-all-friends/:offset",
+  [isAuthenticated, param("offset").notEmpty().isInt()],
+  userController.getAllFriends
+);
+router.get(
+  "/friends/get-online-friends/:lastFriendId",
+  [isAuthenticated, param("lastFriendId").notEmpty().isInt()],
+  userController.getOnlineFriends
+);
+router.get(
+  "/friends/get-friend-requests",
+  isAuthenticated,
+  userController.getFriendRequests
+);
+router.get(
+  "/friends/search-friends/:groupId",
+  [
+    isAuthenticated,
+    query("q").notEmpty().isLength({
+      min: 1,
+    }),
+    param("groupId").notEmpty().isInt(),
+  ],
+  userController.searchFriends
+);
+
+//* Group
+
+router.get(
+  "/group/pinned-messages/:groupId",
+  [isAuthenticated, param("groupId").notEmpty().isString()],
+  userController.getGroupPinnedMessages
+);
 router.post(
   "/group/add-group",
   [
@@ -28,52 +94,14 @@ router.post(
   ],
   userController.addGroup
 );
-
 router.get("/group/get-groups", isAuthenticated, userController.getGroups);
-
 router.get(
-  "/dm/initialChatData/:chatId",
-  [isAuthenticated, param("chatId").notEmpty().isString()],
-  userController.getInitialDmData
-);
-
-router.get(
-  "/dm/moreData/:chatId",
+  "/group/more-data/:groupId",
   [
     isAuthenticated,
-    param("chatId").notEmpty().isString(),
+    param("groupId").notEmpty().isString(),
     query("nextId").notEmpty().isNumeric(),
   ],
-  userController.getDmData
+  userController.getGroupMessages
 );
-
-router.get(
-  "/dm/pinned-messages/:chatId",
-  [isAuthenticated, param("chatId").notEmpty().isString()],
-  userController.getPinnedMessages
-);
-
-router.get("/dmHistory", isAuthenticated, userController.getDmHistory);
-
-router.get(
-  "/message-requests",
-  isAuthenticated,
-  userController.getMessageRequests
-);
-router.get(
-  "/get-all-friends/:offset",
-  [isAuthenticated, param("offset").notEmpty().isInt()],
-  userController.getAllFriends
-);
-router.get(
-  "/get-online-friends/:lastFriendId",
-  [isAuthenticated, param("lastFriendId").notEmpty().isInt()],
-  userController.getOnlineFriends
-);
-router.get(
-  "/get-friend-requests",
-  isAuthenticated,
-  userController.getFriendRequests
-);
-
 export default router;

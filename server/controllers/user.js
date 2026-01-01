@@ -21,22 +21,13 @@ export const getInitialDmData = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
-
     const hasChatHistorySql = `
       SELECT 
         COUNT(*) val 
       FROM 
         direct_messages 
       WHERE 
-        (
-          to_id = :userId 
-          AND from_id = :receiverId
-        ) 
-        OR 
-        (
-          to_id = :receiverId 
-          AND from_id = :userId
-        )
+        chat_id = :id
     `;
     let receiver = {};
     let friendStatus = null;
@@ -48,7 +39,7 @@ export const getInitialDmData = async (req, res, next) => {
 
     const { chatId } = matchedData(req);
     const chat = await OneToOneChat.findOne({
-      attributes: ["user_id", "receiver_id"],
+      attributes: ["id", "user_id", "receiver_id"],
       where: {
         chat_id: chatId,
       },
@@ -57,7 +48,7 @@ export const getInitialDmData = async (req, res, next) => {
 
     if (!chat) throw new Error("Chat not found");
 
-    const { user_id, receiver_id } = chat;
+    const { id, user_id, receiver_id } = chat;
     const receiverId = user_id == userId ? receiver_id : user_id;
     const isReceiverBlocked = await BlockedUser.findOne({
       where: {
@@ -106,8 +97,7 @@ export const getInitialDmData = async (req, res, next) => {
       const [hasChatHistory] = await sequelize.query(hasChatHistorySql, {
         type: QueryTypes.SELECT,
         replacements: {
-          userId,
-          receiverId,
+          id,
         },
       });
 
@@ -125,16 +115,12 @@ export const getInitialDmData = async (req, res, next) => {
     next(error);
   }
 };
-export const getDmData = async (req, res, next) => {
+export const getDirectMessages = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
     const nextIdSql = "AND dm.id < :nextId";
     const limit = 30;
-    let replacements = {
-      userId,
-      limit,
-    };
     let dms;
     let receiver = {};
 
@@ -143,9 +129,9 @@ export const getDmData = async (req, res, next) => {
       throw new Error("Validation failed");
     }
 
-    let { chatId, nextId } = matchedData(req);
+    const { chatId, nextIdParam } = matchedData(req);
     const chat = await OneToOneChat.findOne({
-      attributes: ["user_id", "receiver_id"],
+      attributes: ["id", "user_id", "receiver_id"],
       where: {
         chat_id: chatId,
       },
@@ -154,32 +140,10 @@ export const getDmData = async (req, res, next) => {
 
     if (!chat) throw new Error("Chat not found");
 
-    const { user_id, receiver_id } = chat;
+    const { id, user_id, receiver_id } = chat;
     const receiverId = user_id == userId ? receiver_id : user_id;
     const cachedStatus = await client.get(`user:${receiverId}:status`);
-
-    nextId = Number(nextId);
-    receiver = await User.findByPk(receiverId, {
-      attributes: [
-        "id",
-        "display_name",
-        "username",
-        "profile",
-        "status",
-        "background_color",
-        "about_me",
-        "createdAt",
-      ],
-      raw: true,
-    });
-
-    if (!receiver) throw new Error("Receiver not found");
-    if (!cachedStatus) {
-      await client.set(`user:${receiverId}:status`, receiver.status);
-    } else {
-      receiver.status = cachedStatus;
-    }
-
+    const nextId = Number(nextIdParam);
     const dmsSql = ` 
       SELECT 
         dm.id,
@@ -208,17 +172,7 @@ export const getDmData = async (req, res, next) => {
         LEFT JOIN users replied_msg_sender 
           ON replied_msg.from_id = replied_msg_sender.id 
       WHERE 
-        (
-          (
-            dm.to_id = :userId 
-            AND dm.from_id = :receiverId
-          ) 
-          OR
-          (
-            dm.to_id = :receiverId
-            AND dm.from_id = :userId 
-          )
-        )
+        dm.chat_id = :id
         AND 
         dm.is_deleted = 0
         ${nextId !== 0 ? nextIdSql : ""}
@@ -228,16 +182,34 @@ export const getDmData = async (req, res, next) => {
         :limit
     `;
 
-    replacements = nextId
-      ? { ...replacements, receiverId, nextId }
-      : { ...replacements, receiverId };
+    receiver = await User.findByPk(receiverId, {
+      attributes: [
+        "id",
+        "display_name",
+        "username",
+        "profile",
+        "status",
+        "background_color",
+        "about_me",
+        "createdAt",
+      ],
+      raw: true,
+    });
+
+    if (!receiver) throw new Error("Receiver not found");
+    if (!cachedStatus) {
+      await client.set(`user:${receiverId}:status`, receiver.status);
+    } else {
+      receiver.status = cachedStatus;
+    }
+
     receiver = await User.findByPk(receiverId);
 
     if (!receiver) throw new Error("Receiver not found");
 
     dms = await sequelize.query(dmsSql, {
       type: QueryTypes.SELECT,
-      replacements,
+      replacements: { limit, id, nextId },
     });
     dms = dms.reverse();
     nextId = dms.length < 30 ? null : dms[0].id;
@@ -311,7 +283,7 @@ export const getDmHistory = async (req, res, next) => {
     next(error);
   }
 };
-export const getPinnedMessages = async (req, res, next) => {
+export const getDmPinnedMessages = async (req, res, next) => {
   try {
     const result = validationResult(req);
     const userId = req.session.passport.user;
@@ -323,7 +295,7 @@ export const getPinnedMessages = async (req, res, next) => {
 
     const { chatId } = matchedData(req);
     const chat = await OneToOneChat.findOne({
-      attributes: ["user_id", "receiver_id"],
+      attributes: ["id", "user_id", "receiver_id"],
       where: {
         chat_id: chatId,
       },
@@ -332,7 +304,7 @@ export const getPinnedMessages = async (req, res, next) => {
 
     if (!chat) throw new Error("Chat not found");
 
-    const { user_id, receiver_id } = chat;
+    const { id, user_id, receiver_id } = chat;
     const receiverId = user_id == userId ? receiver_id : user_id;
     const receiver = await User.findByPk(receiverId);
 
@@ -359,15 +331,7 @@ export const getPinnedMessages = async (req, res, next) => {
         INNER JOIN users receiver ON receiver.id = dm.to_id 
         LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
       WHERE 
-        ((
-          dm.to_id = :userId
-          AND dm.from_id = :receiverId
-        ) 
-        OR
-        (
-          dm.to_id = :receiverId
-          AND dm.from_id = :userId
-        )) 
+        dm.chat_id = :id 
         AND dm.is_pinned = 1
       ORDER BY 
         dm.pin_updated_at DESC
@@ -375,8 +339,7 @@ export const getPinnedMessages = async (req, res, next) => {
     const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
       type: QueryTypes.SELECT,
       replacements: {
-        userId,
-        receiverId,
+        id,
       },
     });
     const sortedPinnedMessages = pinnedMessages.sort((a, b) => {
@@ -393,10 +356,12 @@ export const getPinnedMessages = async (req, res, next) => {
 export const exploreUsers = async (req, res, next) => {
   try {
     const result = validationResult(req);
+
     if (!result.isEmpty()) {
       logger.log(result.array());
       throw new Error("Validation failed");
     }
+
     const data = matchedData(req);
     const { explore } = data;
     const users = await User.findAll({
@@ -499,6 +464,7 @@ export const getAllFriends = async (req, res, next) => {
       LIMIT :limit 
       OFFSET :offset
     `;
+
     let friends = await sequelize.query(friendsSql, {
       type: QueryTypes.SELECT,
       replacements: {
@@ -519,9 +485,7 @@ export const getAllFriends = async (req, res, next) => {
       },
       raw: true,
     });
-    logger.log("friends: ", friends);
-    logger.log("ids: ", ids);
-    logger.log("chatids: ", chatIds);
+
     if (chatIds.length) {
       const findChatId = (friendId) => {
         const key = [userId, friendId].sort((a, b) => a - b).join("-");
@@ -664,6 +628,64 @@ export const getGroups = async (req, res, next) => {
     next(error);
   }
 };
+export const searchFriends = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    const result = validationResult(req);
+
+    if (!result.isEmpty()) throw new Error({ message: result.array() });
+
+    const { q, groupId } = matchedData(req);
+
+    const nonMemberFriendsSql = `
+      WITH friends_temp AS (
+        SELECT 
+          friend_id AS other_user_id 
+        FROM 
+          friends 
+        WHERE 
+          user_id = :userId 
+        UNION 
+        SELECT 
+          user_id AS other_user_id 
+        FROM 
+          friends 
+        WHERE 
+          friend_id = :userId
+      ), 
+      members_temp AS (
+        SELECT 
+          user_id id 
+        FROM 
+          group_members 
+        WHERE 
+          group_id = :groupId
+      ) 
+
+      SELECT 
+        u.* 
+      FROM 
+        users u 
+        INNER JOIN friends_temp f ON f.other_user_id = u.id 
+        LEFT JOIN members_temp m ON m.id = u.id 
+      WHERE 
+        m.id IS NULL
+        AND u.display_name LIKE :q
+    `;
+    const nonMemberFriends = await sequelize.query(nonMemberFriendsSql, {
+      replacements: {
+        userId,
+        q: `%${q}%`,
+        groupId,
+      },
+      type: QueryTypes.SELECT,
+    });
+
+    res.status(200).json({ nonMemberFriends: nonMemberFriends });
+  } catch (error) {
+    next(error);
+  }
+};
 // export const getGroupMessages = async (req, res, next) => {
 //   try {
 //     const sql = `SELECT * FROM group_messages`;
@@ -675,3 +697,183 @@ export const getGroups = async (req, res, next) => {
 //     next(error);
 //   }
 // };
+export const getGroupPinnedMessages = async (req, res, next) => {
+  try {
+    const result = validationResult(req);
+    const userId = req.session.passport.user;
+
+    if (!result.isEmpty()) {
+      logger.log(result.array());
+      throw new Error("Validation failed");
+    }
+
+    const { groupId } = matchedData(req);
+    const group = await GroupChat.findOne({
+      attributes: ["id"],
+      where: {
+        group_id: groupId,
+      },
+      raw: true,
+    });
+
+    if (!group) throw new Error("Group not found");
+
+    const isMember = GroupMember.findOne({
+      where: {
+        user_id: userId,
+        group_id: group.id,
+      },
+    });
+
+    if (!isMember) throw new Error("Not a member in this group");
+
+    const pinnedMessagesSql = `
+      SELECT 
+        gm.id,
+        sender.display_name, 
+        sender.username, 
+        sender.profile,
+        gm.to_id,
+        gm.is_pinned,
+        gm.last_pin_action_by_id,
+        gm.clientOffset,
+        gm.message,
+        gm.createdAt created_at,
+        gm.pin_updated_at
+      FROM 
+        group_messages gm 
+        INNER JOIN users sender ON sender.id = gm.from_id 
+        INNER JOIN users receiver ON receiver.id = gm.to_id 
+        LEFT JOIN group_messages gms ON gm.reply_to_msg = gms.id 
+      WHERE 
+        gm.group_id = :id 
+        AND gm.is_pinned = 1
+      ORDER BY 
+        gm.pin_updated_at DESC
+    `;
+    const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        id,
+      },
+    });
+    const sortedPinnedMessages = pinnedMessages.sort((a, b) => {
+      const dateA = new Date(a.pin_updated_at);
+      const dateB = new Date(b.pin_updated_at);
+      return dateB - dateA;
+    });
+
+    res.status(200).json(sortedPinnedMessages);
+  } catch (error) {
+    next(error);
+  }
+};
+export const getInitialGroupData = async (req, res, next) => {
+  try {
+    const result = validationResult(req);
+    const userId = req.session.passport.user;
+
+    if (!result.isEmpty()) {
+      logger.log(result.array());
+      throw new Error("Validation failed");
+    }
+
+    const { groupId } = matchedData(req);
+    const group = await OneToOneChat.findOne({
+      attributes: ["id"],
+      where: {
+        chat_id: groupId,
+      },
+      raw: true,
+    });
+
+    if (!group) throw new Error("Chat not found");
+  } catch (error) {
+    next(error);
+  }
+};
+export const getGroupMessages = async (req, res, next) => {
+  try {
+    const result = validationResult(req);
+    const userId = req.session.passport.user;
+    const nextIdSql = "AND gm.id < :nextId";
+    const limit = 30;
+    let groupMessages;
+
+    if (!result.isEmpty()) {
+      logger.log(result.array());
+      throw new Error("Validation failed");
+    }
+
+    const { groupId, nextIdParam } = matchedData(req);
+    const group = await OneToOneChat.findOne({
+      attributes: ["id"],
+      where: {
+        chat_id: groupId,
+      },
+      raw: true,
+    });
+    const groupMessagesSql = ` 
+      SELECT 
+        gm.id,
+        gm.from_id,
+        gm.to_id, 
+        sender.display_name, 
+        sender.username, 
+        sender.profile,
+        gm.clientOffset, 
+        gm.message,
+        gm.is_edited,
+        gm.is_pinned,
+        gm.request_state, 
+        gm.createdAt created_at, 
+        replied_msg.id replied_msg_id,
+        replied_msg.message replied_msg_message,
+        replied_msg.is_deleted is_replied_msg_deleted, 
+        replied_msg_sender.display_name replied_msg_sender,
+				replied_msg_sender.profile replied_msg_profile
+      FROM 
+        group_messages gm 
+        INNER JOIN users sender 
+          ON sender.id = gm.from_id          
+        LEFT JOIN group_messages replied_msg 
+          ON gm.reply_to_msg = replied_msg.id 
+        LEFT JOIN users replied_msg_sender 
+          ON replied_msg.from_id = replied_msg_sender.id 
+      WHERE 
+        gm.chat_id = :id
+        AND 
+        gm.is_deleted = 0
+        ${nextId !== 0 ? nextIdSql : ""}
+      ORDER BY 
+        gm.createdAt DESC
+      LIMIT 
+        :limit
+    `;
+    let nextId = Number(nextIdParam);
+
+    if (!group) throw new Error("Group not found");
+
+    const isMember = GroupMember.findOne({
+      where: {
+        user_id: userId,
+        group_id: group.id,
+      },
+    });
+
+    if (!isMember) throw new Error("Not a member in this group");
+
+    const { id } = group;
+
+    groupMessages = await sequelize.query(groupMessagesSql, {
+      type: QueryTypes.SELECT,
+      replacements: { limit, id, nextId },
+    });
+    groupMessages = groupMessages.reverse();
+    nextId = groupMessages.length < 30 ? null : groupMessages[0].id;
+
+    res.status(200).json({ messages: groupMessages, nextId });
+  } catch (error) {
+    next(error);
+  }
+};

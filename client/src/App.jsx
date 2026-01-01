@@ -65,8 +65,9 @@ function App() {
               element: <MessageRequests />,
             },
             {
-              path: "group-chat/:groupId",
+              path: "gc/:groupId",
               element: <GroupChatPanel />,
+              loader: Loader.loadGroupData(queryClient),
             },
           ],
           loader: Loader.loadGroups(queryClient),

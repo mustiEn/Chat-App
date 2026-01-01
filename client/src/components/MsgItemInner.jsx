@@ -1,12 +1,10 @@
 import React from "react";
-import EditDm from "./EditDm";
+import EditMsg from "./EditMsg.jsx";
 import { formatDate, isURL, normaliseURL } from "../utils/index.js";
-import MsgRepliedDiv from "../components/MsgRepliedDiv";
+import MsgRepliedDiv from "./MsgRepliedDiv.jsx";
 import { Anchor, Flex, Image, Text } from "@mantine/core";
 
-const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
-  console.log(isURL(msg.message), normaliseURL(msg.message));
-
+const MsgItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
   return (
     <>
       {msg.replied_msg_sender && <MsgRepliedDiv msg={msg} />}
@@ -36,7 +34,7 @@ const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
                 : "Sent!"}
             </span>
           </Flex>
-          <EditDm
+          <EditMsg
             msg={msg}
             editedMessage={editedMessage}
             setEditedMessage={setEditedMessage}
@@ -69,4 +67,4 @@ const DmItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
   );
 };
 
-export default DmItemInner;
+export default MsgItemInner;

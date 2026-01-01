@@ -137,7 +137,7 @@ const GroupList = memo(function Grouplist() {
           <PopoverComponent
             key={group}
             content={popOverContent("Direct Messages")}
-            trigger={popOverTrigger("/@me/group-chat/1", group + 1, undefined)}
+            trigger={popOverTrigger("/@me/gc/1", group + 1, undefined)}
           />
         ))} */}
         {isLoading ? (
@@ -147,11 +147,7 @@ const GroupList = memo(function Grouplist() {
             <PopoverComponent
               key={group.id}
               content={popOverContent(group.group_name)}
-              trigger={popOverTrigger(
-                `/@me/group-chat/${group.id}`,
-                group,
-                undefined
-              )}
+              trigger={popOverTrigger(`/@me/gc/${group.id}`, group, undefined)}
             />
           ))
         )}

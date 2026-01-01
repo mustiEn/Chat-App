@@ -3,10 +3,17 @@ import { immer } from "zustand/middleware/immer";
 
 export const useShowPinnedMsgBoxStore = create(
   immer((set) => ({
-    showPinnedMsgBox: {},
-    addToShowPinnedMsgBox: (chatId, val) =>
+    pinnedMsgBoxObj: {
+      dm: {},
+      group: {},
+    },
+    switchDmPinnedMsgBox: (chatId, val) =>
       set((state) => {
-        state.showPinnedMsgBox[chatId] = val;
+        state.pinnedMsgBoxObj.dm[chatId] = val;
+      }),
+    switchGroupPinnedMsgBox: (chatId, val) =>
+      set((state) => {
+        state.pinnedMsgBoxObj.group[chatId] = val;
       }),
   }))
 );

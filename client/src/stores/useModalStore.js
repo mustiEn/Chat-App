@@ -3,14 +3,14 @@ import { immer } from "zustand/middleware/immer";
 
 export const useModalStore = create(
   immer((set) => ({
-    dmModalNotifierOpened: false,
-    dmModalNotifierOpen: () =>
+    panelModalNotifierOpened: false,
+    openPanelModalNotifier: () =>
       set((state) => {
-        state.dmModalNotifierOpened = true;
+        state.panelModalNotifierOpened = true;
       }),
-    dmModalNotifierClose: () =>
+    closePanelModalNotifier: () =>
       set((state) => {
-        state.dmModalNotifierOpened = false;
+        state.panelModalNotifierOpened = false;
       }),
   }))
 );

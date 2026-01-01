@@ -10,41 +10,41 @@ import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import { useDirectMessages } from "../custom-hooks/useDirectMessages.js";
+import { useGroupMessages } from "../custom-hooks/useGroupMessages.js";
 import DmHeadProfile from "./DmHeadProfile.jsx";
 import { useInView } from "react-intersection-observer";
 import { socket } from "../socket.js";
 
-const DmList = () => {
-  const { chatId } = useParams();
-  const { scrollElementRef, dmChatRef } = useOutletContext();
+const GroupMessageList = () => {
+  const { groupId } = useParams();
+  const { scrollElementRef, groupChatRef } = useOutletContext();
   const { receiverId } = useContext(DmPanelContext);
 
-  const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs.dm);
-  const addToHasMoreUp = useHasMoreUpStore((s) => s.addToDmHasMoreUp);
-  const hasMoreUp = useHasMoreUpStore((s) => s.hasMoreUp.dm);
+  const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs.group);
+  const addToHasMoreUp = useHasMoreUpStore((s) => s.addToGroupHasMoreUp);
+  const hasMoreUp = useHasMoreUpStore((s) => s.hasMoreUp.group);
 
   const {
     scrollPosition,
     prevTopId,
     dmPanel: { directMessagesTopId },
     msgAddedOrDeleted,
-  } = dmChatRef.current;
+  } = groupChatRef.current;
   const {
-    data: directMessages,
+    data: groupMessages,
     fetchNextPage,
     hasNextPage,
     isLoading,
-  } = useDirectMessages(chatId);
+  } = useGroupMessages(groupId);
 
-  const reversed = directMessages && directMessages.pages.toReversed();
+  const reversed = groupMessages && groupMessages.pages.toReversed();
   const messages = reversed ? reversed.flatMap(({ messages }) => messages) : [];
   const items = useMemo(
-    () => [...messages, ...(pendingMsgs[chatId] ?? [])],
-    [messages, pendingMsgs[chatId]]
+    () => [...messages, ...(pendingMsgs[groupId] ?? [])],
+    [messages, pendingMsgs[groupId]]
   );
   const rowVirtualizer = useVirtualizer({
-    count: (messages.length ?? 0) + (pendingMsgs[chatId]?.length ?? 0),
+    count: (messages.length ?? 0) + (pendingMsgs[groupId]?.length ?? 0),
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
     overscan: 5,
@@ -60,7 +60,7 @@ const DmList = () => {
     if (!el) return;
 
     const handleScroll = () => {
-      scrollPosition[chatId] = el.scrollTop;
+      scrollPosition[groupId] = el.scrollTop;
     };
 
     el.addEventListener("scroll", handleScroll);
@@ -68,7 +68,7 @@ const DmList = () => {
       el.removeEventListener("scroll", handleScroll);
       // console.log("scerollposition", scrollPosition);
     };
-  }, [scrollElementRef.current, chatId]);
+  }, [scrollElementRef.current, groupId]);
 
   useLayoutEffect(() => {
     const el = scrollElementRef.current;
@@ -77,49 +77,49 @@ const DmList = () => {
 
     const latestTopId = items[0].id;
     const newMsgsLoaded =
-      directMessagesTopId[chatId] &&
-      directMessagesTopId[chatId] !== latestTopId;
+      directMessagesTopId[groupId] &&
+      directMessagesTopId[groupId] !== latestTopId;
     const isNearBottom = rowVirtualizer.range.endIndex >= items.length - 4;
 
-    if (scrollPosition[chatId] === undefined) {
+    if (scrollPosition[groupId] === undefined) {
       el.scrollTop = el.scrollHeight;
-      scrollPosition[chatId] = el.scrollTop;
-      addToHasMoreUp(chatId, hasNextPage);
+      scrollPosition[groupId] = el.scrollTop;
+      addToHasMoreUp(groupId, hasNextPage);
     } else if (newMsgsLoaded) {
-      const index = items.findIndex(({ id }) => id == prevTopId[chatId]);
+      const index = items.findIndex(({ id }) => id == prevTopId[groupId]);
 
-      addToHasMoreUp(chatId, hasNextPage);
+      addToHasMoreUp(groupId, hasNextPage);
       rowVirtualizer.scrollToIndex(index, {
         align: "center",
         behavior: "smooth",
       });
-    } else if (isNearBottom && msgAddedOrDeleted[chatId]) {
+    } else if (isNearBottom && msgAddedOrDeleted[groupId]) {
       el.scrollTo({ top: el.scrollHeight + 20, behavior: "smooth" });
-      msgAddedOrDeleted[chatId] = false;
+      msgAddedOrDeleted[groupId] = false;
     }
     // else {
     //   console.log("not new");
 
-    //   el.scrollTop = scrollPosition[chatId];
+    //   el.scrollTop = scrollPosition[groupId];
     // }
 
     socket.auth.serverOffset[receiverId] = messages.at(-1)?.id ?? 0;
-    directMessagesTopId[chatId] = latestTopId;
+    directMessagesTopId[groupId] = latestTopId;
   }, [items]);
 
   useLayoutEffect(() => {
     const el = scrollElementRef.current;
 
     if (!el) return;
-    el.scrollTop = scrollPosition[chatId];
+    el.scrollTop = scrollPosition[groupId];
   }, []);
 
   useEffect(() => {
-    if (hasMoreUp[chatId] && inView) {
+    if (hasMoreUp[groupId] && inView) {
       const el = scrollElementRef.current;
 
-      prevTopId[chatId] = messages.at(0)?.id;
-      scrollPosition[chatId] = el.scrollTop;
+      prevTopId[groupId] = messages.at(0)?.id;
+      scrollPosition[groupId] = el.scrollTop;
 
       fetchNextPage();
     }
@@ -142,9 +142,9 @@ const DmList = () => {
               </div>
             </>
           ) : (
-            !hasMoreUp[chatId] && <DmHeadProfile />
+            !hasMoreUp[groupId] && <DmHeadProfile />
           )}
-          {hasMoreUp[chatId] && messages.length && (
+          {hasMoreUp[groupId] && messages.length && (
             <Box mb={"xl"} ref={ref}>
               <PulseLoader color={"white"} />
             </Box>
@@ -186,4 +186,4 @@ const DmList = () => {
   );
 };
 
-export default DmList;
+export default GroupMessageList;

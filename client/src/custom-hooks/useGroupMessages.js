@@ -1,15 +1,16 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 
-const fetchMoreData = async (pageParam, chatId) => {
+const fetchMoreData = async (pageParam, groupId) => {
   try {
-    const res = await fetch(`/api/dm/moreData/${chatId}?nextId=${pageParam}`);
+    const res = await fetch(
+      `/api/group/more-data/${groupId}?nextId=${pageParam}`
+    );
     const data = await res.json();
 
     if (!res.ok) {
       console.log("ERROR");
       throw new Error(data.error);
     }
-    console.log("Fethcing...");
 
     return data;
   } catch (error) {
@@ -18,10 +19,10 @@ const fetchMoreData = async (pageParam, chatId) => {
   }
 };
 
-export const useChatMessages = (chatId) => {
+export const useGroupMessages = (groupId) => {
   return useInfiniteQuery({
-    queryKey: ["chatMessages", chatId],
-    queryFn: ({ pageParam }) => fetchMoreData(pageParam, chatId),
+    queryKey: ["groupMessages", groupId],
+    queryFn: ({ pageParam }) => fetchMoreData(pageParam, groupId),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextId,
     staleTime: Infinity,

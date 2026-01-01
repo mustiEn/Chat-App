@@ -4,6 +4,11 @@ import { DataTypes } from "sequelize";
 export const GroupChat = sequelize.define(
   "group_chat",
   {
+    group_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
+    },
     group_icon: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -23,6 +28,10 @@ export const GroupChat = sequelize.define(
   },
   {
     indexes: [
+      {
+        unique: true,
+        fields: ["group_id"],
+      },
       {
         unique: true,
         fields: ["group_name"],

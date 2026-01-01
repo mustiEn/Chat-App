@@ -25,6 +25,8 @@ import groupChatSidebarStyles from "../css/group_chat_sidebar.module.css";
 import { PulseLoader } from "react-spinners";
 import PopoverComponent from "./PopoverComponent";
 import { useGroups } from "../custom-hooks/useGroups";
+import useDelayedSpinner from "../custom-hooks/useDelayedSpinner";
+import { useEffect } from "react";
 
 const GroupChatSidebar = () => {
   const { groupId } = useParams();
@@ -33,8 +35,9 @@ const GroupChatSidebar = () => {
   const [opened, { open, close }] = useDisclosure(false);
   const [friendInp, setFriendInp] = useState("");
   const [debounceVal, setDebounceVal] = useState("");
-  const { data, isLoading } = useSearchFriends(debounceVal);
+  const { data, isFetching } = useSearchFriends(debounceVal, groupId);
   const debouncedChange = useDebounce((val) => setDebounceVal(val), 700);
+  // const showSpinner = useDelayedSpinner(isFetching);
 
   //? dont list those who are alredy in the froup
   return (
@@ -103,13 +106,13 @@ const GroupChatSidebar = () => {
             h={"18rem"}
             my={"xs"}
           >
-            {isLoading ? (
+            {isFetching ? (
               <Center mt={"xl"}>
                 <PulseLoader color="white" />
               </Center>
-            ) : data?.users.length ? (
+            ) : data?.nonMemberFriends.length ? (
               <Stack gap={"xs"}>
-                {data.users.map((e) => (
+                {data?.nonMemberFriends.map((e) => (
                   <Flex
                     gap={"xs"}
                     key={e.id}
@@ -123,17 +126,19 @@ const GroupChatSidebar = () => {
                       w={32}
                       h={32}
                     />
-                    <Text>{e.firstName}</Text>
+                    <Text>{e.display_name}</Text>
                     <Button size="xs" ms={"auto"}>
                       Invite
                     </Button>
                   </Flex>
                 ))}
               </Stack>
-            ) : (
+            ) : debounceVal === "" ? (
               <Center mt={"xl"}>
                 <Text>You'll find your friends here!</Text>
               </Center>
+            ) : (
+              <Box>No results</Box>
             )}
           </Box>
         </Box>

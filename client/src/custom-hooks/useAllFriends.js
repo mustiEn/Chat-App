@@ -2,7 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 const getAllFriends = async ({ pageParam }) => {
   try {
-    const res = await fetch(`/api/get-all-friends/${pageParam}`);
+    const res = await fetch(`/api/friends/get-all-friends/${pageParam}`);
     // const res = await fetch(
     //   `https://dummyjson.com/users?limit=20&skip=${pageParam}`
     // );

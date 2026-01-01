@@ -1,24 +1,25 @@
 import React, { useCallback, useRef } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import styles from "../css/dm_panel.module.css";
-import { socket } from "../socket";
+import { socket } from "../socket.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Flex } from "@mantine/core";
-import { editMessage } from "../utils/chatMessages.js";
+import { editMessage } from "../utils/directMessages.js";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
-  const { chatId } = useParams();
+const EditMsg = ({ msg, editedMessage, setEditedMessage, paramName }) => {
+  const params = useParams();
+  const paramId = paramName === "group" ? params.groupId : params.chatId;
   const queryClient = useQueryClient();
   const editInpRef = useRef(null);
 
-  const handleEdit = () => {
+  const handleEdit = (paramId, paramName) => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
     if (editInpRef.current != document.activeElement) {
@@ -106,4 +107,4 @@ const EditDm = ({ msg, editedMessage, setEditedMessage }) => {
   );
 };
 
-export default EditDm;
+export default EditMsg;

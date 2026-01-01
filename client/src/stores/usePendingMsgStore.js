@@ -3,17 +3,32 @@ import { immer } from "zustand/middleware/immer";
 
 export const usePendingMsgStore = create(
   immer((set) => ({
-    pendingMsgs: {},
-    addToPendingMsgs: (chatId, pendingMsg) =>
+    pendingMsgs: {
+      dm: {},
+      group: {},
+    },
+    addToDmPendingMsgs: (chatId, pendingMsg) =>
       set((state) => {
-        if (!state.pendingMsgs[chatId]) state.pendingMsgs[chatId] = [];
-        state.pendingMsgs[chatId].push(pendingMsg);
+        if (!state.pendingMsgs.dm[chatId]) state.pendingMsgs.dm[chatId] = [];
+        state.pendingMsgs.dm[chatId].push(pendingMsg);
       }),
-    removeFromPendingMsgs: (chatId, clientOffset) =>
+    removeFromDmPendingMsgs: (chatId, clientOffset) =>
       set((state) => {
-        state.pendingMsgs[chatId] = state.pendingMsgs[chatId].filter(
+        state.pendingMsgs.dm[chatId] = state.pendingMsgs.dm[chatId].filter(
           (e) => e.clientOffset != clientOffset
         );
+      }),
+    addToGroupPendingMsgs: (groupId, pendingMsg) =>
+      set((state) => {
+        if (!state.pendingMsgs.group[groupId])
+          state.pendingMsgs.group[groupId] = [];
+        state.pendingMsgs.group[groupId].push(pendingMsg);
+      }),
+    removeFromGroupPendingMsgs: (groupId, clientOffset) =>
+      set((state) => {
+        state.pendingMsgs.group[groupId] = state.pendingMsgs.group[
+          groupId
+        ].filter((e) => e.clientOffset != clientOffset);
       }),
   }))
 );

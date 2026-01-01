@@ -19,13 +19,13 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import UserStatus from "../components/UserStatus.jsx";
 import DmPanelTopIcons from "./DmPanelTopIcons.jsx";
 import stylesPanelTop from "../css/dm_panel_top.module.css";
+import { closePinnedMsgBox } from "../utils/pinnedMsgBox.js";
 
 const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
   const { chatId } = useParams();
   const queryClient = useQueryClient();
   const { data: allFriendsData } = useAllFriends();
   const { data: friendRequests } = useFriendRequests();
-  const { dmChatRef } = useOutletContext();
   const { receiverId } = useContext(DmPanelContext);
   const [
     isFriendModalOpened,
@@ -42,9 +42,9 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
   const { sentFriendRequests = [], receivedFriendRequests = [] } =
     friendRequests ?? {};
 
-  const showPinnedMsgBox = useShowPinnedMsgBoxStore((s) => s.showPinnedMsgBox);
-  const addToShowPinnedMsgBox = useShowPinnedMsgBoxStore(
-    (s) => s.addToShowPinnedMsgBox
+  const pinnedMsgBoxObj = useShowPinnedMsgBoxStore((s) => s.pinnedMsgBoxObj.dm);
+  const switchPinnedMsgBox = useShowPinnedMsgBoxStore(
+    (s) => s.switchDmPinnedMsgBox.dm
   );
 
   const isFriend = allFriends.some((e) => e.id == receiverId);
@@ -127,26 +127,21 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
   };
 
   useEffect(() => {
-    if (showPinnedMsgBox[chatId])
-      customOverlayRef.current.style.display = "block";
+    const eventCallback = closePinnedMsgBox(
+      e,
+      pinnedMsgBoxObj,
+      chatId,
+      customOverlayRef,
+      isTargetOverlay,
+      switchPinnedMsgBox
+    );
 
-    const closePinnedMsgsBox = (event) => {
-      const isTargetOverlay = event.target.classList.contains(
-        customOverlayRef.current.className
-      );
-
-      if (!isTargetOverlay) return;
-
-      customOverlayRef.current.style.display = "none";
-      addToShowPinnedMsgBox(chatId, false);
-    };
-
-    document.addEventListener("click", closePinnedMsgsBox);
+    document.addEventListener("click", eventCallback);
 
     return () => {
-      document.removeEventListener("click", closePinnedMsgsBox);
+      document.removeEventListener("click", eventCallback);
     };
-  }, [showPinnedMsgBox]);
+  }, [pinnedMsgBoxObj]);
 
   return (
     <>
