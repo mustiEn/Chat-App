@@ -8,7 +8,7 @@ import {
   addPinnedMessages,
   removePinnedMessage,
 } from "../utils/dmPinnedMessages.js";
-import { deleteMessage, setIsMessagePinned } from "../utils/directMessages.js";
+import { deleteMessage, setIsMessagePinned } from "../utils/messages.js";
 import { useModalStore } from "../stores/useModalStore.js";
 import toast from "react-hot-toast";
 
@@ -23,7 +23,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
       return;
     }
     socket.emit(
-      "send pinned msgs",
+      "send dm pinned msgs",
       {
         id: msg.id,
         isPinned: true,
@@ -37,8 +37,14 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
           return;
         }
 
-        addPinnedMessages(queryClient, paramId, msg);
-        setIsMessagePinned(queryClient, paramId, msg.id, true);
+        addPinnedMessages("dmPinnedMessages", queryClient, paramId, msg);
+        setIsMessagePinned(
+          "directMessages",
+          queryClient,
+          paramId,
+          msg.id,
+          true
+        );
         console.log("Pinned message successfully", res);
       }
     );
@@ -56,19 +62,19 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
       return;
     }
 
-    socket.emit("send deleted msgs", msg, paramId, (err, res) => {
+    socket.emit("send dm deleted msgs", msg, paramId, (err, res) => {
       if (err) {
         console.log("err", err);
         return;
       }
 
-      deleteMessage(queryClient, paramId, msg.id);
+      deleteMessage("directMessages", queryClient, paramId, msg.id);
       console.log("Deleted message successfully", res);
     });
 
     if (isMsgPinned !== -1) {
       socket.emit(
-        "send pinned msgs",
+        "send dm pinned msgs",
         {
           id: msg.id,
           isPinned: false,
@@ -80,7 +86,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
             return;
           }
 
-          removePinnedMessage(queryClient, paramId, msg.id);
+          removePinnedMessage("dmPinnedMessages", queryClient, paramId, msg.id);
         }
       );
     }
@@ -92,7 +98,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
     }
 
     socket.emit(
-      "send pinned msgs",
+      "send dm pinned msgs",
       {
         id: msg.id,
         isPinned: false,
@@ -106,8 +112,14 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
           return;
         }
 
-        removePinnedMessage(queryClient, paramId, msg.id);
-        setIsMessagePinned(queryClient, paramId, msg.id, false);
+        removePinnedMessage("dmPinnedMessages", queryClient, paramId, msg.id);
+        setIsMessagePinned(
+          "directMessages",
+          queryClient,
+          paramId,
+          msg.id,
+          false
+        );
 
         // console.log("Unpinned successfully", res);
       }
@@ -119,7 +131,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
       return;
     }
     socket.emit(
-      "send pinned msgs",
+      "send dm pinned msgs",
       {
         id: msg.id,
         isPinned: true,
@@ -133,8 +145,14 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
           return;
         }
 
-        addPinnedMessages(queryClient, paramId, msg);
-        setIsMessagePinned(queryClient, paramId, msg.id, true);
+        addPinnedMessages("dmPinnedMessages", queryClient, paramId, msg);
+        setIsMessagePinned(
+          "directMessages",
+          queryClient,
+          paramId,
+          msg.id,
+          true
+        );
         console.log("Pinned message successfully", res);
       }
     );
@@ -152,19 +170,19 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
       return;
     }
 
-    socket.emit("send deleted msgs", msg, paramId, (err, res) => {
+    socket.emit("send dm deleted msgs", msg, paramId, (err, res) => {
       if (err) {
         console.log("err", err);
         return;
       }
 
-      deleteMessage(queryClient, paramId, msg.id);
+      deleteMessage("directMessages", queryClient, paramId, msg.id);
       console.log("Deleted message successfully", res);
     });
 
     if (isMsgPinned !== -1) {
       socket.emit(
-        "send pinned msgs",
+        "send dm pinned msgs",
         {
           id: msg.id,
           isPinned: false,
@@ -176,7 +194,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
             return;
           }
 
-          removePinnedMessage(queryClient, paramId, msg.id);
+          removePinnedMessage("dmPinnedMessages", queryClient, paramId, msg.id);
         }
       );
     }
@@ -188,7 +206,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
     }
 
     socket.emit(
-      "send pinned msgs",
+      "send dm pinned msgs",
       {
         id: msg.id,
         isPinned: false,
@@ -202,8 +220,14 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
           return;
         }
 
-        removePinnedMessage(queryClient, paramId, msg.id);
-        setIsMessagePinned(queryClient, paramId, msg.id, false);
+        removePinnedMessage("dmPinnedMessages", queryClient, paramId, msg.id);
+        setIsMessagePinned(
+          "directMessages",
+          queryClient,
+          paramId,
+          msg.id,
+          false
+        );
 
         // console.log("Unpinned successfully", res);
       }

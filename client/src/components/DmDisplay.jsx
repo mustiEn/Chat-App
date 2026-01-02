@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import DmList from "./DmList.jsx";
-import MessageInput from "./MessageInput.jsx";
+import DmInput from "./DmInput.jsx";
 import { Box } from "@mantine/core";
 
 dayjs.extend(utc);
@@ -27,7 +27,7 @@ const DmDisplay = ({ isInitialDataLoading }) => {
         <DmList key={recevierId} isInitialDataLoading={isInitialDataLoading} />
       </Box>
 
-      <MessageInput key={recevierId} />
+      <DmInput key={recevierId} />
     </>
   );
 };

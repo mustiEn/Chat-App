@@ -1,11 +1,18 @@
-export const addOldMessages = (queryClient, chatId, newMsgs) => {
-  queryClient.setQueryData(["directMessages", chatId], (olderData) => ({
+export const addOldMessages = (queryKey, queryClient, paramId, newMsgs) => {
+  queryClient.setQueryData([queryKey, paramId], (olderData) => ({
     ...olderData,
     pages: [{ messages: newMsgs }, ...olderData.pages],
   }));
 };
-export const setIsMessagePinned = (queryClient, chatId, msgId, val) => {
-  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
+export const setIsMessagePinned = (
+  queryKey,
+  queryClient,
+  queryKey,
+  paramId,
+  msgId,
+  val
+) => {
+  queryClient.setQueryData([queryKey, paramId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page) => ({
@@ -22,13 +29,14 @@ export const setIsMessagePinned = (queryClient, chatId, msgId, val) => {
   });
 };
 export const editMessage = (
+  queryKey,
   queryClient,
-  chatId,
+  paramId,
   msgId,
   editedMessage,
   isPending
 ) => {
-  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
+  queryClient.setQueryData([queryKey, paramId], (olderData) => {
     const newPages = olderData.pages.map((page) => ({
       ...page,
       messages: page.messages.map((m) => {
@@ -50,8 +58,8 @@ export const editMessage = (
     };
   });
 };
-export const deleteMessage = (queryClient, chatId, msgId) => {
-  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
+export const deleteMessage = (queryKey, queryClient, paramId, msgId) => {
+  queryClient.setQueryData([queryKey, paramId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page) => ({
@@ -69,8 +77,8 @@ export const deleteMessage = (queryClient, chatId, msgId) => {
     };
   });
 };
-export const addMessage = (queryClient, chatId, msg) => {
-  queryClient.setQueryData(["directMessages", chatId], (olderData) => {
+export const addMessage = (queryKey, queryClient, paramId, msg) => {
+  queryClient.setQueryData([queryKey, paramId], (olderData) => {
     if (!olderData) return olderData;
 
     const newPages = olderData.pages.map((page, i) => ({

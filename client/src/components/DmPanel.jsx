@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Box, Flex } from "@mantine/core";
 import DmList from "./DmList.jsx";
-import MessageInput from "./MessageInput.jsx";
+import DmInput from "./DmInput.jsx";
 import { useDisclosure } from "@mantine/hooks";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
@@ -99,7 +99,7 @@ const DmPanel = () => {
                   <DmList />
                 </Box>
 
-                <MessageInput />
+                <DmInput />
               </Flex>
 
               <FriendProfile

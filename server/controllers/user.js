@@ -168,7 +168,7 @@ export const getDirectMessages = async (req, res, next) => {
         INNER JOIN users sender 
           ON sender.id = dm.from_id          
         LEFT JOIN direct_messages replied_msg 
-          ON dm.reply_to_msg = replied_msg.id 
+          ON dm.reply_to_msg_id = replied_msg.id 
         LEFT JOIN users replied_msg_sender 
           ON replied_msg.from_id = replied_msg_sender.id 
       WHERE 
@@ -329,7 +329,7 @@ export const getDmPinnedMessages = async (req, res, next) => {
         direct_messages dm 
         INNER JOIN users sender ON sender.id = dm.from_id 
         INNER JOIN users receiver ON receiver.id = dm.to_id 
-        LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
+        LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
       WHERE 
         dm.chat_id = :id 
         AND dm.is_pinned = 1
@@ -744,7 +744,7 @@ export const getGroupPinnedMessages = async (req, res, next) => {
         group_messages gm 
         INNER JOIN users sender ON sender.id = gm.from_id 
         INNER JOIN users receiver ON receiver.id = gm.to_id 
-        LEFT JOIN group_messages gms ON gm.reply_to_msg = gms.id 
+        LEFT JOIN group_messages gms ON gm.reply_to_msg_id = gms.id 
       WHERE 
         gm.group_id = :id 
         AND gm.is_pinned = 1
@@ -837,7 +837,7 @@ export const getGroupMessages = async (req, res, next) => {
         INNER JOIN users sender 
           ON sender.id = gm.from_id          
         LEFT JOIN group_messages replied_msg 
-          ON gm.reply_to_msg = replied_msg.id 
+          ON gm.reply_to_msg_id = replied_msg.id 
         LEFT JOIN users replied_msg_sender 
           ON replied_msg.from_id = replied_msg_sender.id 
       WHERE 

@@ -27,7 +27,7 @@ const DmList = () => {
   const {
     scrollPosition,
     prevTopId,
-    dmPanel: { directMessagesTopId },
+    dmPanel: { groupMessagesTopId },
     msgAddedOrDeleted,
   } = dmChatRef.current;
   const {
@@ -77,8 +77,7 @@ const DmList = () => {
 
     const latestTopId = items[0].id;
     const newMsgsLoaded =
-      directMessagesTopId[chatId] &&
-      directMessagesTopId[chatId] !== latestTopId;
+      groupMessagesTopId[chatId] && groupMessagesTopId[chatId] !== latestTopId;
     const isNearBottom = rowVirtualizer.range.endIndex >= items.length - 4;
 
     if (scrollPosition[chatId] === undefined) {
@@ -103,8 +102,8 @@ const DmList = () => {
     //   el.scrollTop = scrollPosition[chatId];
     // }
 
-    socket.auth.serverOffset[receiverId] = messages.at(-1)?.id ?? 0;
-    directMessagesTopId[chatId] = latestTopId;
+    socket.auth.serverOffset.dm[receiverId] = messages.at(-1)?.id ?? 0;
+    groupMessagesTopId[chatId] = latestTopId;
   }, [items]);
 
   useLayoutEffect(() => {

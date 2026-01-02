@@ -7,7 +7,7 @@ export const usePendingMsgStore = create(
       dm: {},
       group: {},
     },
-    addToDmPendingMsgs: (chatId, pendingMsg) =>
+    addDmPendingMsg: (chatId, pendingMsg) =>
       set((state) => {
         if (!state.pendingMsgs.dm[chatId]) state.pendingMsgs.dm[chatId] = [];
         state.pendingMsgs.dm[chatId].push(pendingMsg);
@@ -18,7 +18,7 @@ export const usePendingMsgStore = create(
           (e) => e.clientOffset != clientOffset
         );
       }),
-    addToGroupPendingMsgs: (groupId, pendingMsg) =>
+    addGroupPendingMsg: (groupId, pendingMsg) =>
       set((state) => {
         if (!state.pendingMsgs.group[groupId])
           state.pendingMsgs.group[groupId] = [];

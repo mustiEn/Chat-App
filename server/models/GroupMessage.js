@@ -11,10 +11,6 @@ export const GroupMessage = sequelize.define(
       type: DataTypes.UUID,
       allowNull: true,
     },
-    reply_to_msg: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     is_edited: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

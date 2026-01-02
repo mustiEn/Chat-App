@@ -145,7 +145,7 @@ export const setUpSocket = (io) => {
         });
       }
     });
-    socket.on("send edited msgs", async (msg, chatId, done) => {
+    socket.on("send dm edited msgs", async (msg, chatId, done) => {
       let message;
 
       try {
@@ -218,7 +218,7 @@ export const setUpSocket = (io) => {
           FROM
             direct_messages dm
             INNER JOIN users u ON dm.from_id = u.id
-            LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg = replied_msg.id
+            LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg_id = replied_msg.id
             LEFT JOIN users replied_msg_sender ON replied_msg.from_id = replied_msg_sender.id
           WHERE
             dm.id = :msgReqId
@@ -293,7 +293,7 @@ export const setUpSocket = (io) => {
             FROM 
               direct_messages dm 
               INNER JOIN users u ON dm.from_id = u.id 
-              LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg = replied_msg.id 
+              LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg_id = replied_msg.id 
               LEFT JOIN users replied_msg_sender ON replied_msg.from_id = replied_msg_sender.id 
             WHERE 
               dm.id = :id
@@ -372,7 +372,7 @@ export const setUpSocket = (io) => {
           FROM 
             direct_messages dm 
             INNER JOIN users u ON dm.from_id = u.id 
-            LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg = replied_msg.id 
+            LEFT JOIN direct_messages replied_msg ON dm.reply_to_msg_id = replied_msg.id 
             LEFT JOIN users replied_msg_sender ON replied_msg.from_id = replied_msg_sender.id 
           WHERE 
             dm.id = :id
@@ -405,7 +405,7 @@ export const setUpSocket = (io) => {
         chatId,
       });
     });
-    socket.on("send pinned msgs", async (msg, chatId, done) => {
+    socket.on("send dm pinned msgs", async (msg, chatId, done) => {
       let pinnedMessage;
 
       try {
@@ -446,7 +446,7 @@ export const setUpSocket = (io) => {
               direct_messages dm 
               INNER JOIN users sender ON sender.id = dm.from_id 
               INNER JOIN users receiver ON receiver.id = dm.to_id 
-              LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id 
+              LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
             WHERE 
               dm.id = :msgId
           `;
@@ -477,7 +477,7 @@ export const setUpSocket = (io) => {
         chatId,
       });
     });
-    socket.on("send deleted msgs", async (msg, chatId, done) => {
+    socket.on("send dm deleted msgs", async (msg, chatId, done) => {
       try {
         const message = await DirectMessage.findByPk(msg.id, { raw: true });
         logger.log("message state", message);
@@ -816,6 +816,10 @@ export const setUpSocket = (io) => {
       });
     });
 
+    //^ Group
+
+    socket.on("send group edited msgs", async (params) => {});
+
     if (!socket.recovered) {
       const userLastDisconnect = lastDisconnect.get(userId);
       logger.log("socket recovered");
@@ -860,7 +864,7 @@ export const setUpSocket = (io) => {
               FROM direct_messages dm
               INNER JOIN users u ON dm.from_id = u.id
               LEFT JOIN direct_messages replied_msg 
-                ON dm.reply_to_msg = replied_msg.id 
+                ON dm.reply_to_msg_id = replied_msg.id 
               LEFT JOIN users replied_msg_sender 
                 ON replied_msg.from_id = replied_msg_sender.id
               WHERE
@@ -888,7 +892,7 @@ export const setUpSocket = (io) => {
                 direct_messages dm
                 INNER JOIN users sender ON sender.id = dm.from_id
                 INNER JOIN users receiver ON receiver.id = dm.to_id
-                LEFT JOIN direct_messages dms ON dm.reply_to_msg = dms.id
+                LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id
               WHERE
                 (	            
                   dm.to_id = :userId

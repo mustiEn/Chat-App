@@ -8,7 +8,7 @@ import utc from "dayjs/plugin/utc";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Flex } from "@mantine/core";
-import { editMessage } from "../utils/directMessages.js";
+import { editMessage } from "../utils/messages.js";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -16,10 +16,13 @@ dayjs.extend(utc);
 const EditMsg = ({ msg, editedMessage, setEditedMessage, paramName }) => {
   const params = useParams();
   const paramId = paramName === "group" ? params.groupId : params.chatId;
+  const queryKey = paramName === "group" ? "groupMessages" : "directMessages";
+  const socketEndpoint =
+    paramName === "group" ? "send group edited msgs" : "send dm edited msgs";
   const queryClient = useQueryClient();
   const editInpRef = useRef(null);
 
-  const handleEdit = (paramId, paramName) => {
+  const handleEdit = (paramId) => {
     const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
     if (editInpRef.current != document.activeElement) {
@@ -33,7 +36,14 @@ const EditMsg = ({ msg, editedMessage, setEditedMessage, paramName }) => {
     } else if (msg.message == editedMessage.message) return;
 
     if (!socket.connected) {
-      editMessage(queryClient, chatId, msg.id, editedMessage.message, true);
+      editMessage(
+        queryKey,
+        queryClient,
+        paramId,
+        msg.id,
+        editedMessage.message,
+        true
+      );
     }
 
     setEditedMessage({
@@ -42,20 +52,27 @@ const EditMsg = ({ msg, editedMessage, setEditedMessage, paramName }) => {
     });
 
     socket.emit(
-      "send edited msgs",
+      socketEndpoint,
       {
         id: editedMessage.id,
         message: editedMessage.message,
         updatedAt: time,
       },
-      chatId,
+      paramId,
       (err, res) => {
         if (err) {
           console.log("Edited Message failed:", err);
           return;
         }
 
-        editMessage(queryClient, chatId, msg.id, editedMessage.message, false);
+        editMessage(
+          queryKey,
+          queryClient,
+          paramId,
+          msg.id,
+          editedMessage.message,
+          false
+        );
 
         console.log("Edited Message successfull: ", res);
       }
@@ -92,7 +109,7 @@ const EditMsg = ({ msg, editedMessage, setEditedMessage, paramName }) => {
             // onHeightChange={scrollbottom}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                handleEdit();
+                handleEdit(paramId);
               } else if (e.key === "Escape") {
                 setEditedMessage({
                   id: null,

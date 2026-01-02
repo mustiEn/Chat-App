@@ -9,16 +9,14 @@ import ChatSkeleton from "./ChatSkeleton.jsx";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box } from "@mantine/core";
-import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { useGroupMessages } from "../custom-hooks/useGroupMessages.js";
-import DmHeadProfile from "./DmHeadProfile.jsx";
+import GroupHeadText from "./GroupHeadText.jsx";
 import { useInView } from "react-intersection-observer";
 import { socket } from "../socket.js";
 
 const GroupMessageList = () => {
   const { groupId } = useParams();
   const { scrollElementRef, groupChatRef } = useOutletContext();
-  const { receiverId } = useContext(DmPanelContext);
 
   const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs.group);
   const addToHasMoreUp = useHasMoreUpStore((s) => s.addToGroupHasMoreUp);
@@ -27,7 +25,7 @@ const GroupMessageList = () => {
   const {
     scrollPosition,
     prevTopId,
-    dmPanel: { directMessagesTopId },
+    groupPanel: { groupMessagesTopId },
     msgAddedOrDeleted,
   } = groupChatRef.current;
   const {
@@ -77,8 +75,8 @@ const GroupMessageList = () => {
 
     const latestTopId = items[0].id;
     const newMsgsLoaded =
-      directMessagesTopId[groupId] &&
-      directMessagesTopId[groupId] !== latestTopId;
+      groupMessagesTopId[groupId] &&
+      groupMessagesTopId[groupId] !== latestTopId;
     const isNearBottom = rowVirtualizer.range.endIndex >= items.length - 4;
 
     if (scrollPosition[groupId] === undefined) {
@@ -103,8 +101,8 @@ const GroupMessageList = () => {
     //   el.scrollTop = scrollPosition[groupId];
     // }
 
-    socket.auth.serverOffset[receiverId] = messages.at(-1)?.id ?? 0;
-    directMessagesTopId[groupId] = latestTopId;
+    socket.auth.serverOffset.group[groupId] = messages.at(-1)?.id ?? 0;
+    groupMessagesTopId[groupId] = latestTopId;
   }, [items]);
 
   useLayoutEffect(() => {
@@ -136,13 +134,13 @@ const GroupMessageList = () => {
         >
           {!messages.length ? (
             <>
-              <DmHeadProfile />
+              <GroupHeadText />
               <div className="empty-state">
                 No messages yet. Start the conversation!
               </div>
             </>
           ) : (
-            !hasMoreUp[groupId] && <DmHeadProfile />
+            !hasMoreUp[groupId] && <GroupHeadText />
           )}
           {hasMoreUp[groupId] && messages.length && (
             <Box mb={"xl"} ref={ref}>

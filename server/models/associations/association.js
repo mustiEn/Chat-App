@@ -34,6 +34,14 @@ export const setUpAssociation = () => {
   OneToOneChat.hasMany(DirectMessage, {
     foreignKey: "chat_id",
   });
+  DirectMessage.belongsTo(DirectMessage, {
+    as: "replyTo",
+    foreignKey: "reply_to_msg_id",
+  });
+  DirectMessage.hasMany(DirectMessage, {
+    as: "replies",
+    foreignKey: "reply_to_msg_id",
+  });
 
   //* GroupChats
   User.hasMany(GroupChat, {
@@ -45,16 +53,24 @@ export const setUpAssociation = () => {
 
   //* GroupMessages
   User.hasMany(GroupMessage, {
-    foreignKey: "user_id",
+    foreignKey: "from_id",
   });
   GroupMessage.belongsTo(User, {
-    foreignKey: "user_id",
+    foreignKey: "from_id",
   });
   GroupChat.hasMany(GroupMessage, {
     foreignKey: "group_id",
   });
   GroupMessage.belongsTo(GroupChat, {
     foreignKey: "group_id",
+  });
+  GroupMessage.belongsTo(GroupMessage, {
+    as: "replyTo",
+    foreignKey: "reply_to_msg_id",
+  });
+  GroupMessage.hasMany(GroupMessage, {
+    as: "replies",
+    foreignKey: "reply_to_msg_id",
   });
 
   //* GroupMembers

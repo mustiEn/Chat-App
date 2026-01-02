@@ -26,7 +26,7 @@ import {
   deleteMessage,
   editMessage,
   setIsMessagePinned,
-} from "../utils/directMessages.js";
+} from "../utils/messages.js";
 import UserProfileBar from "./UserProfileBar.jsx";
 import { UserContext } from "../contexts/UserContext.jsx";
 import dayjs from "dayjs";
@@ -57,7 +57,7 @@ const MainPanel = () => {
     isPinnedMessagesFetched: {},
     initialPageParam: {},
     dmPanel: {
-      directMessagesTopId: {},
+      groupMessagesTopId: {},
       directMessagesBottomId: {},
       isInitialDmDataFetched: false,
     },
@@ -117,7 +117,7 @@ const MainPanel = () => {
       console.log("Edited msgs: ", result);
 
       result.forEach(({ from_id, id, message }) => {
-        editMessage(queryClient, chatId, id, message, false);
+        editMessage("directMessages", queryClient, chatId, id, message, false);
       });
     };
     const handleNewMessages = ({ result, chatId }) => {
@@ -128,8 +128,8 @@ const MainPanel = () => {
       console.log("new msgs: ", result);
 
       result.forEach((newMsg) => {
-        addMessage(queryClient, chatId, newMsg);
-        // socket.auth.serverOffset[newMsg.from_id] = newMsg.id;
+        addMessage("directMessages", queryClient, chatId, newMsg);
+        // socket.auth.serverOffset.dm[newMsg.from_id] = newMsg.id;
         directMessagesBottomId[chatId] = newMsg.id;
         msgAddedOrDeleted[chatId] = true;
       });
@@ -145,7 +145,7 @@ const MainPanel = () => {
           "dmPinnedMessages",
           chatId,
         ]);
-        const isChatMessagesQueryFetched = queryClient.getQueryData([
+        const isDmQueryFetched = queryClient.getQueryData([
           "directMessages",
           chatId,
         ]);
@@ -156,14 +156,20 @@ const MainPanel = () => {
           if (is_pinned) {
             const val = !pinnedMsgBoxObj[chatId];
 
-            addPinnedMessages(queryClient, chatId, result);
+            addPinnedMessages("dmPinnedMessages", queryClient, chatId, result);
             setDmPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
           } else {
-            removePinnedMessage(queryClient, chatId, id);
+            removePinnedMessage("dmPinnedMessages", queryClient, chatId, id);
           }
         }
-        if (isChatMessagesQueryFetched) {
-          setIsMessagePinned(queryClient, chatId, id, is_pinned);
+        if (isDmQueryFetched) {
+          setIsMessagePinned(
+            "directMessages",
+            queryClient,
+            chatId,
+            id,
+            is_pinned
+          );
         }
       } else {
         result.forEach((res, i) => {
@@ -174,7 +180,7 @@ const MainPanel = () => {
             "dmPinnedMessages",
             chatId,
           ]);
-          const isChatMessagesQueryFetched = queryClient.getQueryData([
+          const isDmQueryFetched = queryClient.getQueryData([
             "directMessages",
             chatId,
           ]);
@@ -185,14 +191,20 @@ const MainPanel = () => {
             if (is_pinned) {
               const val = !pinnedMsgBoxObj[chatId];
 
-              addPinnedMessages(queryClient, chatId, res);
+              addPinnedMessages("dmPinnedMessages", queryClient, chatId, res);
               setDmPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
             } else {
-              removePinnedMessage(queryClient, chatId, id);
+              removePinnedMessage("dmPinnedMessages", queryClient, chatId, id);
             }
           }
-          if (isChatMessagesQueryFetched) {
-            setIsMessagePinned(queryClient, chatId, id, is_pinned);
+          if (isDmQueryFetched) {
+            setIsMessagePinned(
+              "directMessages",
+              queryClient,
+              chatId,
+              id,
+              is_pinned
+            );
           }
         });
       }
@@ -210,7 +222,7 @@ const MainPanel = () => {
         ]);
         //^ This is to keep cache empty if undefined cuz on dmpanel mount,its already gonna comeup
         if (isQueryFetched && reqAcceptance.message)
-          addMessage(queryClient, chatIds[i], reqAcceptance);
+          addMessage("directMessages", queryClient, chatIds[i], reqAcceptance);
 
         removeSentMessageRequest(queryClient, reqAcceptance.from_id);
 
@@ -246,7 +258,7 @@ const MainPanel = () => {
 
         if (!isUserInDmHistory) addDmHistoryUsers(queryClient, [dmHistoryUser]);
 
-        addMessage(queryClient, chatIds[i], req);
+        addMessage("directMessages", queryClient, chatIds[i], req);
         addReceivedMessageRequests(queryClient, [
           { ...req, chatId: chatIds[i] },
         ]);
@@ -272,10 +284,15 @@ const MainPanel = () => {
             ({ id }) => id == deletedMsgId
           );
           if (isMsgPinned)
-            removePinnedMessage(queryClient, chatId, deletedMsgId);
+            removePinnedMessage(
+              "dmPinnedMessages",
+              queryClient,
+              chatId,
+              deletedMsgId
+            );
         }
         if (isChatQueryFetched) {
-          deleteMessage(queryClient, chatId, deletedMsgId);
+          deleteMessage("directMessages", queryClient, chatId, deletedMsgId);
           msgAddedOrDeleted[chatId] = true;
         }
       });

@@ -15,7 +15,7 @@ import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box, Flex } from "@mantine/core";
 import styles from "../css/dm_panel.module.css";
-import { addMessage } from "../utils/directMessages.js";
+import { addMessage } from "../utils/messages.js";
 import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
 import { useMessageRequests } from "../custom-hooks/useMessageRequests.js";
 import {
@@ -28,7 +28,7 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const MessageInput = () => {
+const DmInput = () => {
   const queryClient = useQueryClient();
   const { chatId } = useParams();
   const { receiverId } = useContext(DmPanelContext);
@@ -41,7 +41,7 @@ const MessageInput = () => {
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const receivers = useReceiverStore((s) => s.receivers);
   const receiver = receivers[receiverId];
-  const addToPendingMsgs = usePendingMsgStore((s) => s.addToDmPendingMsgs);
+  const addPendingMsg = usePendingMsgStore((s) => s.addDmPendingMsg);
   const removeFromPendingMsgs = usePendingMsgStore(
     (s) => s.removeFromDmPendingMsgs
   );
@@ -79,8 +79,8 @@ const MessageInput = () => {
     if (pendingMsgs[chatId])
       removeFromPendingMsgs(chatId, res.result[0].clientOffset);
 
-    addMessage(queryClient, chatId, res.result[0]);
-    // socket.auth.serverOffset[receiverId] = res.result[0].id;
+    addMessage("directMessages", queryClient, chatId, res.result[0]);
+    // socket.auth.serverOffset.dm[receiverId] = res.result[0].id;
     // directMessagesBottomId[receiverId] = res.result[0].id;
     msgAddedOrDeleted[chatId] = true;
 
@@ -94,7 +94,7 @@ const MessageInput = () => {
       from_id: socket.auth.user.id,
       to_id: Number(receiverId),
       clientOffset,
-      reply_to_msg: msgToReply?.id ?? null,
+      reply_to_msg_id: msgToReply?.id ?? null,
     };
 
     const msgReqReceived = receivedMessageRequests.find(
@@ -124,7 +124,7 @@ const MessageInput = () => {
   };
   const handleSubmit = (msgPayload) => {
     if (!socket.connected) {
-      addToPendingMsgs(chatId, { ...msgPayload, isPending: true });
+      addPendingMsg(chatId, { ...msgPayload, isPending: true });
       msgAddedOrDeleted[chatId] = true;
     }
 
@@ -246,4 +246,4 @@ const MessageInput = () => {
   );
 };
 
-export default MessageInput;
+export default DmInput;
