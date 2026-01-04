@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Flex, Title } from "@mantine/core";
 import GroupChatPanelTopIcons from "./GroupChatPanelTopIcons.jsx";
 import GroupChatPinnedMsgsBox from "./GroupChatPinnedMsgsBox.jsx";
-import stylesPanelTop from "../css/dm_panel_top.module.css";
+import stylesPanelTop from "../css/panel_top.module.css";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 

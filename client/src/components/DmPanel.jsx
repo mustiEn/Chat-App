@@ -1,15 +1,12 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
-import { useOutletContext, useParams } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import FriendProfile from "./FriendProfile";
 import DmPanelTop from "./DmPanelTop";
-import styles from "../css/dm_panel.module.css";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { Box, Flex } from "@mantine/core";
 import DmList from "./DmList.jsx";
 import DmInput from "./DmInput.jsx";
-import { useDisclosure } from "@mantine/hooks";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
 import {
@@ -19,6 +16,7 @@ import {
 import { useMemo } from "react";
 import { useDmData } from "../custom-hooks/useDmData.js";
 import PanelModalNotifier from "./PanelModalNotifier.jsx";
+import styles from "../css/panel.module.css";
 
 const DmPanel = () => {
   const queryClient = useQueryClient();
@@ -84,7 +82,7 @@ const DmPanel = () => {
               }}
             >
               <Flex
-                id={styles["dmPanelContent"]}
+                id={styles["panelContent"]}
                 direction={"column"}
                 gap={"xs"}
                 w={"100%"}

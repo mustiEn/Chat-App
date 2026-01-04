@@ -11,7 +11,7 @@ import { Box, Flex, Text } from "@mantine/core";
 import { useDmPinnedMessages } from "../custom-hooks/useDmPinnedMessages.js";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import stylesPanelTop from "../css/dm_panel_top.module.css";
+import stylesPanelTop from "../css/panel_top.module.css";
 import { handleSwitchPinnedMsgBox } from "../utils/pinnedMsgBox.js";
 
 const DmPanelTopIcons = ({
@@ -74,7 +74,7 @@ const DmPanelTopIcons = ({
                 id="drawingPin"
                 className={`${
                   pinnedMsgBoxObj[chatId] && stylesPanelTop["active"]
-                } ${stylesPanelTop["dm-panel-top-icon"]}`}
+                } ${stylesPanelTop["panel-top-icon"]}`}
                 style={{ marginLeft: "auto", fontSize: "1.25rem" }} // fs-5
               />
 
@@ -105,7 +105,7 @@ const DmPanelTopIcons = ({
           trigger={
             <CgProfile
               className={`${showOffset && stylesPanelTop["active"]} ${
-                stylesPanelTop["dm-panel-top-icon"]
+                stylesPanelTop["panel-top-icon"]
               }`}
               style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
               onClick={handleOffsetToggle}
@@ -125,7 +125,7 @@ const DmPanelTopIcons = ({
               <FaUserFriends
                 className={`${
                   isFriendModalOpened && stylesPanelTop["active"]
-                } ${stylesPanelTop["dm-panel-top-icon"]}`}
+                } ${stylesPanelTop["panel-top-icon"]}`}
                 style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
                 onClick={openFriendModal}
               />

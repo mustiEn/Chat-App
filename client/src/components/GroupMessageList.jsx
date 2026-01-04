@@ -133,12 +133,7 @@ const GroupMessageList = () => {
           loader={<PulseLoader color={"white"} />}
         >
           {!messages.length ? (
-            <>
-              <GroupHeadText />
-              <div className="empty-state">
-                No messages yet. Start the conversation!
-              </div>
-            </>
+            <GroupHeadText />
           ) : (
             !hasMoreUp[groupId] && <GroupHeadText />
           )}

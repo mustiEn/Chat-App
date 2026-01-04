@@ -20,7 +20,7 @@ const upload = multer({ storage, fileFilter });
 const router = express.Router();
 
 router.get(
-  "/dm/initial-chat-data/:chatId",
+  "/dm/initial-dm-data/:chatId",
   [isAuthenticated, param("chatId").notEmpty().isString()],
   userController.getInitialDmData
 );
@@ -103,5 +103,10 @@ router.get(
     query("nextId").notEmpty().isNumeric(),
   ],
   userController.getGroupMessages
+);
+router.get(
+  "/group/get-members/:groupId",
+  [isAuthenticated, param("groupId").notEmpty().isString()],
+  userController.getGroupMembers
 );
 export default router;

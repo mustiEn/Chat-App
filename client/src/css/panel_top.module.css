@@ -1,20 +1,20 @@
-.dm-panel-top {
+.panel-top {
   border: 1px solid rgb(255, 255, 255, 25%);
   border-left: none;
   border-right: none;
   position: relative;
 }
 
-.dm-panel-top-icon {
+.panel-top-icon {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.dm-panel-top-icon:hover {
+.panel-top-icon:hover {
   color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
 }
 
-.dm-panel-top-icon.active {
+.panel-top-icon.active {
   color: rgba(255, 255, 255);
 }
 

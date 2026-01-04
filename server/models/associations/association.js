@@ -72,6 +72,12 @@ export const setUpAssociation = () => {
     as: "replies",
     foreignKey: "reply_to_msg_id",
   });
+  GroupMessage.belongsTo(User, {
+    foreignKey: "last_pin_action_by_id",
+  });
+  User.hasMany(GroupMessage, {
+    foreignKey: "last_pin_action_by_id",
+  });
 
   //* GroupMembers
   User.belongsToMany(GroupChat, {

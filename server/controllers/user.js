@@ -733,7 +733,7 @@ export const getGroupPinnedMessages = async (req, res, next) => {
         sender.display_name, 
         sender.username, 
         sender.profile,
-        gm.to_id,
+        gm.group_id,
         gm.is_pinned,
         gm.last_pin_action_by_id,
         gm.clientOffset,
@@ -743,7 +743,6 @@ export const getGroupPinnedMessages = async (req, res, next) => {
       FROM 
         group_messages gm 
         INNER JOIN users sender ON sender.id = gm.from_id 
-        INNER JOIN users receiver ON receiver.id = gm.to_id 
         LEFT JOIN group_messages gms ON gm.reply_to_msg_id = gms.id 
       WHERE 
         gm.group_id = :id 
@@ -817,7 +816,7 @@ export const getGroupMessages = async (req, res, next) => {
       SELECT 
         gm.id,
         gm.from_id,
-        gm.to_id, 
+        gm.group_id, 
         sender.display_name, 
         sender.username, 
         sender.profile,
@@ -873,6 +872,72 @@ export const getGroupMessages = async (req, res, next) => {
     nextId = groupMessages.length < 30 ? null : groupMessages[0].id;
 
     res.status(200).json({ messages: groupMessages, nextId });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getGroupMembers = async (req, res, next) => {
+  try {
+    const result = validationResult(req);
+    const userId = req.session.passport.user;
+
+    if (!result.isEmpty()) {
+      logger.log(result.array());
+      throw new Error("Validation failed");
+    }
+
+    const { groupId } = matchedData(req);
+    const group = await GroupChat.findOne({
+      attributes: ["id"],
+      where: {
+        group_id: groupId,
+      },
+      raw: true,
+    });
+    const groupMembersSql = ` 
+      SELECT 
+        u.id, 
+        u.display_name, 
+        u.profile, 
+        u.status 
+      FROM 
+        group_members gm 
+        INNER JOIN users u ON u.id = gm.user_id 
+      WHERE 
+        group_id = :id
+      ORDER BY
+        u.display_name ASC
+    `;
+
+    if (!group) throw new Error("Group not found");
+
+    const isMember = GroupMember.findOne({
+      where: {
+        user_id: userId,
+        group_id: group.id,
+      },
+    });
+
+    if (!isMember) throw new Error("Not a member in this group");
+
+    const { id } = group;
+    const groupMembers = await sequelize.query(groupMembersSql, {
+      type: QueryTypes.SELECT,
+      replacements: { id },
+    });
+
+    groupMembers.map(async (e) => {
+      const cachedStatus = await client.get(`user:${e.id}:status`);
+
+      if (cachedStatus) {
+        return { ...e, status: cachedStatus };
+      } else {
+        await client.set(`user:${e.id}:status`, e.status);
+        return e;
+      }
+    });
+
+    res.status(200).json({ members: groupMembers });
   } catch (error) {
     next(error);
   }

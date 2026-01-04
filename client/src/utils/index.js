@@ -35,3 +35,6 @@ export const normaliseURL = (str) => {
 
   return `https://${trimmed}`;
 };
+export const concatName = (name) => {
+  return name?.length > 15 ? name.slice(15).concat("...") : name;
+};

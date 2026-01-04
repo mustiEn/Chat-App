@@ -9,6 +9,7 @@ import { OneToOneChat } from "./models/OneToOneChat.js";
 import { BlockedUser } from "./models/BlockedUser.js";
 import { client } from "./server.js";
 import { DirectMessageHistory } from "./models/DirectMessageHistory.js";
+import { GroupMessage } from "./models/GroupMessage.js";
 
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
@@ -818,7 +819,212 @@ export const setUpSocket = (io) => {
 
     //^ Group
 
-    socket.on("send group edited msgs", async (params) => {});
+    socket.on("send group edited msgs", async (msg, groupId, done) => {
+      let message;
+
+      try {
+        message = await GroupMessage.findByPk(msg.id, { raw: true });
+
+        if (!message) throw new Error("Message not found");
+        if (message.message == msg.message) {
+          logger.log("⚠️ Duplicate message, already edited");
+          return done({ status: "already edited", result: [message] });
+        }
+
+        message = await GroupMessage.update(
+          {
+            message: msg.message,
+            updatedAt: msg.updatedAt,
+            is_edited: true,
+          },
+          {
+            where: {
+              id: msg.id,
+            },
+          }
+        );
+        message = await GroupMessage.findByPk(msg.id, { raw: true });
+      } catch (error) {
+        logger.log("❌ Unexpected error updating message:", error);
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+
+      socket
+        .to(groupId)
+        .emit("receive group edited msgs", { result: [message], groupId });
+      logger.log("message edited");
+
+      done({
+        status: "ok",
+        result: message,
+      });
+    });
+    socket.on("send group msgs", async (msg, groupId, done) => {
+      let result;
+
+      try {
+        const newMsg = await GroupMessage.create(msg, { raw: true });
+
+        const resultSql = `
+          SELECT 
+            gm.id,
+            gm.from_id,
+            gm.group_id, 
+            u.display_name, 
+            u.username, 
+            u.profile,
+            gm.clientOffset, 
+            gm.message,
+            gm.is_edited,
+            gm.is_pinned,
+            gm.request_state, 
+            gm.createdAt created_at, 
+            replied_msg.message replied_msg_message, 
+            replied_msg_sender.display_name replied_msg_sender, 
+            replied_msg_sender.profile replied_msg_profile 
+          FROM 
+            group_messages gm 
+            INNER JOIN users u ON gm.from_id = u.id 
+            LEFT JOIN group_messages replied_msg ON gm.reply_to_msg_id = replied_msg.id 
+            LEFT JOIN users replied_msg_sender ON replied_msg.from_id = replied_msg_sender.id 
+          WHERE 
+            gm.id = :id
+        `;
+
+        result = await sequelize.query(resultSql, {
+          type: QueryTypes.SELECT,
+          replacements: {
+            id: newMsg.id,
+          },
+        });
+      } catch (error) {
+        if (
+          error.name === "SequelizeUniqueConstraintError" &&
+          error.original.code === "ER_DUP_ENTRY"
+        ) {
+          logger.log("⚠️ Duplicate message, already inserted");
+          return done({ status: "duplicate" });
+        }
+        console.error("❌ Unexpected error inserting message:", error);
+      }
+      socket.to(groupId).emit("receive group msgs", {
+        result,
+        groupId,
+      });
+      logger.log("Sent dm:", result);
+      done({
+        status: "ok",
+        result,
+        groupId,
+      });
+    });
+    socket.on("send group pinned msgs", async (msg, groupId, done) => {
+      let pinnedMessage;
+
+      try {
+        pinnedMessage = await GroupMessage.findByPk(msg.id, { raw: true });
+
+        if (!pinnedMessage) throw new Error("Pinned message not found");
+
+        await GroupMessage.update(
+          {
+            is_pinned: msg.isPinned,
+            pin_updated_at: dayjs.utc().format("YYYY-MM-DD HH:mm:ss"),
+            last_pin_action_by_id: userId,
+          },
+          {
+            where: {
+              id: msg.id,
+            },
+          }
+        );
+
+        pinnedMessage = await GroupMessage.findByPk(msg.id, { raw: true });
+
+        if (msg.isPinned) {
+          const pinnedMessagesSql = `
+            SELECT 
+              gm.id,
+              sender.display_name, 
+              sender.username, 
+              sender.profile,
+              gm.to_id,
+              gm.is_pinned,
+              gm.last_pin_action_by_id,
+              gm.clientOffset,
+              gm.message,
+              gm.createdAt created_at,
+              gm.pin_updated_at
+            FROM 
+              group_messages gm 
+              INNER JOIN users sender ON sender.id = gm.from_id 
+              LEFT JOIN group_messages gms ON gm.reply_to_msg_id = gms.id 
+            WHERE 
+              gm.id = :msgId
+          `;
+          [pinnedMessage] = await sequelize.query(pinnedMessagesSql, {
+            type: QueryTypes.SELECT,
+            replacements: {
+              msgId: msg.id,
+            },
+          });
+        }
+      } catch (error) {
+        logger.log(error);
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+
+      socket.to(groupId).emit("receive group pinned msgs", {
+        result: pinnedMessage,
+        isRecovery: false,
+        groupId,
+      });
+      logger.log("pinned sent");
+      done({
+        status: "ok",
+        result: pinnedMessage,
+        groupId,
+      });
+    });
+    socket.on("send group deleted msgs", async (msg, groupId, done) => {
+      try {
+        const message = await GroupMessage.findByPk(msg.id, { raw: true });
+        logger.log("message state", message);
+        if (!message) throw new Error("Message not found");
+
+        await GroupMessage.update(
+          { is_deleted: true },
+          {
+            where: {
+              id: msg.id,
+            },
+          }
+        );
+      } catch (error) {
+        logger.log(error);
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+
+      socket.to(groupId).emit("receive group deleted msgs", {
+        result: [msg.id],
+        userId,
+        groupId,
+      });
+      logger.log("Deleted dm:", msg.id);
+      done({
+        status: "ok",
+        groupId,
+      });
+    });
 
     if (!socket.recovered) {
       const userLastDisconnect = lastDisconnect.get(userId);
@@ -827,7 +1033,7 @@ export const setUpSocket = (io) => {
       // logger.log(lastDisconnect.get(userId));
 
       try {
-        const obj = socket.handshake.auth.serverOffset;
+        const obj = socket.handshake.auth.serverOffset.dm;
         logger.log(obj);
         if (userLastDisconnect && Object.keys(obj).length) {
           for (const receiverId in obj) {

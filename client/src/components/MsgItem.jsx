@@ -6,7 +6,7 @@ import utc from "dayjs/plugin/utc";
 import MsgItemInner from "./MsgItemInner.jsx";
 import { Box } from "@mantine/core";
 import { memo } from "react";
-import styles from "../css/dm_panel.module.css";
+import styles from "../css/panel.module.css";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);

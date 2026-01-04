@@ -6,7 +6,7 @@ import { PiPencilSimple, PiArrowBendUpLeft } from "react-icons/pi";
 import { ImBin } from "react-icons/im";
 import { RxDrawingPin } from "react-icons/rx";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
-import styles from "../css/dm_panel.module.css";
+import styles from "../css/panel.module.css";
 import { useContext } from "react";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { Flex, Text } from "@mantine/core";

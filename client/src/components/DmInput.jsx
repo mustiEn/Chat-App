@@ -14,7 +14,7 @@ import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box, Flex } from "@mantine/core";
-import styles from "../css/dm_panel.module.css";
+import styles from "../css/panel.module.css";
 import { addMessage } from "../utils/messages.js";
 import { addDmHistoryUsers } from "../utils/dmHistoryUsers.js";
 import { useMessageRequests } from "../custom-hooks/useMessageRequests.js";

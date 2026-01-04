@@ -1,6 +1,6 @@
 import React, { useCallback, useRef } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import styles from "../css/dm_panel.module.css";
+import styles from "../css/panel.module.css";
 import { socket } from "../socket.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";

@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
-const getDirectMessages = async (chatId) => {
+const getInitials = async (chatId) => {
   try {
-    const res = await fetch(`/api/dm/initial-chat-data/${chatId}`);
+    const res = await fetch(`/api/dm/initial-dm-data/${chatId}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -17,8 +17,8 @@ const getDirectMessages = async (chatId) => {
 };
 export const dmDataQuery = (chatId) => ({
   // queryKey: ["directMessages", chatId],
-  queryKey: ["initialChatData", chatId],
-  queryFn: () => getDirectMessages(chatId),
+  queryKey: ["initialDmData", chatId],
+  queryFn: () => getInitials(chatId),
   staleTime: Infinity,
 });
 export const useDmData = () => useQuery(dmDataQuery);

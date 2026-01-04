@@ -7,7 +7,7 @@ import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js"
 import { useNewPinnedMsgIndicatorStore } from "../stores/useNewPinnedMsgIndicatorStore.js";
 import { Box, Flex, Text } from "@mantine/core";
 import { useGroupPinnedMessages } from "../custom-hooks/useGroupPinnedMessages.js";
-import stylesPanelTop from "../css/dm_panel_top.module.css";
+import stylesPanelTop from "../css/panel_top.module.css";
 import { handleSwitchPinnedMsgBox } from "../utils/pinnedMsgBox.js";
 
 const GroupChatPanelTopIcons = ({ showOffset, handleOffsetToggle }) => {
@@ -59,7 +59,7 @@ const GroupChatPanelTopIcons = ({ showOffset, handleOffsetToggle }) => {
                 id="drawingPin"
                 className={`${
                   pinnedMsgBoxObj[groupId] && stylesPanelTop["active"]
-                } ${stylesPanelTop["dm-panel-top-icon"]}`}
+                } ${stylesPanelTop["panel-top-icon"]}`}
                 style={{ marginLeft: "auto", fontSize: "1.25rem" }} // fs-5
               />
 
@@ -90,7 +90,7 @@ const GroupChatPanelTopIcons = ({ showOffset, handleOffsetToggle }) => {
           trigger={
             <BsPersonLinesFill
               className={`${showOffset && stylesPanelTop["active"]} ${
-                stylesPanelTop["dm-panel-top-icon"]
+                stylesPanelTop["panel-top-icon"]
               }`}
               style={{ marginRight: "0.25rem", fontSize: "1.25rem" }} // me-1 fs-5
               onClick={handleOffsetToggle}

@@ -8,6 +8,7 @@ import UserStatus from "./UserStatus.jsx";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
+import { concatName } from "../utils/index.js";
 // import DmHistorySkeleton from "./DmHistorySkeleton";
 
 const DmHistoryUsers = memo(function DmHistoryUsers() {
@@ -108,11 +109,7 @@ const DmHistoryUsers = memo(function DmHistoryUsers() {
                         />
                       )}
                     </div>
-                    <Text>
-                      {e.display_name?.length > 15
-                        ? e.display_name.slice(15).concat("...")
-                        : e.display_name}
-                    </Text>
+                    <Text>{concatName(e.display_name)}</Text>
                   </Flex>
                 </Button>
               </NavLink>

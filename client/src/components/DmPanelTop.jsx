@@ -18,7 +18,7 @@ import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import UserStatus from "../components/UserStatus.jsx";
 import DmPanelTopIcons from "./DmPanelTopIcons.jsx";
-import stylesPanelTop from "../css/dm_panel_top.module.css";
+import stylesPanelTop from "../css/panel_top.module.css";
 import { closePinnedMsgBox } from "../utils/pinnedMsgBox.js";
 
 const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {

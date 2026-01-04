@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 import { Box, Flex } from "@mantine/core";
-import styles from "../css/dm_panel.module.css";
+import styles from "../css/panel.module.css";
 import { addMessage } from "../utils/messages.js";
 import toast from "react-hot-toast";
 
