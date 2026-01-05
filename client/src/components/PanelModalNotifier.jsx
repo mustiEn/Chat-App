@@ -7,7 +7,7 @@ import { useCallback, useContext } from "react";
 import {
   addPinnedMessages,
   removePinnedMessage,
-} from "../utils/dmPinnedMessages.js";
+} from "../utils/pinnedMessages.js";
 import { deleteMessage, setIsMessagePinned } from "../utils/messages.js";
 import { useModalStore } from "../stores/useModalStore.js";
 import toast from "react-hot-toast";

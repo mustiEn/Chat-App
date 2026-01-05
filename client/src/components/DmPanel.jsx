@@ -17,6 +17,8 @@ import { useMemo } from "react";
 import { useDmData } from "../custom-hooks/useDmData.js";
 import PanelModalNotifier from "./PanelModalNotifier.jsx";
 import styles from "../css/panel.module.css";
+import { useDirectMessages } from "../custom-hooks/useDirectMessages.js";
+import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
 
 const DmPanel = () => {
   const queryClient = useQueryClient();
@@ -25,7 +27,6 @@ const DmPanel = () => {
   const receivers = useReceiverStore((s) => s.receivers);
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const { data: initialDmData, isSuccess } = useDmData(chatId);
-
   const [showOffset, setShowOffset] = useState(false);
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
   const activeMsg = useRef({

@@ -21,4 +21,4 @@ export const dmDataQuery = (chatId) => ({
   queryFn: () => getInitials(chatId),
   staleTime: Infinity,
 });
-export const useDmData = () => useQuery(dmDataQuery);
+export const useDmData = (chatId) => useQuery(dmDataQuery(chatId));

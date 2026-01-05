@@ -3,7 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 const fetchMoreData = async (pageParam, groupId) => {
   try {
     const res = await fetch(
-      `/api/group/more-data/${groupId}?nextId=${pageParam}`
+      `/api/group/more-data/${groupId}?nextIdParam=${pageParam}`
     );
     const data = await res.json();
 

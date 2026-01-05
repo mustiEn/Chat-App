@@ -20,15 +20,10 @@ export const handleSwitchPinnedMsgBox = (
 
 export const closePinnedMsgBox = (
   e,
-  pinnedMsgBoxObj,
   paramId,
   customOverlayRef,
-  isTargetOverlay,
   switchPinnedMsgBox
 ) => {
-  if (pinnedMsgBoxObj[paramId])
-    customOverlayRef.current.style.display = "block";
-
   const isTargetOverlay = e.target.classList.contains(
     customOverlayRef.current.className
   );

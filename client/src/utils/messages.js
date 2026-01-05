@@ -7,7 +7,6 @@ export const addOldMessages = (queryKey, queryClient, paramId, newMsgs) => {
 export const setIsMessagePinned = (
   queryKey,
   queryClient,
-  queryKey,
   paramId,
   msgId,
   val

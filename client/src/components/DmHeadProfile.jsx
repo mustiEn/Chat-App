@@ -90,10 +90,10 @@ const DmHeadProfile = () => {
                 color="dark"
                 size="sm"
                 onClick={() =>
-                  receiver.isBlocked ? handleUnblockUser() : handleBlockUser()
+                  receiver?.isBlocked ? handleUnblockUser() : handleBlockUser()
                 }
               >
-                {receiver.isBlocked ? "Unblock" : "Block"}
+                {receiver?.isBlocked ? "Unblock" : "Block"}
               </Button>
             </>
           )}

@@ -1,8 +1,13 @@
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
 import { Popover } from "@mantine/core";
+import { memo } from "react";
 
-const PopoverComponent = ({ content, trigger, position = "right" }) => {
+const PopoverComponent = memo(function PopoverComponent({
+  content,
+  trigger,
+  position = "right",
+}) {
   const [opened, { close, open }] = useDisclosure(false);
 
   return (
@@ -15,6 +20,6 @@ const PopoverComponent = ({ content, trigger, position = "right" }) => {
       </Popover.Dropdown>
     </Popover>
   );
-};
+});
 
 export default PopoverComponent;

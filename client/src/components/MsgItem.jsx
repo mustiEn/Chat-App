@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import MsgItemInner from "./MsgItemInner.jsx";
-import { Box } from "@mantine/core";
 import { memo } from "react";
 import styles from "../css/panel.module.css";
 
@@ -25,14 +24,16 @@ const MsgItem = memo(function DmList({ msg }) {
 
   return (
     <>
-      <Box
+      <div
         id={`message-${msg?.id}`}
         className={styles["message"]}
-        p={7}
-        w={"100%"}
+        // p={7}
+        // w={"100%"}
         style={{
           position: "relative",
           borderRadius: 7,
+          padding: 7,
+          width: "100%",
         }}
       >
         <MsgItemInner
@@ -40,10 +41,10 @@ const MsgItem = memo(function DmList({ msg }) {
           editedMessage={editedMessage}
           setEditedMessage={setEditedMessage}
         />
-        <Box className={styles["options-tab"]}>
+        <div className={styles["options-tab"]}>
           <Options msg={msg} handleEditableMsg={handleEditableMsg} />
-        </Box>
-      </Box>
+        </div>
+      </div>
     </>
   );
 });

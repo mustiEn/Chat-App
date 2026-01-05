@@ -11,9 +11,9 @@ export const useShowPinnedMsgBoxStore = create(
       set((state) => {
         state.pinnedMsgBoxObj.dm[chatId] = val;
       }),
-    switchGroupPinnedMsgBox: (chatId, val) =>
+    switchGroupPinnedMsgBox: (groupId, val) =>
       set((state) => {
-        state.pinnedMsgBoxObj.group[chatId] = val;
+        state.pinnedMsgBoxObj.group[groupId] = val;
       }),
   }))
 );

@@ -8,8 +8,8 @@ export const socket = io("http://localhost:8081", {
     },
     user: null,
   },
-  ackTimeout: 3000,
-  retries: 1,
+  ackTimeout: 1000,
+  retries: 3,
   autoConnect: false,
   withCredentials: true,
 });

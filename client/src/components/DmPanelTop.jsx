@@ -44,7 +44,7 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
 
   const pinnedMsgBoxObj = useShowPinnedMsgBoxStore((s) => s.pinnedMsgBoxObj.dm);
   const switchPinnedMsgBox = useShowPinnedMsgBoxStore(
-    (s) => s.switchDmPinnedMsgBox.dm
+    (s) => s.switchDmPinnedMsgBox
   );
 
   const isFriend = allFriends.some((e) => e.id == receiverId);
@@ -127,14 +127,11 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
   };
 
   useEffect(() => {
-    const eventCallback = closePinnedMsgBox(
-      e,
-      pinnedMsgBoxObj,
-      chatId,
-      customOverlayRef,
-      isTargetOverlay,
-      switchPinnedMsgBox
-    );
+    if (pinnedMsgBoxObj[chatId])
+      customOverlayRef.current.style.display = "block";
+
+    const eventCallback = (e) =>
+      closePinnedMsgBox(e, chatId, customOverlayRef, switchPinnedMsgBox);
 
     document.addEventListener("click", eventCallback);
 

@@ -20,7 +20,7 @@ import {
 import {
   addPinnedMessages,
   removePinnedMessage,
-} from "../utils/dmPinnedMessages.js";
+} from "../utils/pinnedMessages.js";
 import {
   addMessage,
   deleteMessage,
@@ -139,30 +139,45 @@ const MainPanel = () => {
       console.log(result);
 
       if (!isRecovery) {
-        const { last_pin_action_by_id, is_pinned, id } = result;
-
-        const isPinnedMessagesQueryFetched = queryClient.getQueryData([
-          "dmPinnedMessages",
-          chatId,
-        ]);
-        const isQueryFetched = queryClient.getQueryData([
-          "directMessages",
-          chatId,
-        ]);
+        const { is_pinned, id } = result;
 
         //^ here, add a notification and amend if needed.if notification is here,no need to check ispinned, cuz now i cant know whether to notify on mount
 
-        if (isPinnedMessagesQueryFetched) {
+        if (is_pinned) {
+          const val = !pinnedMsgBoxObj.dm[chatId];
+          console.log("val", val);
+
+          addPinnedMessages("dmPinnedMessages", queryClient, chatId, result);
+          setDmPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
+        } else {
+          removePinnedMessage("dmPinnedMessages", queryClient, chatId, id);
+        }
+
+        setIsMessagePinned(
+          "directMessages",
+          queryClient,
+          chatId,
+          id,
+          is_pinned
+        );
+      } else {
+        result.forEach((res, i) => {
+          console.log(res);
+
+          const { is_pinned, id } = res;
+
+          //^ notification thing applies to this here too.
+
           if (is_pinned) {
             const val = !pinnedMsgBoxObj.dm[chatId];
+            console.log("val", val);
 
-            addPinnedMessages("dmPinnedMessages", queryClient, chatId, result);
+            addPinnedMessages("dmPinnedMessages", queryClient, chatId, res);
             setDmPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
           } else {
             removePinnedMessage("dmPinnedMessages", queryClient, chatId, id);
           }
-        }
-        if (isQueryFetched) {
+
           setIsMessagePinned(
             "directMessages",
             queryClient,
@@ -170,42 +185,6 @@ const MainPanel = () => {
             id,
             is_pinned
           );
-        }
-      } else {
-        result.forEach((res, i) => {
-          console.log(res);
-
-          const { last_pin_action_by_id, is_pinned, id } = res;
-          const isPinnedMessagesQueryFetched = queryClient.getQueryData([
-            "dmPinnedMessages",
-            chatId,
-          ]);
-          const isQueryFetched = queryClient.getQueryData([
-            "directMessages",
-            chatId,
-          ]);
-
-          //^ notification thing applies to this here too.
-
-          if (isPinnedMessagesQueryFetched) {
-            if (is_pinned) {
-              const val = !pinnedMsgBoxObj.dm[chatId];
-
-              addPinnedMessages("dmPinnedMessages", queryClient, chatId, res);
-              setDmPinnedMsgExists(chatId, val); //* if the modal is open,dont notify the user, if not, do it
-            } else {
-              removePinnedMessage("dmPinnedMessages", queryClient, chatId, id);
-            }
-          }
-          if (isQueryFetched) {
-            setIsMessagePinned(
-              "directMessages",
-              queryClient,
-              chatId,
-              id,
-              is_pinned
-            );
-          }
         });
       }
     };
@@ -268,7 +247,7 @@ const MainPanel = () => {
     const handleDmDeletedMessages = ({ result, chatId }) => {
       console.log("result", result);
 
-      result.forEach(({ id: deletedMsgId }) => {
+      result.forEach((deletedMsgId) => {
         const { msgAddedOrDeleted } = dmChatRef.current;
         const isPinnedMsgQueryFetched = queryClient.getQueryData([
           "dmPinnedMessages",
@@ -525,9 +504,9 @@ const MainPanel = () => {
     socket.on("receive dms", handleDmNewMessages);
     socket.on("receive msg requests", handleMessageRequests);
     socket.on("receive msg request acceptance", handleMessageRequestAcceptance);
-    socket.on("receive deleted msgs", handleDmDeletedMessages);
-    socket.on("receive edited msgs", handleDmEditedMessages);
-    socket.on("receive pinned msgs", handleDmPinnedMessages);
+    socket.on("receive dm deleted msgs", handleDmDeletedMessages);
+    socket.on("receive dm edited msgs", handleDmEditedMessages);
+    socket.on("receive dm pinned msgs", handleDmPinnedMessages);
     socket.on("receive removed friends", handleRemovedFriends);
     socket.on("receive friend requests", handleFriendRequests);
     socket.on("receive blocked users", handleBlockedUsers);
@@ -551,13 +530,14 @@ const MainPanel = () => {
       socket.off("connect", onConnect);
       socket.off("connect_error", onConnectErr);
       socket.off("initial", getInitial);
-      socket.off("receive dm edited msgs", handleDmEditedMessages);
-      socket.off("receive dms", handleDmNewMessages);
       socket.off("receive msg requests", handleMessageRequests);
       socket.off(
         "receive msg request acceptance",
         handleMessageRequestAcceptance
       );
+      socket.off("receive dms", handleDmNewMessages);
+
+      socket.off("receive dm edited msgs", handleDmEditedMessages);
       socket.off("receive dm deleted msgs", handleDmDeletedMessages);
       socket.off("receive dm pinned msgs", handleDmPinnedMessages);
       socket.off("receive removed friends", handleRemovedFriends);

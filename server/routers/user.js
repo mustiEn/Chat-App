@@ -30,7 +30,7 @@ router.get(
   [
     isAuthenticated,
     param("chatId").notEmpty().isString(),
-    query("nextId").notEmpty().isNumeric(),
+    query("nextIdParam").notEmpty().isNumeric(),
   ],
   userController.getDirectMessages
 );
@@ -100,7 +100,7 @@ router.get(
   [
     isAuthenticated,
     param("groupId").notEmpty().isString(),
-    query("nextId").notEmpty().isNumeric(),
+    query("nextIdParam").notEmpty().isNumeric(),
   ],
   userController.getGroupMessages
 );

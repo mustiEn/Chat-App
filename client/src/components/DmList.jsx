@@ -8,14 +8,13 @@ import { useLayoutEffect } from "react";
 import ChatSkeleton from "./ChatSkeleton.jsx";
 import { useHasMoreUpStore } from "../stores/useHasMoreUpStore.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
-import { Box } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { useDirectMessages } from "../custom-hooks/useDirectMessages.js";
 import DmHeadProfile from "./DmHeadProfile.jsx";
 import { useInView } from "react-intersection-observer";
 import { socket } from "../socket.js";
 
-const DmList = () => {
+const DmList = ({}) => {
   const { chatId } = useParams();
   const { scrollElementRef, dmChatRef } = useOutletContext();
   const { receiverId } = useContext(DmPanelContext);
@@ -38,17 +37,15 @@ const DmList = () => {
   } = useDirectMessages(chatId);
 
   const reversed = directMessages && directMessages.pages.toReversed();
-  const messages = reversed ? reversed.flatMap(({ messages }) => messages) : [];
-  const items = useMemo(
-    () => [...messages, ...(pendingMsgs[chatId] ?? [])],
-    [messages, pendingMsgs[chatId]]
-  );
+  const messages = reversed?.flatMap(({ messages }) => messages) ?? [];
+  const pending = pendingMsgs[chatId];
+  const items = pending?.length ? [...messages, ...pending] : messages;
+
   const rowVirtualizer = useVirtualizer({
-    count: (messages.length ?? 0) + (pendingMsgs[chatId]?.length ?? 0),
+    count: items.length ?? 0,
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
-    overscan: 5,
-    gap: 20,
+    gap: 10,
   });
   const { ref, inView } = useInView({
     threshold: 0.6,
@@ -90,7 +87,7 @@ const DmList = () => {
       addToHasMoreUp(chatId, hasNextPage);
       rowVirtualizer.scrollToIndex(index, {
         align: "center",
-        behavior: "smooth",
+        // behavior: "smooth",
       });
     } else if (isNearBottom && msgAddedOrDeleted[chatId]) {
       el.scrollTo({ top: el.scrollHeight + 20, behavior: "smooth" });
@@ -144,41 +141,51 @@ const DmList = () => {
             !hasMoreUp[chatId] && <DmHeadProfile />
           )}
           {hasMoreUp[chatId] && messages.length && (
-            <Box mb={"xl"} ref={ref}>
+            <div
+              ref={ref}
+              style={{
+                marginBottom: "var(--mantine-spacing-xl)",
+              }}
+            >
               <PulseLoader color={"white"} />
-            </Box>
+            </div>
           )}
-          <Box
-            h={rowVirtualizer.getTotalSize()}
+          <div
+            // h={rowVirtualizer.getTotalSize()}
             style={{
               position: "relative",
               minHeight: 355,
+              padding: 5,
+              height: rowVirtualizer.getTotalSize(),
             }}
-            p={"xs"}
+            // p={"xs"}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const item = items[virtualRow.index];
               return (
-                <Box
+                <div
                   key={virtualRow.key}
-                  w={"100%"}
-                  top={0}
-                  left={0}
+                  // w={"100%"}
+                  // top={0}
+                  // left={0}
                   style={{
                     position: "absolute",
                     transform: `translateY(${virtualRow.start}px)`,
+                    width: "100%",
+                    top: 0,
+                    left: 0,
                   }}
                   data-index={virtualRow.index}
-                  ref={rowVirtualizer.measureElement}
+                  // ref={rowVirtualizer.measureElement}
                 >
-                  {/* <Box w={"100%"} p={"xs"}>
+                  {/* <div w={"100%"} p={"xs"}>
                     {virtualRow.index}
-                  </Box> */}
+                  </div> */}
                   <MsgItem msg={item} />
-                </Box>
+                </div>
               );
             })}
-          </Box>
+          </div>
         </InfiniteLoader>
       )}
     </>

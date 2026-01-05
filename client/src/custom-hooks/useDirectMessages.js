@@ -2,7 +2,9 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 const fetchMoreData = async (pageParam, chatId) => {
   try {
-    const res = await fetch(`/api/dm/more-data/${chatId}?nextId=${pageParam}`);
+    const res = await fetch(
+      `/api/dm/more-data/${chatId}?nextIdParam=${pageParam}`
+    );
     const data = await res.json();
 
     if (!res.ok) {

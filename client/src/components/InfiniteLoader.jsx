@@ -7,18 +7,18 @@ const InfiniteLoader = ({ children }) => {
 
   return (
     <>
-      <Box
+      <div
         style={{
           height: "100%",
           overflowY: "auto",
+          padding: "0px 8px 0px 8px",
         }}
         id={"scrollableRef"}
         ref={scrollElementRef}
         className="custom-scrollbar"
-        px={"md"}
       >
         {children}
-      </Box>
+      </div>
     </>
   );
 };

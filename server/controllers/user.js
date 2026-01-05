@@ -143,7 +143,7 @@ export const getDirectMessages = async (req, res, next) => {
     const { id, user_id, receiver_id } = chat;
     const receiverId = user_id == userId ? receiver_id : user_id;
     const cachedStatus = await client.get(`user:${receiverId}:status`);
-    const nextId = Number(nextIdParam);
+    let nextId = Number(nextIdParam);
     const dmsSql = ` 
       SELECT 
         dm.id,
@@ -181,6 +181,7 @@ export const getDirectMessages = async (req, res, next) => {
       LIMIT 
         :limit
     `;
+    const replacements = nextId !== 0 ? { id, limit, nextId } : { id, limit };
 
     receiver = await User.findByPk(receiverId, {
       attributes: [
@@ -209,7 +210,7 @@ export const getDirectMessages = async (req, res, next) => {
 
     dms = await sequelize.query(dmsSql, {
       type: QueryTypes.SELECT,
-      replacements: { limit, id, nextId },
+      replacements,
     });
     dms = dms.reverse();
     nextId = dms.length < 30 ? null : dms[0].id;

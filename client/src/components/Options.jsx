@@ -9,11 +9,9 @@ import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import styles from "../css/panel.module.css";
 import { useContext } from "react";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import { Flex, Text } from "@mantine/core";
-import { useEffect } from "react";
 import { useModalStore } from "../stores/useModalStore.js";
 
-const Options = ({ msg, handleEditableMsg }) => {
+const Options = memo(function Options({ msg, handleEditableMsg }) {
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
   const { activeMsg } = useContext(DmPanelContext);
   const open = useModalStore((s) => s.openPanelModalNotifier);
@@ -70,24 +68,30 @@ const Options = ({ msg, handleEditableMsg }) => {
           <PopoverComponent
             key={i}
             content={
-              <Text fw={"bold"} className="popover-content">
+              <div
+                style={{
+                  fontWeight: "bold",
+                }}
+                className="popover-content"
+              >
                 {option.name}
-              </Text>
+              </div>
             }
             trigger={
-              <Flex
+              <div
                 id={option.name + "-" + msg.id}
-                align={"center"}
-                justify={"center"}
-                p={5}
                 className={`${styles["option"]}`}
                 onClick={() => option.func(msg)}
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 5,
                   borderRadius: 10,
                 }}
               >
                 {option.icon}
-              </Flex>
+              </div>
             }
             position="top"
           />
@@ -95,6 +99,6 @@ const Options = ({ msg, handleEditableMsg }) => {
       })}
     </>
   );
-};
+});
 
 export default Options;

@@ -2,7 +2,7 @@ import PopoverComponent from "./PopoverComponent";
 import { IoAdd } from "react-icons/io5";
 import DmHistoryUsers from "./DmHistoryUsers";
 import { socket } from "../socket";
-import { Box, Flex, Space, Text } from "@mantine/core";
+import { Box, Button, Flex, Space, Text } from "@mantine/core";
 
 const DmHistory = () => {
   const popOverContent = () => {
@@ -34,14 +34,14 @@ const DmHistory = () => {
         </Flex>
         <DmHistoryUsers />
         <Space h={"lg"}></Space>
-        <button
+        <Button
           onClick={() => {
             socket.disconnect();
           }}
         >
           close
-        </button>
-        <button onClick={() => socket.connect()}>connect</button>
+        </Button>
+        <Button onClick={() => socket.connect()}>connect</Button>
       </Box>
     </>
   );

@@ -52,7 +52,7 @@ const DmHistoryUsers = memo(function DmHistoryUsers() {
               h={45}
               onClick={() => setHeader(e.display_name)}
             >
-              <NavLink to={`${e.chatId}`}>
+              <NavLink to={`/@me/ch/${e.chatId}`}>
                 <Button
                   color={"dark"}
                   w={"100%"}

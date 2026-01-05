@@ -124,7 +124,7 @@ const OnlineFriends = () => {
                           bdrs={"xl"}
                           ms={"auto"}
                           onClick={() =>
-                            navigate(`/@me/${friend.chatId ?? friend.id}`)
+                            navigate(`/@me/ch/${friend.chatId ?? friend.id}`)
                           }
                         >
                           <FaRegComment className={styles.icon} />

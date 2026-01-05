@@ -3,10 +3,7 @@ import { RxDrawingPin, RxCross2 } from "react-icons/rx";
 import { formatDate } from "../utils/index.js";
 import { TbHeartBroken } from "react-icons/tb";
 import { PulseLoader } from "react-spinners";
-import PanelModalNotifier from "./PanelModalNotifier";
-import { socket } from "../socket";
 import { useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 import {
   Box,
@@ -19,9 +16,9 @@ import {
   Title,
 } from "@mantine/core";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
-import styles from "../css/pinned_msgs_box.module.css";
 import { useDmPinnedMessages } from "../custom-hooks/useDmPinnedMessages.js";
 import { useModalStore } from "../stores/useModalStore.js";
+import styles from "../css/pinned_msgs_box.module.css";
 
 const PinnedMsgsBox = ({ customOverlayRef, ref }) => {
   const { activeMsg } = useContext(DmPanelContext);

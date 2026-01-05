@@ -59,7 +59,6 @@ const DmInput = () => {
 
       return;
     }
-    console.log(res);
 
     if (key == "acceptance") {
       removeReceivedMessageRequest(queryClient, receiverId);
@@ -76,7 +75,7 @@ const DmInput = () => {
         addDmHistoryUsers(queryClient, [receiver]);
     }
 
-    if (pendingMsgs[chatId])
+    if (pendingMsgs.dm[chatId])
       removeFromPendingMsgs(chatId, res.result[0].clientOffset);
 
     addMessage("directMessages", queryClient, chatId, res.result[0]);

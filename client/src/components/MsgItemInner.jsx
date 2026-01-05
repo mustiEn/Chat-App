@@ -2,27 +2,51 @@ import React from "react";
 import EditMsg from "./EditMsg.jsx";
 import { formatDate, isURL, normaliseURL } from "../utils/index.js";
 import MsgRepliedDiv from "./MsgRepliedDiv.jsx";
-import { Anchor, Flex, Image, Text } from "@mantine/core";
+import { Anchor } from "@mantine/core";
 
 const MsgItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
   return (
     <>
       {msg.replied_msg_sender && <MsgRepliedDiv msg={msg} />}
-      <Flex align={"center"} gap={"xs"} w={"100%"}>
-        <Image
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          width: "100%",
+        }}
+      >
+        <img
           src={msg.profile ?? "https://placehold.co/40"}
-          radius={"xl"}
-          w={40}
-          h={40}
           style={{
             alignSelf: "baseline",
+            // border: "1px solid white",
+            borderRadius: "100%",
+            width: 40,
+            height: 40,
           }}
         />
-        <Flex w={"100%"} direction={"column"}>
-          <Flex gap={"xs"} align={"center"}>
-            <Text fw={"bold"} c={"white"}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: "bold",
+              }}
+            >
               {msg.display_name}
-            </Text>
+            </div>
             <span className={`timestamp text-muted`}>
               {formatDate(msg.created_at)}
               {msg?.is_edited
@@ -33,13 +57,13 @@ const MsgItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
                 ? "sending"
                 : "Sent!"}
             </span>
-          </Flex>
+          </div>
           <EditMsg
             msg={msg}
             editedMessage={editedMessage}
             setEditedMessage={setEditedMessage}
           />
-          {isURL(msg.message) ? (
+          {isURL(msg?.message ?? "") ? (
             <Anchor
               className={`message-content`}
               style={{
@@ -51,18 +75,17 @@ const MsgItemInner = ({ msg = [], editedMessage, setEditedMessage }) => {
               {normaliseURL(msg.message)}
             </Anchor>
           ) : (
-            <Text
-              c={"white"}
+            <div
               className={`message-content`}
               style={{
                 display: editedMessage.id ? "none" : "block",
               }}
             >
               {msg.message}
-            </Text>
+            </div>
           )}
-        </Flex>
-      </Flex>
+        </div>
+      </div>
     </>
   );
 };

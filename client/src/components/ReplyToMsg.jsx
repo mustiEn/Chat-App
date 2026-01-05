@@ -2,7 +2,7 @@ import React from "react";
 import { RxCrossCircled } from "react-icons/rx";
 import styles from "../css/reply_to_msg.module.css";
 import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
-import { Flex, Text } from "@mantine/core";
+import { Box, Flex, Text } from "@mantine/core";
 
 const ReplyToMsg = ({ toWho }) => {
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
@@ -22,9 +22,16 @@ const ReplyToMsg = ({ toWho }) => {
         borderTopRightRadius: 5,
       }}
     >
-      <Text c="white">
-        Replying to <Text fw={"bold"}>{toWho}</Text>
-      </Text>
+      <Box c="white">
+        Replying to{" "}
+        <span
+          style={{
+            fontWeight: "bold",
+          }}
+        >
+          {toWho}
+        </span>
+      </Box>
       <RxCrossCircled
         className={`${styles["icon"]}`}
         onClick={() => setMsgToReply(null)}

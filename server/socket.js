@@ -8,7 +8,6 @@ import { Friend } from "./models/Friend.js";
 import { OneToOneChat } from "./models/OneToOneChat.js";
 import { BlockedUser } from "./models/BlockedUser.js";
 import { client } from "./server.js";
-import { DirectMessageHistory } from "./models/DirectMessageHistory.js";
 import { GroupMessage } from "./models/GroupMessage.js";
 
 export const setUpSocket = (io) => {
@@ -77,6 +76,7 @@ export const setUpSocket = (io) => {
       // socket.join(id);
     });
     logger.log(allContactsParsed);
+    logger.log(dayjs().format("HH:mm:ss"));
 
     socket.on("join room", (chatId, done) => {
       socket.join(chatId);
@@ -170,7 +170,6 @@ export const setUpSocket = (io) => {
             },
           }
         );
-        message = await DirectMessage.findByPk(msg.id, { raw: true });
       } catch (error) {
         logger.log("❌ Unexpected error updating message:", error);
         return done({
@@ -178,15 +177,16 @@ export const setUpSocket = (io) => {
           error: error.message,
         });
       }
-
-      socket
-        .to(chatId)
-        .emit("receive edited msgs", { result: [message], chatId });
+      const result = [{ id: msg.id, message: msg.message }];
+      socket.to(chatId).emit("receive dm edited msgs", {
+        result,
+        chatId,
+      });
       logger.log("message edited");
 
       done({
         status: "ok",
-        result: message,
+        result,
       });
     });
     socket.on("send msg requests", async (msg, done) => {
@@ -349,9 +349,24 @@ export const setUpSocket = (io) => {
     });
     socket.on("send dms", async (msg, chatId, done) => {
       let result;
+      logger.log(dayjs().format("HH:mm:ss"));
 
       try {
-        const newMsg = await DirectMessage.create(msg, { raw: true });
+        const chat = await OneToOneChat.findOne({
+          attributes: ["id"],
+          where: {
+            chat_id: chatId,
+          },
+          raw: true,
+        });
+
+        if (!chat) throw new Error("Chat not found");
+
+        const { id } = chat;
+        const newMsg = await DirectMessage.create(
+          { ...msg, chat_id: id },
+          { raw: true }
+        );
 
         const resultSql = `
           SELECT 
@@ -405,6 +420,7 @@ export const setUpSocket = (io) => {
         result,
         chatId,
       });
+      logger.log(dayjs().format("HH:mm:ss"));
     });
     socket.on("send dm pinned msgs", async (msg, chatId, done) => {
       let pinnedMessage;
@@ -446,7 +462,6 @@ export const setUpSocket = (io) => {
             FROM 
               direct_messages dm 
               INNER JOIN users sender ON sender.id = dm.from_id 
-              INNER JOIN users receiver ON receiver.id = dm.to_id 
               LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id 
             WHERE 
               dm.id = :msgId
@@ -466,7 +481,7 @@ export const setUpSocket = (io) => {
         });
       }
 
-      socket.to(chatId).emit("receive pinned msgs", {
+      socket.to(chatId).emit("receive dm pinned msgs", {
         result: pinnedMessage,
         isRecovery: false,
         chatId,
@@ -500,7 +515,7 @@ export const setUpSocket = (io) => {
         });
       }
 
-      socket.to(chatId).emit("receive deleted msgs", {
+      socket.to(chatId).emit("receive dm deleted msgs", {
         result: [msg.id],
         userId,
         chatId,
@@ -1160,125 +1175,125 @@ export const setUpSocket = (io) => {
               socket.emit("receive dms", { result: messages, chatId });
             }
             if (editedMessages.length) {
-              socket.emit("receive edited msgs", {
+              socket.emit("receive dm edited msgs", {
                 result: editedMessages,
                 chatId,
               });
             }
             if (pinnedMessages.length) {
-              socket.emit("receive pinned msgs", {
+              socket.emit("receive dm pinned msgs", {
                 result: pinnedMessages,
                 isRecovery: true,
                 chatId,
               });
             }
             if (deletedMessages.length) {
-              socket.emit("receive deleted msgs", {
+              socket.emit("receive dm deleted msgs", {
                 result: deletedMessages,
                 chatId,
               });
             }
-            logger.log(deletedMessages);
+            // logger.log(deletedMessages);
           }
 
           const msgRequestAcceptanceSql = `
-            SELECT 
-              dm.id, 
-              temp2.from_id, 
-              dm.to_id, 
-              dm.clientOffset, 
-              dm.message, 
-              dm.is_edited, 
-              dm.is_pinned, 
-              dm.request_state, 
-              dm.createdAt created_at 
-            FROM 
-              direct_messages dm 
+            SELECT
+              dm.id,
+              temp2.from_id,
+              dm.to_id,
+              dm.clientOffset,
+              dm.message,
+              dm.is_edited,
+              dm.is_pinned,
+              dm.request_state,
+              dm.createdAt created_at
+            FROM
+              direct_messages dm
               RIGHT JOIN (
-                SELECT 
-                  MAX(dm2.id) id, 
-                  MAX(temp.from_id) from_id, 
-                  MAX(dm2.message), 
-                  MAX(dm2.request_state), 
-                  MAX(dm2.createdAt) created_at 
-                FROM 
-                  direct_messages dm2 
+                SELECT
+                  MAX(dm2.id) id,
+                  MAX(temp.from_id) from_id,
+                  MAX(dm2.message),
+                  MAX(dm2.request_state),
+                  MAX(dm2.createdAt) created_at
+                FROM
+                  direct_messages dm2
                   RIGHT JOIN (
-                    SELECT 
-                      dm3.to_id from_id 
-                    FROM 
-                      direct_messages dm3 
-                    WHERE 
-                      dm3.from_id = :userId 
-                      AND dm3.request_state = "accepted" 
+                    SELECT
+                      dm3.to_id from_id
+                    FROM
+                      direct_messages dm3
+                    WHERE
+                      dm3.from_id = :userId
+                      AND dm3.request_state = "accepted"
                       AND dm3.createdAt >= :lastDisconnect
-                  ) temp ON dm2.from_id = temp.from_id 
-                  AND dm2.createdAt >= :lastDisconnect 
-                GROUP BY 
+                  ) temp ON dm2.from_id = temp.from_id
+                  AND dm2.createdAt >= :lastDisconnect
+                GROUP BY
                   dm2.from_id
               ) temp2 ON temp2.id = dm.id
           `;
           const msgRequestsSql = `
-            SELECT 
-              dm.id, 
-              dm.from_id, 
-              dm.to_id, 
-              u.display_name, 
-              u.username, 
-              u.profile, 
-              dm.clientOffset, 
-              dm.message, 
-              dm.is_edited, 
-              dm.is_pinned, 
-              dm.request_state, 
-              dm.createdAt created_at 
-            FROM 
-              direct_messages dm 
-              INNER JOIN users u ON u.id = dm.from_id 
-            WHERE 
-              dm.to_id = :userId 
-              AND dm.request_state = "pending" 
+            SELECT
+              dm.id,
+              dm.from_id,
+              dm.to_id,
+              u.display_name,
+              u.username,
+              u.profile,
+              dm.clientOffset,
+              dm.message,
+              dm.is_edited,
+              dm.is_pinned,
+              dm.request_state,
+              dm.createdAt created_at
+            FROM
+              direct_messages dm
+              INNER JOIN users u ON u.id = dm.from_id
+            WHERE
+              dm.to_id = :userId
+              AND dm.request_state = "pending"
               AND dm.createdAt >= :lastDisconnect
           `;
           const friendRequestsSql = `
-            SELECT 
-              u.id, u.username, u.display_name, u.profile 
-            FROM 
+            SELECT
+              u.id, u.username, u.display_name, u.profile
+            FROM
               friends f
-              INNER JOIN users u ON u.id = f.user_id 
-            WHERE 
+              INNER JOIN users u ON u.id = f.user_id
+            WHERE
               user_id = :userId
               AND request_state = "pending"
-              AND f.createdAt > :lastDisconnect            
+              AND f.createdAt > :lastDisconnect
           `;
           const friendRequestsAcceptanceSql = `
-            SELECT 
+            SELECT
               u.id,
               u.display_name,
               u.username,
               u.profile,
               f.request_state status
-            FROM 
-              friends f 
-              INNER JOIN users u ON u.id = f.friend_id 
-            WHERE 
-              f.user_id = :userId 
-              AND f.request_state = "accepted" 
-              AND f.createdAt > :lastDisconnect 
-            UNION 
-            SELECT 
+            FROM
+              friends f
+              INNER JOIN users u ON u.id = f.friend_id
+            WHERE
+              f.user_id = :userId
+              AND f.request_state = "accepted"
+              AND f.createdAt > :lastDisconnect
+            UNION
+            SELECT
               u.id,
               u.display_name,
               u.username,
               u.profile,
               f.request_state status
-            FROM 
-              friends f 
-              INNER JOIN users u ON u.id = f.friend_id 
-            WHERE 
-              f.user_id = :userId 
-              AND f.request_state = "rejected" 
-              AND f.createdAt > :lastDisconnect 
+            FROM
+              friends f
+              INNER JOIN users u ON u.id = f.friend_id
+            WHERE
+              f.user_id = :userId
+              AND f.request_state = "rejected"
+              AND f.createdAt > :lastDisconnect
           `;
           const [
             friendRequests,
@@ -1317,9 +1332,11 @@ export const setUpSocket = (io) => {
             }),
             BlockedUser.findAll({
               attributes: ["blocked_id"],
-              blocked_by_id: userId,
-              updatedAt: {
-                [Op.gte]: userLastDisconnect,
+              where: {
+                blocked_by_id: userId,
+                updatedAt: {
+                  [Op.gte]: userLastDisconnect,
+                },
               },
               raw: true,
             }),
@@ -1393,7 +1410,7 @@ export const setUpSocket = (io) => {
             });
           }
 
-          logger.log("friendRequests offline", friendRequests);
+          // logger.log("friendRequests offline", friendRequests);
         }
       } catch (e) {
         logger.log("recovery error", e);
