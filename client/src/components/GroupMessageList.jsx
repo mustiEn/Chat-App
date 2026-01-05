@@ -13,9 +13,12 @@ import { useGroupMessages } from "../custom-hooks/useGroupMessages.js";
 import GroupHeadText from "./GroupHeadText.jsx";
 import { useInView } from "react-intersection-observer";
 import { socket } from "../socket.js";
+import { useGroups } from "../custom-hooks/useGroups.js";
 
 const GroupMessageList = () => {
   const { groupId } = useParams();
+  const { data: groups } = useGroups();
+  const group = groups?.find(({ group_id }) => group_id === groupId) ?? [];
   const { scrollElementRef, groupChatRef } = useOutletContext();
 
   const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs.group);
@@ -36,17 +39,16 @@ const GroupMessageList = () => {
   } = useGroupMessages(groupId);
 
   const reversed = groupMessages && groupMessages.pages.toReversed();
-  const messages = reversed ? reversed.flatMap(({ messages }) => messages) : [];
-  const items = useMemo(
-    () => [...messages, ...(pendingMsgs[groupId] ?? [])],
-    [messages, pendingMsgs[groupId]]
-  );
+  const messages = reversed?.flatMap(({ messages }) => messages) ?? [];
+  const pending = pendingMsgs[groupId];
+  const items = pending?.length ? [...messages, ...pending] : messages;
+
   const rowVirtualizer = useVirtualizer({
-    count: (messages.length ?? 0) + (pendingMsgs[groupId]?.length ?? 0),
+    count: items.length ?? 0,
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
-    overscan: 5,
-    gap: 20,
+    overscan: 2,
+    gap: 5,
   });
   const { ref, inView } = useInView({
     threshold: 0.6,
@@ -133,9 +135,19 @@ const GroupMessageList = () => {
           loader={<PulseLoader color={"white"} />}
         >
           {!messages.length ? (
-            <GroupHeadText />
+            <GroupHeadText
+              serverName={group?.group_name}
+              msgExists={false}
+              image={group?.group_icon}
+            />
           ) : (
-            !hasMoreUp[groupId] && <GroupHeadText />
+            !hasMoreUp[groupId] && (
+              <GroupHeadText
+                serverName={group?.group_name}
+                msgExists={true}
+                image={group?.group_icon}
+              />
+            )
           )}
           {hasMoreUp[groupId] && messages.length && (
             <Box mb={"xl"} ref={ref}>

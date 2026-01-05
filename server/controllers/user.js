@@ -594,7 +594,7 @@ export const addGroup = async (req, res, next) => {
       user_id: userId,
     });
 
-    res.status(200).json({ group });
+    res.status(200).json({ groupId: group.group_id });
   } catch (error) {
     next(error);
   }
@@ -728,6 +728,7 @@ export const getGroupPinnedMessages = async (req, res, next) => {
 
     if (!isMember) throw new Error("Not a member in this group");
 
+    const { id } = group;
     const pinnedMessagesSql = `
       SELECT 
         gm.id,
@@ -806,13 +807,14 @@ export const getGroupMessages = async (req, res, next) => {
     }
 
     const { groupId, nextIdParam } = matchedData(req);
-    const group = await OneToOneChat.findOne({
+    const group = await GroupChat.findOne({
       attributes: ["id"],
       where: {
-        chat_id: groupId,
+        group_id: groupId,
       },
       raw: true,
     });
+    let nextId = Number(nextIdParam);
     const groupMessagesSql = ` 
       SELECT 
         gm.id,
@@ -825,7 +827,6 @@ export const getGroupMessages = async (req, res, next) => {
         gm.message,
         gm.is_edited,
         gm.is_pinned,
-        gm.request_state, 
         gm.createdAt created_at, 
         replied_msg.id replied_msg_id,
         replied_msg.message replied_msg_message,
@@ -841,7 +842,7 @@ export const getGroupMessages = async (req, res, next) => {
         LEFT JOIN users replied_msg_sender 
           ON replied_msg.from_id = replied_msg_sender.id 
       WHERE 
-        gm.chat_id = :id
+        gm.group_id = :id
         AND 
         gm.is_deleted = 0
         ${nextId !== 0 ? nextIdSql : ""}
@@ -850,7 +851,6 @@ export const getGroupMessages = async (req, res, next) => {
       LIMIT 
         :limit
     `;
-    let nextId = Number(nextIdParam);
 
     if (!group) throw new Error("Group not found");
 

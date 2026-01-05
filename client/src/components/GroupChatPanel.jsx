@@ -8,6 +8,7 @@ import GroupMessageInput from "./GroupMessageInput.jsx";
 import GroupMessageList from "./GroupMessageList";
 import GroupMembers from "./GroupMembers";
 import styles from "../css/panel.module.css";
+import { useEffect } from "react";
 
 const GroupChatPanel = () => {
   const [showOffset, setShowOffset] = useState(false);
@@ -16,6 +17,30 @@ const GroupChatPanel = () => {
     msg: null,
     type: null,
   });
+
+  // useEffect(() => {
+  //   if (!isSuccess) return;
+
+  //   const { receiver, friendStatus } = initialDmData;
+  //   const isUserInReceiversObj = receivers[receiver.id];
+  //   const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
+  //   const isUserInDmHistory =
+  //     dmHistoryUsers && dmHistoryUsers.some((e) => e.id == receiver.id);
+
+  //   if (!isUserInDmHistory)
+  //     addDmHistoryUsers(queryClient, [{ ...receiver, chatId }]);
+  //   if (!isUserInReceiversObj)
+  //     addToReceivers(receiver.id, { ...receiver, chatId });
+  //   if (friendStatus?.request_state === "pending") {
+  //     friendStatus.user_id == receiver.id
+  //       ? addReceivedFriendRequest(queryClient, [receiver])
+  //       : addSentFriendRequest(queryClient, [
+  //           { id: receiver.id, username: receiver.username },
+  //         ]);
+  //   }
+  //   // initialPageParam[recevierId] = nextId;
+  // }, [initialDmData]);
+
   const value = useMemo(() => ({ activeMsg }), [activeMsg]);
 
   return (

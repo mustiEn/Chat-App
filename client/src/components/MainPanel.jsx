@@ -42,6 +42,9 @@ const MainPanel = () => {
   const setDmPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.setDmPinnedMsgExists
   );
+  const setGroupPinnedMsgExists = useNewPinnedMsgIndicatorStore(
+    (s) => s.setGroupPinnedMsgExists
+  );
   const addToReceivers = useReceiverStore((s) => s.addToReceivers);
   const receivers = useReceiverStore((s) => s.receivers);
   const blockReceiver = useReceiverStore((s) => s.blockReceiver);
@@ -108,7 +111,7 @@ const MainPanel = () => {
       lastActivity.current = now.valueOf();
       setUser(user);
 
-      console.log(user);
+      // console.log(user);
     };
     const onDisconnect = (reason) => {
       console.log("❌ Socket disconnected, ", reason);
@@ -374,30 +377,46 @@ const MainPanel = () => {
       console.log(result);
 
       if (!isRecovery) {
-        const { last_pin_action_by_id, is_pinned, id } = result;
-
-        const isPinnedMessagesQueryFetched = queryClient.getQueryData([
-          "dmPinnedMessages",
-          groupId,
-        ]);
-        const isQueryFetched = queryClient.getQueryData([
-          "groupMessages",
-          groupId,
-        ]);
+        const { is_pinned, id } = result;
 
         //^ here, add a notification and amend if needed.if notification is here,no need to check ispinned, cuz now i cant know whether to notify on mount
 
-        if (isPinnedMessagesQueryFetched) {
+        if (is_pinned) {
+          const val = !pinnedMsgBoxObj.group[groupId];
+          console.log("val", val);
+
+          addPinnedMessages(
+            "groupPinnedMessages",
+            queryClient,
+            groupId,
+            result
+          );
+          setGroupPinnedMsgExists(groupId, val); //* if the modal is open,dont notify the user, if not, do it
+        } else {
+          removePinnedMessage("groupPinnedMessages", queryClient, groupId, id);
+        }
+
+        setIsMessagePinned(
+          "groupMessages",
+          queryClient,
+          groupId,
+          id,
+          is_pinned
+        );
+      } else {
+        result.forEach((res, i) => {
+          console.log(res);
+
+          const { is_pinned, id } = res;
+
+          //^ notification thing applies to this here too.
+
           if (is_pinned) {
             const val = !pinnedMsgBoxObj.group[groupId];
+            console.log("val", val);
 
-            addPinnedMessages(
-              "groupPinnedMessages",
-              queryClient,
-              groupId,
-              result
-            );
-            setDmPinnedMsgExists(groupId, val); //* if the modal is open,dont notify the user, if not, do it
+            addPinnedMessages("groupPinnedMessages", queryClient, groupId, res);
+            setGroupPinnedMsgExists(groupId, val); //* if the modal is open,dont notify the user, if not, do it
           } else {
             removePinnedMessage(
               "groupPinnedMessages",
@@ -406,8 +425,7 @@ const MainPanel = () => {
               id
             );
           }
-        }
-        if (isQueryFetched) {
+
           setIsMessagePinned(
             "groupMessages",
             queryClient,
@@ -415,52 +433,6 @@ const MainPanel = () => {
             id,
             is_pinned
           );
-        }
-      } else {
-        result.forEach((res, i) => {
-          console.log(res);
-
-          const { last_pin_action_by_id, is_pinned, id } = res;
-          const isPinnedMessagesQueryFetched = queryClient.getQueryData([
-            "groupPinnedMessages",
-            groupId,
-          ]);
-          const isQueryFetched = queryClient.getQueryData([
-            "groupMessages",
-            groupId,
-          ]);
-
-          //^ notification thing applies to this here too.
-
-          if (isPinnedMessagesQueryFetched) {
-            if (is_pinned) {
-              const val = !pinnedMsgBoxObj.group[groupId];
-
-              addPinnedMessages(
-                "groupPinnedMessages",
-                queryClient,
-                groupId,
-                res
-              );
-              setDmPinnedMsgExists(groupId, val); //* if the modal is open,dont notify the user, if not, do it
-            } else {
-              removePinnedMessage(
-                "groupPinnedMessages",
-                queryClient,
-                groupId,
-                id
-              );
-            }
-          }
-          if (isQueryFetched) {
-            setIsMessagePinned(
-              "groupMessages",
-              queryClient,
-              groupId,
-              id,
-              is_pinned
-            );
-          }
         });
       }
     };
@@ -517,10 +489,10 @@ const MainPanel = () => {
     );
     socket.on("receive changed user status", handleUserStatus);
     socket.on("receive user activity", handleUserActivity);
-    socket.off("receive group edited msgs", handleGroupEditedMessages);
-    socket.off("receive group msgs", handleGroupNewMessages);
-    socket.off("receive group deleted msgs", handleGroupDeletedMessages);
-    socket.off("receive group pinned msgs", handleGroupPinnedMessages);
+    socket.on("receive group edited msgs", handleGroupEditedMessages);
+    socket.on("receive group msgs", handleGroupNewMessages);
+    socket.on("receive group deleted msgs", handleGroupDeletedMessages);
+    socket.on("receive group pinned msgs", handleGroupPinnedMessages);
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", (err) =>
       console.error("⚠️ Connect error:", err)

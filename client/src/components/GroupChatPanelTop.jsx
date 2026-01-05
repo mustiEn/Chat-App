@@ -1,10 +1,14 @@
 import React from "react";
 import { Box, Flex, Title } from "@mantine/core";
 import GroupChatPanelTopIcons from "./GroupChatPanelTopIcons.jsx";
-import GroupChatPinnedMsgsBox from "./GroupChatPinnedMsgsBox.jsx";
+import GroupChatPinnedMsgsBoxWrapper from "./GroupChatPinnedMsgsBoxWrapper.jsx";
 import stylesPanelTop from "../css/panel_top.module.css";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
+import { useParams } from "react-router-dom";
+import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
+import { closePinnedMsgBox } from "../utils/pinnedMsgBox.js";
 
 const GroupChatPanelTop = ({ showOffset, handleOffsetToggle }) => {
   const customOverlayRef = useRef();
@@ -13,20 +17,19 @@ const GroupChatPanelTop = ({ showOffset, handleOffsetToggle }) => {
   const { groupId } = useParams();
   const queryClient = useQueryClient();
   const groups = [];
-  const pinnedMsgBoxObj = useShowPinnedMsgBoxStore((s) => s.pinnedMsgBoxObj.dm);
+  const pinnedMsgBoxObj = useShowPinnedMsgBoxStore(
+    (s) => s.pinnedMsgBoxObj.group
+  );
   const switchPinnedMsgBox = useShowPinnedMsgBoxStore(
-    (s) => s.switchPinnedMsgBox.group
+    (s) => s.switchGroupPinnedMsgBox
   );
 
   useEffect(() => {
-    const eventCallback = closePinnedMsgsBox(
-      e,
-      pinnedMsgBoxObj,
-      groupId,
-      customOverlayRef,
-      isTargetOverlay,
-      switchPinnedMsgBox
-    );
+    if (pinnedMsgBoxObj[groupId])
+      customOverlayRef.current.style.display = "block";
+
+    const eventCallback = (e) =>
+      closePinnedMsgBox(e, groupId, customOverlayRef, switchPinnedMsgBox);
 
     document.addEventListener("click", eventCallback);
 
@@ -50,7 +53,7 @@ const GroupChatPanelTop = ({ showOffset, handleOffsetToggle }) => {
             handleOffsetToggle={handleOffsetToggle}
           />
         </Flex>
-        <GroupChatPinnedMsgsBox
+        <GroupChatPinnedMsgsBoxWrapper
           customOverlayRef={customOverlayRef}
           ref={pinnedMsgsBoxRef}
         />

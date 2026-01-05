@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import styles from "../css/add_group_modal.module.css";
 import { useForm } from "@mantine/form";
 import { useEffect } from "react";
+import { socket } from "../socket";
 
 const allowedFileTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
 
@@ -80,6 +81,8 @@ const AddGroupModal = ({ opened, open, close }) => {
             if (values.icon) formData.append("icon", values.icon);
 
             addGroup.mutate(formData);
+            if (addGroup?.data.groupId)
+              socket.emit("join group", addGroup.data.groupId);
             console.log(values, formData);
           })}
           encType="multipart/form-data"

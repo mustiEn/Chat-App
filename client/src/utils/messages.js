@@ -36,6 +36,8 @@ export const editMessage = (
   isPending
 ) => {
   queryClient.setQueryData([queryKey, paramId], (olderData) => {
+    console.log(olderData);
+
     const newPages = olderData.pages.map((page) => ({
       ...page,
       messages: page.messages.map((m) => {

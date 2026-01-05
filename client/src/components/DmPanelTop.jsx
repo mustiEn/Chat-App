@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import PinnedMsgsBox from "./PinnedMsgsBox";
+import DmPinnedMsgsBoxWrapper from "./DmPinnedMsgsBoxWrapper";
 import { useOutletContext, useParams } from "react-router-dom";
 import { useShowPinnedMsgBoxStore } from "../stores/useShowPinnedMsgBoxStore.js";
 import { useReceiverStore } from "../stores/useReceiverStore.js";
@@ -173,7 +173,7 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
             isFriendModalOpened={isFriendModalOpened}
           />
         </Flex>
-        <PinnedMsgsBox
+        <DmPinnedMsgsBoxWrapper
           customOverlayRef={customOverlayRef}
           ref={pinnedMsgsBoxRef}
         />

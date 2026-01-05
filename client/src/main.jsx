@@ -18,12 +18,14 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById("root")).render(
-  <QueryClientProvider client={queryClient}>
-    <MantineProvider defaultColorScheme="dark">
-      <Suspense fallback={"Loading..."}>
-        <App />
-      </Suspense>
-      <Toaster position="top-right" />
-    </MantineProvider>
-  </QueryClientProvider>
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <MantineProvider defaultColorScheme="dark">
+        <Suspense fallback={"Loading..."}>
+          <App />
+        </Suspense>
+        <Toaster position="top-right" />
+      </MantineProvider>
+    </QueryClientProvider>
+  </StrictMode>
 );

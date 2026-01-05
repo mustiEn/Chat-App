@@ -1,4 +1,4 @@
-import { Op, QueryTypes, col, fn, literal } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import { DirectMessage } from "./models/DirectMessage.js";
 import dayjs from "dayjs";
 import { logger, lastDisconnect } from "./utils/index.js";
@@ -9,6 +9,7 @@ import { OneToOneChat } from "./models/OneToOneChat.js";
 import { BlockedUser } from "./models/BlockedUser.js";
 import { client } from "./server.js";
 import { GroupMessage } from "./models/GroupMessage.js";
+import { GroupChat } from "./models/GroupChat.js";
 
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
@@ -27,38 +28,51 @@ export const setUpSocket = (io) => {
       ],
       raw: true,
     });
-    const usersWithInContact = await OneToOneChat.findAll({
-      attributes: [
-        [
-          fn(
-            "IF",
-            literal(`user_id = ${userId}`),
-            col("receiver_id"),
-            col("user_id")
-          ),
-          "id",
-        ],
-        "chat_id",
-      ],
-      where: {
-        [Op.or]: [
-          {
-            user_id: userId,
-          },
-          { receiver_id: userId },
-        ],
-      },
-      raw: true,
-    });
+
     const cachedStatus = await client.get(`user:${userId}:status`);
     const cachedContacts = await client.get(`user:${userId}:contacts`);
+    const cachedGroups = await client.get(`user:${userId}:groups`);
 
     if (!cachedStatus) await client.set(`user:${userId}:status`, sender.status);
-    if (!cachedContacts)
+    if (!cachedContacts) {
+      const usersWithInContact = await OneToOneChat.findAll({
+        attributes: ["chat_id"],
+        where: {
+          [Op.or]: [
+            {
+              user_id: userId,
+            },
+            { receiver_id: userId },
+          ],
+        },
+        raw: true,
+      });
       await client.set(
         `user:${userId}:contacts`,
         JSON.stringify(usersWithInContact)
       );
+    }
+    if (!cachedGroups) {
+      const groupsSql = `
+        SELECT 
+          gc.id, 
+          gc.group_id, 
+          gc.group_icon, 
+          gc.group_name 
+        FROM 
+          group_members gm 
+          INNER JOIN group_chats gc ON gc.id = gm.group_id 
+        WHERE 
+          gm.user_id = :userId      
+      `;
+      const groups = await sequelize.query(groupsSql, {
+        type: QueryTypes.SELECT,
+        replacements: {
+          userId,
+        },
+      });
+      await client.set(`user:${userId}:groups`, JSON.stringify(groups));
+    }
 
     logger.log(`User with id => ${userId} connected`);
 
@@ -70,27 +84,76 @@ export const setUpSocket = (io) => {
 
     const allContactsStr = await client.get(`user:${userId}:contacts`);
     const allContactsParsed = JSON.parse(allContactsStr);
+    const allGroupsStr = await client.get(`user:${userId}:groups`);
+    const allGroupsParsed = JSON.parse(allGroupsStr);
 
-    allContactsParsed.forEach(({ chat_id, id }) => {
+    allContactsParsed.forEach(({ chat_id }) => {
       socket.join(chat_id);
-      // socket.join(id);
     });
-    logger.log(allContactsParsed);
-    logger.log(dayjs().format("HH:mm:ss"));
+    allGroupsParsed.forEach(({ group_id }) => {
+      socket.join(group_id);
+      logger.log("Joined group = ", group_id);
+    });
 
-    socket.on("join room", (chatId, done) => {
+    // logger.log(allContactsParsed);
+
+    socket.on("join room", async (chatId, done) => {
+      const chatExists = allContactsParsed.some(
+        ({ chat_id }) => chat_id == chatId
+      );
+      if (!chatExists) {
+        const chat = await OneToOneChat.findOne({
+          attributes: ["chat_id"],
+          where: {
+            group_id: chatId,
+          },
+          raw: true,
+        });
+        const newChatsStr = JSON.stringify({
+          ...allContactsStr,
+          ...chat,
+        });
+        await client.set(`user:${userId}:contacts`, newChatsStr);
+      }
+
       socket.join(chatId);
       logger.log("Joined room:", room);
-      logger.log("sender", userId);
+
       done({
         status: "ok",
       });
     });
-    socket.on("leave room", (receiverId, done) => {
-      receiverId = Number(receiverId);
-      const key = [userId, receiverId];
-      const room = key.sort((a, b) => a - b).join("_");
-      socket.leave(room);
+    socket.on("leave room", (chatId, done) => {
+      socket.leave(chatId);
+      done({
+        status: "ok",
+      });
+    });
+    socket.on("join group", async (groupId, done) => {
+      const groupExists = allGroupsParsed.some(
+        ({ group_id }) => group_id == groupId
+      );
+      if (!groupExists) {
+        const group = await GroupChat.findOne({
+          attributes: ["id", "group_id", "group_icon", "group_name"],
+          where: {
+            group_id: groupId,
+          },
+          raw: true,
+        });
+        const newGroupsStr = JSON.stringify({ ...allGroupsStr, group });
+        await client.set(`user:${userId}:groups`, newGroupsStr);
+      }
+
+      socket.join(groupId);
+      logger.log("Joined group:", groupId);
+
+      done({
+        status: "ok",
+      });
+    });
+    socket.on("leave group", (groupId, done) => {
+      socket.leave(groupId);
       done({
         status: "ok",
       });
@@ -881,7 +944,17 @@ export const setUpSocket = (io) => {
       let result;
 
       try {
-        const newMsg = await GroupMessage.create(msg, { raw: true });
+        const group = await GroupChat.findOne({
+          attributes: ["id"],
+          where: {
+            group_id: groupId,
+          },
+          raw: true,
+        });
+        const newMsg = await GroupMessage.create(
+          { ...msg, group_id: group.id },
+          { raw: true }
+        );
 
         const resultSql = `
           SELECT 
@@ -895,7 +968,6 @@ export const setUpSocket = (io) => {
             gm.message,
             gm.is_edited,
             gm.is_pinned,
-            gm.request_state, 
             gm.createdAt created_at, 
             replied_msg.message replied_msg_message, 
             replied_msg_sender.display_name replied_msg_sender, 
@@ -966,7 +1038,7 @@ export const setUpSocket = (io) => {
               sender.display_name, 
               sender.username, 
               sender.profile,
-              gm.to_id,
+              gm.group_id,
               gm.is_pinned,
               gm.last_pin_action_by_id,
               gm.clientOffset,
@@ -1049,7 +1121,6 @@ export const setUpSocket = (io) => {
 
       try {
         const obj = socket.handshake.auth.serverOffset.dm;
-        logger.log(obj);
         if (userLastDisconnect && Object.keys(obj).length) {
           for (const receiverId in obj) {
             const serverOffset = obj[receiverId];

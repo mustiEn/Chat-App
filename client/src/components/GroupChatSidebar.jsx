@@ -25,13 +25,11 @@ import groupChatSidebarStyles from "../css/group_chat_sidebar.module.css";
 import { PulseLoader } from "react-spinners";
 import PopoverComponent from "./PopoverComponent";
 import { useGroups } from "../custom-hooks/useGroups";
-import useDelayedSpinner from "../custom-hooks/useDelayedSpinner";
-import { useEffect } from "react";
 
 const GroupChatSidebar = () => {
   const { groupId } = useParams();
   const { data: groups } = useGroups();
-  const group = groups?.find(({ id }) => id === Number(groupId)) ?? [];
+  const group = groups?.find(({ group_id }) => group_id === groupId) ?? [];
   const [opened, { open, close }] = useDisclosure(false);
   const [friendInp, setFriendInp] = useState("");
   const [debounceVal, setDebounceVal] = useState("");

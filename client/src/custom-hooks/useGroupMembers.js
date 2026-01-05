@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const getGroupMembers = async (groupId) => {
   try {
-    const res = await fetch(`/api/group/group-members/${groupId}`);
+    const res = await fetch(`/api/group/get-members/${groupId}`);
     const data = await res.json();
 
     if (!res.ok) {

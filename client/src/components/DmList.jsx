@@ -44,8 +44,9 @@ const DmList = ({}) => {
   const rowVirtualizer = useVirtualizer({
     count: items.length ?? 0,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => 80,
-    gap: 10,
+    estimateSize: () => 70,
+    gap: 5,
+    overscan: 1,
   });
   const { ref, inView } = useInView({
     threshold: 0.6,

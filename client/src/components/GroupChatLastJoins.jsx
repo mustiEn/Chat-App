@@ -1,5 +1,6 @@
-import { Box, Stack, Text } from "@mantine/core";
+import { Box, Button, Stack, Text } from "@mantine/core";
 import React from "react";
+import { socket } from "../socket";
 
 const GroupChatLastJoins = () => {
   return (
@@ -12,6 +13,14 @@ const GroupChatLastJoins = () => {
           ))}
         </Stack>
       </Box>
+      <Button
+        onClick={() => {
+          socket.disconnect();
+        }}
+      >
+        close
+      </Button>
+      <Button onClick={() => socket.connect()}>connect</Button>
     </>
   );
 };

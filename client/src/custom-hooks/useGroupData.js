@@ -20,4 +20,4 @@ export const groupDataQuery = (groupId) => ({
   queryFn: () => getGroupData(groupId),
   staleTime: Infinity,
 });
-export const useGroupData = () => useQuery(groupDataQuery);
+export const useGroupData = (groupId) => useQuery(groupDataQuery(groupId));

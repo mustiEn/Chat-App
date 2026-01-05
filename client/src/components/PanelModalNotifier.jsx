@@ -131,7 +131,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
       return;
     }
     socket.emit(
-      "send dm pinned msgs",
+      "send group pinned msgs",
       {
         id: msg.id,
         isPinned: true,
@@ -145,21 +145,15 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
           return;
         }
 
-        addPinnedMessages("dmPinnedMessages", queryClient, paramId, msg);
-        setIsMessagePinned(
-          "directMessages",
-          queryClient,
-          paramId,
-          msg.id,
-          true
-        );
+        addPinnedMessages("groupPinnedMessages", queryClient, paramId, msg);
+        setIsMessagePinned("groupMessages", queryClient, paramId, msg.id, true);
         console.log("Pinned message successfully", res);
       }
     );
   };
   const handleDeleteGroupMessage = () => {
     const pinnedMsgData = queryClient.getQueryData([
-      "dmPinnedMessages",
+      "groupPinnedMessages",
       paramId,
     ]);
     const isMsgPinned =
@@ -170,19 +164,19 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
       return;
     }
 
-    socket.emit("send dm deleted msgs", msg, paramId, (err, res) => {
+    socket.emit("send group deleted msgs", msg, paramId, (err, res) => {
       if (err) {
         console.log("err", err);
         return;
       }
 
-      deleteMessage("directMessages", queryClient, paramId, msg.id);
+      deleteMessage("groupMessages", queryClient, paramId, msg.id);
       console.log("Deleted message successfully", res);
     });
 
     if (isMsgPinned !== -1) {
       socket.emit(
-        "send dm pinned msgs",
+        "send group pinned msgs",
         {
           id: msg.id,
           isPinned: false,
@@ -194,7 +188,12 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
             return;
           }
 
-          removePinnedMessage("dmPinnedMessages", queryClient, paramId, msg.id);
+          removePinnedMessage(
+            "groupPinnedMessages",
+            queryClient,
+            paramId,
+            msg.id
+          );
         }
       );
     }
@@ -206,7 +205,7 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
     }
 
     socket.emit(
-      "send dm pinned msgs",
+      "send group pinned msgs",
       {
         id: msg.id,
         isPinned: false,
@@ -220,9 +219,14 @@ const PanelModalNotifier = ({ activeMsg, panelName }) => {
           return;
         }
 
-        removePinnedMessage("dmPinnedMessages", queryClient, paramId, msg.id);
+        removePinnedMessage(
+          "groupPinnedMessages",
+          queryClient,
+          paramId,
+          msg.id
+        );
         setIsMessagePinned(
-          "directMessages",
+          "groupMessages",
           queryClient,
           paramId,
           msg.id,

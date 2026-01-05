@@ -117,8 +117,6 @@ const GroupList = memo(function Grouplist() {
     );
   };
 
-  useEffect(() => console.log(groups), [groups]);
-
   return (
     <>
       <Flex
@@ -147,7 +145,11 @@ const GroupList = memo(function Grouplist() {
             <PopoverComponent
               key={group.id}
               content={popOverContent(group.group_name)}
-              trigger={popOverTrigger(`/@me/gc/${group.id}`, group, undefined)}
+              trigger={popOverTrigger(
+                `/@me/gc/${group.group_id}`,
+                group,
+                undefined
+              )}
             />
           ))
         )}

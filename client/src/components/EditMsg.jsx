@@ -6,19 +6,22 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import { useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { Flex } from "@mantine/core";
 import { editMessage } from "../utils/messages.js";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const EditMsg = ({ msg, editedMessage, setEditedMessage, paramName }) => {
+const EditMsg = ({ msg, editedMessage, setEditedMessage }) => {
+  const { pathname } = useLocation();
   const params = useParams();
-  const paramId = paramName === "group" ? params.groupId : params.chatId;
-  const queryKey = paramName === "group" ? "groupMessages" : "directMessages";
-  const socketEndpoint =
-    paramName === "group" ? "send group edited msgs" : "send dm edited msgs";
+  const pathnameHasGroupId = pathname.includes("/@me/gc/");
+  const paramId = pathnameHasGroupId ? params.groupId : params.chatId;
+  const queryKey = pathnameHasGroupId ? "groupMessages" : "directMessages";
+  const socketEndpoint = pathnameHasGroupId
+    ? "send group edited msgs"
+    : "send dm edited msgs";
   const queryClient = useQueryClient();
   const editInpRef = useRef(null);
 

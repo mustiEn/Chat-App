@@ -16,8 +16,9 @@ const GroupMembers = ({ showOffset }) => {
         <PulseLoader color={"white"} />
       ) : (
         <Stack>
-          {data.map((member) => (
+          {data.members.map((member) => (
             <Box
+              key={member.id}
               color={"dark"}
               w={"100%"}
               h={"100%"}

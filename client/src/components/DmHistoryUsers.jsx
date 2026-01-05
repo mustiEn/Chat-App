@@ -27,7 +27,7 @@ const DmHistoryUsers = memo(function DmHistoryUsers() {
     if (!isSuccess) return;
     if (!data || !data.length) return;
     if (receivers[data[0].id]) return;
-    console.log(data);
+    // console.log(data);
 
     data.forEach((e) => {
       if (!receivers[e.id]) {

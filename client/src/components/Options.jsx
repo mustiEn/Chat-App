@@ -9,11 +9,17 @@ import { useMsgToReplyStore } from "../stores/useMsgToReplyStore.js";
 import styles from "../css/panel.module.css";
 import { useContext } from "react";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
+import { GroupChatPanelContext } from "../contexts/GroupChatPanelContext.jsx";
 import { useModalStore } from "../stores/useModalStore.js";
+import { useLocation, useParams } from "react-router-dom";
 
 const Options = memo(function Options({ msg, handleEditableMsg }) {
+  const { pathname } = useLocation();
+  const pathnameHasGroupId = pathname.includes("/@me/gc/");
   const setMsgToReply = useMsgToReplyStore((s) => s.setMsgToReply);
-  const { activeMsg } = useContext(DmPanelContext);
+  const { activeMsg } = pathnameHasGroupId
+    ? useContext(GroupChatPanelContext)
+    : useContext(DmPanelContext);
   const open = useModalStore((s) => s.openPanelModalNotifier);
   const handlePanelModalNotifier = (msg, type) => {
     activeMsg.current = {

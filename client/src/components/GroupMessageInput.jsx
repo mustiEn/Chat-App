@@ -46,6 +46,7 @@ const GroupMessageInput = () => {
 
       return;
     }
+    console.log(res);
 
     if (pendingMsgs.group[groupId])
       removeFromPendingMsgs(groupId, res.result[0].clientOffset);
@@ -59,7 +60,7 @@ const GroupMessageInput = () => {
   };
   const handleSocketEmit = (clientOffset) => {
     socket.emit(
-      "send dms",
+      "send group msgs",
       {
         message: message,
         from_id: socket.auth.user.id,
