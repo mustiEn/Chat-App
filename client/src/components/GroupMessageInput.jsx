@@ -52,8 +52,8 @@ const GroupMessageInput = () => {
       removeFromPendingMsgs(groupId, res.result[0].clientOffset);
 
     addMessage("groupMessages", queryClient, groupId, res.result[0]);
-    // socket.auth.serverOffset.dm[receiverId] = res.result[0].id;
-    // directMessagesBottomId[receiverId] = res.result[0].id;
+    // socket.auth.serverOffset.dms[chatId] = res.result[0].id;
+    // directMessagesBottomId[chatId] = res.result[0].id;
     msgAddedOrDeleted[groupId] = true;
 
     console.log("Message successful:", res);

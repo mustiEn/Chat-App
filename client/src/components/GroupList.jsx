@@ -8,6 +8,7 @@ import AddGroupModal from "./AddGroupModal";
 import HeaderContext from "../contexts/HeaderContext";
 import { Flex, Stack, Button, Text } from "@mantine/core";
 import {
+  Link,
   NavLink as ReactNavLink,
   useLocation,
   useNavigate,
@@ -164,6 +165,14 @@ const GroupList = memo(function Grouplist() {
           content={popOverContent("Logout")}
           trigger={popOverTrigger("/logout", undefined, <CiLogout />)}
         />
+        <Link
+          to={"/community-guidelines"}
+          style={{
+            color: "white",
+          }}
+        >
+          Community
+        </Link>
       </Flex>
       <AppsModal
         show={openAppModal}

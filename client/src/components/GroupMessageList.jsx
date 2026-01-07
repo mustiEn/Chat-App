@@ -103,7 +103,7 @@ const GroupMessageList = () => {
     //   el.scrollTop = scrollPosition[groupId];
     // }
 
-    socket.auth.serverOffset.group[groupId] = messages.at(-1)?.id ?? 0;
+    socket.auth.serverOffset.groups[groupId] = messages.at(-1)?.id ?? 0;
     groupMessagesTopId[groupId] = latestTopId;
   }, [items]);
 

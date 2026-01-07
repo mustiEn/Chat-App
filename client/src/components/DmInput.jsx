@@ -79,8 +79,8 @@ const DmInput = () => {
       removeFromPendingMsgs(chatId, res.result[0].clientOffset);
 
     addMessage("directMessages", queryClient, chatId, res.result[0]);
-    // socket.auth.serverOffset.dm[receiverId] = res.result[0].id;
-    // directMessagesBottomId[receiverId] = res.result[0].id;
+    // socket.auth.serverOffset.dms[chatId] = res.result[0].id;
+    // directMessagesBottomId[chatId] = res.result[0].id;
     msgAddedOrDeleted[chatId] = true;
 
     console.log("Message successful:", res);

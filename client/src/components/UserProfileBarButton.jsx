@@ -1,12 +1,11 @@
 import { Box, Flex, Image, Text } from "@mantine/core";
 import React from "react";
-import { UserContext } from "../contexts/UserContext";
-import { useContext } from "react";
 import styles from "../css/user_profile_bar.module.css";
 import UserStatus from "../components/UserStatus.jsx";
+import { useAuthUserStore } from "../stores/useAuthUserStore.js";
 
 const UserProfileBarButton = ({ ref, ...props }) => {
-  const { user } = useContext(UserContext);
+  const user = useAuthUserStore((s) => s.authUser);
   //? get rid of bootstrap
   return (
     <button {...props} className={styles["user-profile-bar-btn"]} ref={ref}>

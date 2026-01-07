@@ -562,14 +562,14 @@ export const setUpSocket = (io) => {
         logger.log("message state", message);
         if (!message) throw new Error("Message not found");
 
-        await DirectMessage.update(
-          { is_deleted: true },
-          {
-            where: {
-              id: msg.id,
-            },
-          }
-        );
+        // await DirectMessage.update(
+        //   { is_deleted: true },
+        //   {
+        //     where: {
+        //       id: msg.id,
+        //     },
+        //   }
+        // );
       } catch (error) {
         logger.log(error);
         return done({
@@ -1085,14 +1085,14 @@ export const setUpSocket = (io) => {
         logger.log("message state", message);
         if (!message) throw new Error("Message not found");
 
-        await GroupMessage.update(
-          { is_deleted: true },
-          {
-            where: {
-              id: msg.id,
-            },
-          }
-        );
+        // await GroupMessage.update(
+        //   { is_deleted: true },
+        //   {
+        //     where: {
+        //       id: msg.id,
+        //     },
+        //   }
+        // );
       } catch (error) {
         logger.log(error);
         return done({
@@ -1120,22 +1120,19 @@ export const setUpSocket = (io) => {
       // logger.log(lastDisconnect.get(userId));
 
       try {
-        const obj = socket.handshake.auth.serverOffset.dm;
-        if (userLastDisconnect && Object.keys(obj).length) {
-          for (const receiverId in obj) {
-            const serverOffset = obj[receiverId];
+        const { dms, groups } = socket.handshake.auth.serverOffset;
+        if (!userLastDisconnect) return;
+        if (Object.keys(dms).length) {
+          for (const chatId in dms) {
+            const serverOffset = dms[chatId];
             logger.log("userid", userId);
-            logger.log(serverOffset, receiverId);
-            const key = `${[userId, receiverId]
-              .sort((a, b) => a - b)
-              .join("-")}`;
-            const { chat_id: chatId } = await OneToOneChat.findOne({
-              attributes: ["chat_id"],
+            logger.log(serverOffset, chatId);
+            const { user_id, receiver_id } = await OneToOneChat.findOne({
               where: {
-                chat_key: key,
+                chat_id: chatId,
               },
-              raw: true,
             });
+            const receiverId = userId == user_id ? receiver_id : user_id;
             const messagesSql = `
               SELECT 
                 dm.id,
@@ -1169,28 +1166,20 @@ export const setUpSocket = (io) => {
             const pinnedMessagesSql = `
               SELECT
                 dm.id,
+                dm.from_id,
                 sender.display_name,
                 sender.username,
                 sender.profile,
-                dm.from_id,
-                dm.to_id,
                 dm.is_pinned,
-                dm.last_pin_action_by_id,
-                dm.clientOffset,
                 dm.message,
                 dm.createdAt created_at,
-                dm.pin_updated_at
               FROM
                 direct_messages dm
                 INNER JOIN users sender ON sender.id = dm.from_id
-                INNER JOIN users receiver ON receiver.id = dm.to_id
                 LEFT JOIN direct_messages dms ON dm.reply_to_msg_id = dms.id
+                INNER JOIN one_to_one_chats o2oc ON o2oc.chat_id = :chatId
               WHERE
-                (	            
-                  dm.to_id = :userId
-                  OR
-                  dm.from_id = :userId
-                )
+								dm.chat_id = o2oc.id
                 AND dm.is_deleted = 0 # deletedMsgsSql already covers unpinned msgs on frontend
                 AND dm.last_pin_action_by_id = :receiverId
                 AND dm.pin_updated_at >= :lastDisconnect
@@ -1223,7 +1212,7 @@ export const setUpSocket = (io) => {
                 sequelize.query(pinnedMessagesSql, {
                   type: QueryTypes.SELECT,
                   replacements: {
-                    userId,
+                    chatId,
                     receiverId,
                     lastDisconnect: userLastDisconnect,
                   },
@@ -1445,8 +1434,8 @@ export const setUpSocket = (io) => {
             for (const element of friendRequestsAcceptance) {
               const { id: friendId, status } = element;
               const key = [friendId, userId].sort((a, b) => a - b).join("-");
-              const [chatId, chatIdCreated] = await OneToOneChat.findCreateFind(
-                {
+              const [chatByFriendReq, chatIdCreated] =
+                await OneToOneChat.findCreateFind({
                   attributes: ["chat_id"],
                   where: {
                     chat_key: key,
@@ -1456,12 +1445,11 @@ export const setUpSocket = (io) => {
                     receiver_id: friendId,
                   },
                   raw: true,
-                }
-              );
+                });
 
               if (status === "accepted" && chatIdCreated)
-                socket.join(chatId.chat_id);
-              chatIds.push(chatId.chat_id);
+                socket.join(chatByFriendReq.chat_id);
+              chatIds.push(chatByFriendReq.chat_id);
             }
 
             socket.emit("receive friend request acceptance", {
@@ -1482,6 +1470,149 @@ export const setUpSocket = (io) => {
           }
 
           // logger.log("friendRequests offline", friendRequests);
+        }
+        if (Object.keys(groups).length) {
+          for (const groupId in groups) {
+            const serverOffset = groups[groupId];
+            logger.log("userid", userId);
+            logger.log(serverOffset, groupId);
+
+            const messagesSql = `
+              SELECT 
+                gm.id,
+                gm.from_id,
+                gm.group_id, 
+                u.display_name, 
+                u.username, 
+                u.profile,
+                gm.clientOffset, 
+                gm.message,
+                gm.is_edited,
+                gm.is_pinned,
+                gm.createdAt created_at, 
+                replied_msg.message replied_msg_message, 
+                replied_msg_sender.display_name replied_msg_sender, 
+                replied_msg_sender.profile replied_msg_profile 
+              FROM group_messages gm
+              INNER JOIN users u ON gm.from_id = u.id
+              LEFT JOIN group_messages replied_msg 
+                ON gm.reply_to_msg_id = replied_msg.id 
+              LEFT JOIN users replied_msg_sender 
+                ON replied_msg.from_id = replied_msg_sender.id
+              INNER JOIN group_chats gc ON gc.group_id = :groupId
+              WHERE
+								dm.group_id = gc.id 
+                AND gm.id > :serverOffset
+                AND gm.is_deleted = 0
+              ORDER BY gm.createdAt ASC
+            `;
+            const pinnedMessagesSql = `
+              SELECT
+                gm.id,
+                gm.from_id,
+                sender.display_name,
+                sender.username,
+                sender.profile,
+                gm.from_id,
+                gm.is_pinned,
+                gm.message,
+                gm.createdAt created_at,
+              FROM
+                group_messages gm
+                INNER JOIN users sender ON sender.id = gm.from_id
+                LEFT JOIN group_messages dms ON gm.reply_to_msg_id = dms.id
+                INNER JOIN group_chats gc ON gc.group_id = :groupId
+              WHERE
+								gm.group_id = gc.id
+                AND gm.is_deleted = 0 # deletedMsgsSql already covers unpinned msgs on frontend
+                AND gm.pin_updated_at >= :lastDisconnect
+              ORDER BY
+                gm.pin_updated_at DESC
+            `;
+            const editedMessagesSql = `
+              SELECT
+                gm.id,
+                gm.from_id,
+                gm.message,
+              FROM
+                group_messages gm
+                INNER JOIN group_chats gc ON gc.group_id = :groupId
+              WHERE
+								gm.group_id = gc.id
+                AND gm.is_edited = 1 
+                AND gm.pin_updated_at >= :lastDisconnect
+              ORDER BY
+                gm.updatedAt ASC
+            `;
+            const deletedMessagesSql = `
+              SELECT
+                gm.id
+              FROM
+                group_messages gm
+                INNER JOIN group_chats gc ON gc.group_id = :groupId
+              WHERE
+								gm.group_id = gc.id
+                AND gm.is_deleted = 1 
+                AND gm.updatedAt >= :lastDisconnect
+              ORDER BY
+                gm.updatedAt ASC
+            `;
+            const [messages, editedMessages, pinnedMessages, deletedMessages] =
+              await Promise.all([
+                sequelize.query(messagesSql, {
+                  type: QueryTypes.SELECT,
+                  replacements: {
+                    groupId,
+                    serverOffset,
+                  },
+                }),
+                sequelize.query(editedMessagesSql, {
+                  type: QueryTypes.SELECT,
+                  replacements: {
+                    groupId,
+                    lastDisconnect: userLastDisconnect,
+                  },
+                }),
+                sequelize.query(pinnedMessagesSql, {
+                  type: QueryTypes.SELECT,
+                  replacements: {
+                    groupId,
+                    lastDisconnect: userLastDisconnect,
+                  },
+                }),
+                sequelize.query(deletedMessagesSql, {
+                  type: QueryTypes.SELECT,
+                  replacements: {
+                    groupId,
+                    lastDisconnect: userLastDisconnect,
+                  },
+                }),
+              ]);
+
+            if (messages.length) {
+              socket.emit("receive group msgs", { result: messages, groupId });
+            }
+            if (editedMessages.length) {
+              socket.emit("receive group edited msgs", {
+                result: editedMessages,
+                groupId,
+              });
+            }
+            if (pinnedMessages.length) {
+              socket.emit("receive group pinned msgs", {
+                result: pinnedMessages,
+                isRecovery: true,
+                groupId,
+              });
+            }
+            if (deletedMessages.length) {
+              socket.emit("receive group deleted msgs", {
+                result: deletedMessages,
+                groupId,
+              });
+            }
+            // logger.log(deletedMessages);
+          }
         }
       } catch (e) {
         logger.log("recovery error", e);

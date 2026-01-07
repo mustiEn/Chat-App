@@ -26,7 +26,7 @@ const MessageRequests = () => {
       }
 
       removeReceivedMessageRequest(queryClient, msg.from_id);
-      // socket.auth.serverOffset.dm[msg.from_id] = msg.id;
+      // socket.auth.serverOffset.dms[chatId] = msg.id;
       toast.success(`Message request ${status}`);
     };
 

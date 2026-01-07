@@ -6,11 +6,12 @@ import utc from "dayjs/plugin/utc";
 import MsgItemInner from "./MsgItemInner.jsx";
 import { memo } from "react";
 import styles from "../css/panel.module.css";
+import { useEffect } from "react";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
-const MsgItem = memo(function DmList({ msg }) {
+const MsgItem = memo(function MsgItem({ msg }) {
   const [editedMessage, setEditedMessage] = useState({ id: null, message: "" });
   const handleEditableMsg = (msg) => {
     setEditedMessage({
@@ -21,6 +22,10 @@ const MsgItem = memo(function DmList({ msg }) {
       document.querySelector(`#message-${msg.id} textarea`).focus();
     }, 100);
   };
+
+  // useEffect(() => {
+  //   console.log("msg:", msg);
+  // }, [msg.is_replied_msg_deleted]);
 
   return (
     <>

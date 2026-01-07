@@ -100,7 +100,7 @@ const DmList = ({}) => {
     //   el.scrollTop = scrollPosition[chatId];
     // }
 
-    socket.auth.serverOffset.dm[receiverId] = messages.at(-1)?.id ?? 0;
+    socket.auth.serverOffset.dms[chatId] = messages.at(-1)?.id ?? 0;
     groupMessagesTopId[chatId] = latestTopId;
   }, [items]);
 

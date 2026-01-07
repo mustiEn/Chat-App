@@ -63,6 +63,8 @@ export const deleteMessage = (queryKey, queryClient, paramId, msgId) => {
   queryClient.setQueryData([queryKey, paramId], (olderData) => {
     if (!olderData) return olderData;
 
+    console.log("olderdata", olderData);
+
     const newPages = olderData.pages.map((page) => ({
       ...page,
       messages: page.messages
@@ -71,6 +73,7 @@ export const deleteMessage = (queryKey, queryClient, paramId, msgId) => {
           e.replied_msg_id == msgId ? { ...e, is_replied_msg_deleted: true } : e
         ),
     }));
+    console.log("newPages", newPages);
 
     return {
       ...olderData,

@@ -33,7 +33,7 @@ window.__TANSTACK_QUERY_CLIENT__ = queryClient;
 function App() {
   const router = createBrowserRouter([
     {
-      path: "/",
+      // path: "/",
       element: <Layout />,
       children: [
         {

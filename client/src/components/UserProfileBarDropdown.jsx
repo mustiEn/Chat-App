@@ -1,15 +1,14 @@
-import { Button, getRefProp, Group, Menu, Text } from "@mantine/core";
+import { Group, Menu } from "@mantine/core";
 import React from "react";
 import { useRef } from "react";
 import UserProfileBarButton from "./UserProfileBarButton";
 import UserStatus from "./UserStatus";
-import { useContext } from "react";
-import { UserContext } from "../contexts/UserContext";
 import { socket } from "../socket.js";
 import { toast } from "react-hot-toast";
+import { useAuthUserStore } from "../stores/useAuthUserStore.js";
 const UserProfileBarDropdown = ({ open }) => {
   const ref = useRef(null);
-  const { user } = useContext(UserContext);
+  const user = useAuthUserStore((s) => s.authUser);
 
   const handleUserStatus = (status) => {
     if (!socket.connected) toast.error("Something went wrong");

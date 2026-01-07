@@ -10,7 +10,6 @@ import {
 import UserStatus from "./UserStatus";
 import { CiSettings } from "react-icons/ci";
 import { useDisclosure } from "@mantine/hooks";
-import { UserContext } from "../contexts/UserContext.jsx";
 import { useContext } from "react";
 import { useState } from "react";
 import SettingsModalMyAccount from "../components/SettingsModalMyAccount.jsx";
@@ -18,6 +17,7 @@ import SettingsModalSecurity from "../components/SettingsModalSecurity.jsx";
 import SettingsModalLanguage from "../components/SettingsModalLanguage.jsx";
 import UserProfileBarDropdown from "./UserProfileBarDropdown.jsx";
 import styles from "../css/user_profile_bar.module.css";
+import { useAuthUserStore } from "../stores/useAuthUserStore.js";
 
 const modalLinks = ["My Account", "Security", "Billings", "Language"];
 const modalComponents = {
@@ -27,7 +27,7 @@ const modalComponents = {
 };
 
 const UserProfileBar = ({ ref }) => {
-  const { user } = useContext(UserContext);
+  const user = useAuthUserStore((s) => s.authUser);
   const [opened, { open, close }] = useDisclosure(false);
   const [activeModalLink, setActiveModalLink] = useState({
     i: 0,

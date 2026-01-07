@@ -1,11 +1,10 @@
-import { Box, Button, Flex, Image, keys, Stack, Text } from "@mantine/core";
+import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 import React from "react";
-import { useContext } from "react";
-import { UserContext } from "../contexts/UserContext";
 import styles from "../css/friend_profile.module.css";
+import { useAuthUserStore } from "../stores/useAuthUserStore";
 
 const SettingsModalMyAccount = () => {
-  const { user } = useContext(UserContext);
+  const user = useAuthUserStore((s) => s.authUser);
   const userDetails = {
     "Display Name": user?.display_name,
     Username: user?.username,

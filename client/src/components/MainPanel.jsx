@@ -28,12 +28,13 @@ import {
   setIsMessagePinned,
 } from "../utils/messages.js";
 import UserProfileBar from "./UserProfileBar.jsx";
-import { UserContext } from "../contexts/UserContext.jsx";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { returnLocalNow } from "../utils/index.js";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
+import { PulseLoader } from "react-spinners";
+import { useAuthUserStore } from "../stores/useAuthUserStore.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -50,8 +51,8 @@ const MainPanel = () => {
   const blockReceiver = useReceiverStore((s) => s.blockReceiver);
   const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
   const setStatus = useReceiverStore((s) => s.setStatus);
+  const setAuthUser = useAuthUserStore((s) => s.setAuthUser);
   const queryClient = useQueryClient();
-  const [user, setUser] = useState();
   const [groupChat, setGroupChat] = useState({});
   const scrollElementRef = useRef(null);
   const dmChatRef = useRef({
@@ -97,6 +98,8 @@ const MainPanel = () => {
     });
   }, [newdata]);
 
+  //* show spinner till user data exists
+
   useEffect(() => {
     const onConnect = () => {
       console.log("✅ Socket connected");
@@ -109,9 +112,9 @@ const MainPanel = () => {
 
       socket.auth.user = user;
       lastActivity.current = now.valueOf();
-      setUser(user);
+      setAuthUser(user);
 
-      // console.log(user);
+      console.log("user", user);
     };
     const onDisconnect = (reason) => {
       console.log("❌ Socket disconnected, ", reason);
@@ -132,7 +135,7 @@ const MainPanel = () => {
 
       result.forEach((newMsg) => {
         addMessage("directMessages", queryClient, chatId, newMsg);
-        // socket.auth.serverOffset.dm[newMsg.from_id] = newMsg.id;
+        // socket.auth.serverOffset.dms[chatId] = newMsg.id;
         directMessagesBottomId[chatId] = newMsg.id;
         msgAddedOrDeleted[chatId] = true;
       });
@@ -256,27 +259,20 @@ const MainPanel = () => {
           "dmPinnedMessages",
           chatId,
         ]);
-        const isChatQueryFetched = queryClient.getQueryData([
-          "directMessages",
-          chatId,
-        ]);
 
-        if (isPinnedMsgQueryFetched) {
-          const isMsgPinned = isPinnedMsgQueryFetched.findIndex(
-            ({ id }) => id == deletedMsgId
+        const isMsgPinned = isPinnedMsgQueryFetched?.findIndex(
+          ({ id }) => id == deletedMsgId
+        );
+        if (isMsgPinned)
+          removePinnedMessage(
+            "dmPinnedMessages",
+            queryClient,
+            chatId,
+            deletedMsgId
           );
-          if (isMsgPinned)
-            removePinnedMessage(
-              "dmPinnedMessages",
-              queryClient,
-              chatId,
-              deletedMsgId
-            );
-        }
-        if (isChatQueryFetched) {
-          deleteMessage("directMessages", queryClient, chatId, deletedMsgId);
-          msgAddedOrDeleted[chatId] = true;
-        }
+
+        deleteMessage("directMessages", queryClient, chatId, deletedMsgId);
+        msgAddedOrDeleted[chatId] = true;
       });
     };
     const handleRemovedFriends = ({ result }) => {
@@ -367,7 +363,7 @@ const MainPanel = () => {
 
       result.forEach((newMsg) => {
         addMessage("groupMessages", queryClient, groupId, newMsg);
-        // socket.auth.serverOffset.dm[newMsg.from_id] = newMsg.id;
+        // socket.auth.serverOffset.dms[chatId] = newMsg.id;
         groupMessagesBottomId[groupId] = newMsg.id;
         msgAddedOrDeleted[groupId] = true;
       });
@@ -439,40 +435,33 @@ const MainPanel = () => {
     const handleGroupDeletedMessages = ({ result, groupId }) => {
       console.log("result", result);
 
-      result.forEach(({ id: deletedMsgId }) => {
+      result.forEach((deletedMsgId) => {
         const { msgAddedOrDeleted } = groupChatRef.current;
         const isPinnedMsgQueryFetched = queryClient.getQueryData([
           "groupPinnedMessages",
           groupId,
         ]);
-        const isChatQueryFetched = queryClient.getQueryData([
-          "groupMessages",
-          groupId,
-        ]);
 
-        if (isPinnedMsgQueryFetched) {
-          const isMsgPinned = isPinnedMsgQueryFetched.findIndex(
-            ({ id }) => id == deletedMsgId
+        const isMsgPinned = isPinnedMsgQueryFetched?.findIndex(
+          ({ id }) => id == deletedMsgId
+        );
+        if (isMsgPinned)
+          removePinnedMessage(
+            "groupPinnedMessages",
+            queryClient,
+            groupId,
+            deletedMsgId
           );
-          if (isMsgPinned)
-            removePinnedMessage(
-              "groupPinnedMessages",
-              queryClient,
-              groupId,
-              deletedMsgId
-            );
-        }
-        if (isChatQueryFetched) {
-          deleteMessage("groupMessages", queryClient, groupId, deletedMsgId);
-          msgAddedOrDeleted[groupId] = true;
-        }
+
+        deleteMessage("groupMessages", queryClient, groupId, deletedMsgId);
+        msgAddedOrDeleted[groupId] = true;
       });
     };
 
-    socket.connect();
-    socket.on("connect", onConnect);
-    socket.on("connect_error", onConnectErr);
-    socket.on("initial", getInitial);
+    // socket.connect();
+    // socket.on("connect", onConnect);
+    // socket.on("connect_error", onConnectErr);
+    // socket.on("initial", getInitial);
     socket.on("receive dms", handleDmNewMessages);
     socket.on("receive msg requests", handleMessageRequests);
     socket.on("receive msg request acceptance", handleMessageRequestAcceptance);
@@ -493,15 +482,15 @@ const MainPanel = () => {
     socket.on("receive group msgs", handleGroupNewMessages);
     socket.on("receive group deleted msgs", handleGroupDeletedMessages);
     socket.on("receive group pinned msgs", handleGroupPinnedMessages);
-    socket.on("disconnect", onDisconnect);
-    socket.on("connect_error", (err) =>
-      console.error("⚠️ Connect error:", err)
-    );
+    // socket.on("disconnect", onDisconnect);
+    // socket.on("connect_error", (err) =>
+    //   console.error("⚠️ Connect error:", err)
+    // );
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("connect_error", onConnectErr);
-      socket.off("initial", getInitial);
+      // socket.off("connect", onConnect);
+      // socket.off("connect_error", onConnectErr);
+      // socket.off("initial", getInitial);
       socket.off("receive msg requests", handleMessageRequests);
       socket.off(
         "receive msg request acceptance",
@@ -527,11 +516,11 @@ const MainPanel = () => {
       socket.off("receive group deleted msgs", handleGroupDeletedMessages);
       socket.off("receive group pinned msgs", handleGroupPinnedMessages);
 
-      socket.off("disconnect", onDisconnect);
-      socket.disconnect();
+      // socket.off("disconnect", onDisconnect);
+      // socket.disconnect();
 
-      queryClient.removeQueries();
-      console.log("SOCKET DISCONNECTED layout");
+      // queryClient.removeQueries();
+      // console.log("SOCKET DISCONNECTED layout");
     };
   }, []);
 
@@ -563,33 +552,31 @@ const MainPanel = () => {
 
   return (
     <>
-      <UserContext value={{ user }}>
-        <UserProfileBar />
-        <Flex w={"100%"}>
-          <Sidebar />
-          <Flex
-            direction={"column"}
-            // w={"100%"}
-            style={{
-              borderLeft: "none",
-              borderRight: "none",
-              flexGrow: 1,
-              maxWidth: "100%",
+      <UserProfileBar />
+      <Flex w={"100%"}>
+        <Sidebar />
+        <Flex
+          direction={"column"}
+          // w={"100%"}
+          style={{
+            borderLeft: "none",
+            borderRight: "none",
+            flexGrow: 1,
+            maxWidth: "100%",
+          }}
+        >
+          <Outlet
+            context={{
+              groupChat,
+              setGroupChat,
+              scrollElementRef,
+              dmChatRef,
+              groupChatRef,
+              allFriendsLastUpdatedAt,
             }}
-          >
-            <Outlet
-              context={{
-                groupChat,
-                setGroupChat,
-                scrollElementRef,
-                dmChatRef,
-                groupChatRef,
-                allFriendsLastUpdatedAt,
-              }}
-            />
-          </Flex>
+          />
         </Flex>
-      </UserContext>
+      </Flex>
     </>
   );
 };

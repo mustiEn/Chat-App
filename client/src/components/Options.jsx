@@ -12,6 +12,7 @@ import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import { GroupChatPanelContext } from "../contexts/GroupChatPanelContext.jsx";
 import { useModalStore } from "../stores/useModalStore.js";
 import { useLocation, useParams } from "react-router-dom";
+import { useEffect } from "react";
 
 const Options = memo(function Options({ msg, handleEditableMsg }) {
   const { pathname } = useLocation();
@@ -28,7 +29,7 @@ const Options = memo(function Options({ msg, handleEditableMsg }) {
     };
     open();
   };
-  // useEffect(() => console.log(msg), [msg]);
+  // useEffect(() => console.log("socket.auth.user", socket.auth.user), []);
   const options = useCallback(
     () => [
       {
@@ -59,6 +60,9 @@ const Options = memo(function Options({ msg, handleEditableMsg }) {
     [msg.is_pinned]
   );
   const isUserIdIsEqualToFromId = (optionName) => {
+    console.log("msg.from_id: ", msg.from_id);
+    console.log("socket.auth.user?.id: ", socket.auth.user?.id);
+
     if (optionName == "Delete" && socket.auth.user?.id !== msg.from_id) {
       return true;
     } else if (optionName == "Edit" && socket.auth.user?.id !== msg.from_id) {
