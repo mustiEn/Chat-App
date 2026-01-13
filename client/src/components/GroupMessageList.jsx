@@ -47,7 +47,7 @@ const GroupMessageList = () => {
     count: items.length ?? 0,
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 80,
-    overscan: 2,
+    overscan: 5,
     gap: 5,
   });
   const { ref, inView } = useInView({
@@ -154,37 +154,34 @@ const GroupMessageList = () => {
               <PulseLoader color={"white"} />
             </Box>
           )}
-          <Box
-            h={rowVirtualizer.getTotalSize()}
+          <div
             style={{
               position: "relative",
               minHeight: 355,
+              height: rowVirtualizer.getTotalSize(),
+              padding: "var(--mantine-spacing-xs)",
             }}
-            p={"xs"}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const item = items[virtualRow.index];
               return (
-                <Box
+                <div
                   key={virtualRow.key}
-                  w={"100%"}
-                  top={0}
-                  left={0}
                   style={{
                     position: "absolute",
                     transform: `translateY(${virtualRow.start}px)`,
+                    width: "100%",
+                    top: 0,
+                    left: 0,
                   }}
                   data-index={virtualRow.index}
                   ref={rowVirtualizer.measureElement}
                 >
-                  {/* <Box w={"100%"} p={"xs"}>
-                    {virtualRow.index}
-                  </Box> */}
                   <MsgItem msg={item} />
-                </Box>
+                </div>
               );
             })}
-          </Box>
+          </div>
         </InfiniteLoader>
       )}
     </>

@@ -60,9 +60,6 @@ const Options = memo(function Options({ msg, handleEditableMsg }) {
     [msg.is_pinned]
   );
   const isUserIdIsEqualToFromId = (optionName) => {
-    console.log("msg.from_id: ", msg.from_id);
-    console.log("socket.auth.user?.id: ", socket.auth.user?.id);
-
     if (optionName == "Delete" && socket.auth.user?.id !== msg.from_id) {
       return true;
     } else if (optionName == "Edit" && socket.auth.user?.id !== msg.from_id) {

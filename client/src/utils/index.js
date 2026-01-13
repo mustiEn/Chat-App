@@ -38,3 +38,25 @@ export const normaliseURL = (str) => {
 export const concatName = (name) => {
   return name?.length > 15 ? name.slice(15).concat("...") : name;
 };
+
+// Function to generate random status
+const randomStatus = () => {
+  const statuses = ["Online", "Offline", "Idle"];
+  return statuses[Math.floor(Math.random() * statuses.length)];
+};
+
+// Function to generate random names
+const randomName = (id) => `User${id}`;
+
+export const generateUsers = (count = 500) => {
+  const users = [];
+  for (let i = 1; i <= count; i++) {
+    users.push({
+      id: i,
+      display_name: randomName(i),
+      profile: null,
+      status: randomStatus(),
+    });
+  }
+  return users;
+};

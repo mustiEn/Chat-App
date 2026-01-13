@@ -5,7 +5,6 @@ import { LiaDownloadSolid } from "react-icons/lia";
 import PopoverComponent from "./PopoverComponent";
 import AppsModal from "./AppsModal";
 import AddGroupModal from "./AddGroupModal";
-import HeaderContext from "../contexts/HeaderContext";
 import { Flex, Stack, Button, Text } from "@mantine/core";
 import {
   Link,
@@ -23,7 +22,6 @@ const GroupList = memo(function Grouplist() {
   const { data: groups, isLoading } = useGroups();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const setHeader = useContext(HeaderContext);
   const [isAppModalOpened, { open: openAppModal, close: closeAppModal }] =
     useDisclosure(false);
   const [isGroupModalOpened, { open: openGroupModal, close: closeGroupModal }] =

@@ -35,24 +35,25 @@ import { returnLocalNow } from "../utils/index.js";
 import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { PulseLoader } from "react-spinners";
 import { useAuthUserStore } from "../stores/useAuthUserStore.js";
+import { removeGroup } from "../utils/groups.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const MainPanel = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const setDmPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.setDmPinnedMsgExists
   );
   const setGroupPinnedMsgExists = useNewPinnedMsgIndicatorStore(
     (s) => s.setGroupPinnedMsgExists
   );
-  const addToReceivers = useReceiverStore((s) => s.addToReceivers);
+  const addReceiver = useReceiverStore((s) => s.addReceiver);
   const receivers = useReceiverStore((s) => s.receivers);
   const blockReceiver = useReceiverStore((s) => s.blockReceiver);
   const unblockReceiver = useReceiverStore((s) => s.unblockReceiver);
   const setStatus = useReceiverStore((s) => s.setStatus);
-  const setAuthUser = useAuthUserStore((s) => s.setAuthUser);
-  const queryClient = useQueryClient();
   const [groupChat, setGroupChat] = useState({});
   const scrollElementRef = useRef(null);
   const dmChatRef = useRef({
@@ -61,8 +62,8 @@ const MainPanel = () => {
     isPinnedMessagesFetched: {},
     initialPageParam: {},
     dmPanel: {
-      groupMessagesTopId: {},
-      directMessagesBottomId: {},
+      dmTopId: {},
+      dmBottomId: {},
       isInitialDmDataFetched: false,
     },
     msgAddedOrDeleted: {},
@@ -93,7 +94,7 @@ const MainPanel = () => {
     allFriendsLastUpdatedAt.current = dataUpdatedAt;
     newdata.forEach((e) => {
       if (!receivers[e.id]) {
-        addToReceivers(e.id, e);
+        addReceiver(e.id, e);
       }
     });
   }, [newdata]);
@@ -101,24 +102,6 @@ const MainPanel = () => {
   //* show spinner till user data exists
 
   useEffect(() => {
-    const onConnect = () => {
-      console.log("✅ Socket connected");
-    };
-    const onConnectErr = (err) => {
-      console.error("❌ Socket connection error:", err);
-    };
-    const getInitial = (user) => {
-      const now = returnLocalNow();
-
-      socket.auth.user = user;
-      lastActivity.current = now.valueOf();
-      setAuthUser(user);
-
-      console.log("user", user);
-    };
-    const onDisconnect = (reason) => {
-      console.log("❌ Socket disconnected, ", reason);
-    };
     const handleDmEditedMessages = ({ result, chatId }) => {
       console.log("Edited msgs: ", result);
 
@@ -128,7 +111,7 @@ const MainPanel = () => {
     };
     const handleDmNewMessages = ({ result, chatId }) => {
       const {
-        dmPanel: { directMessagesBottomId },
+        dmPanel: { dmBottomId },
         msgAddedOrDeleted,
       } = dmChatRef.current;
       console.log("new msgs: ", result);
@@ -136,7 +119,7 @@ const MainPanel = () => {
       result.forEach((newMsg) => {
         addMessage("directMessages", queryClient, chatId, newMsg);
         // socket.auth.serverOffset.dms[chatId] = newMsg.id;
-        directMessagesBottomId[chatId] = newMsg.id;
+        dmBottomId[chatId] = newMsg.id;
         msgAddedOrDeleted[chatId] = true;
       });
     };
@@ -247,7 +230,7 @@ const MainPanel = () => {
         addReceivedMessageRequests(queryClient, [
           { ...req, chatId: chatIds[i] },
         ]);
-        addToReceivers(req.from_id, dmHistoryUser);
+        addReceiver(req.from_id, dmHistoryUser);
       });
     };
     const handleDmDeletedMessages = ({ result, chatId }) => {
@@ -301,7 +284,7 @@ const MainPanel = () => {
         removeSentFriendRequest(queryClient, sender.id);
       });
     };
-    const handleUserStatus = ({ result, id }) => {
+    const handleDmUserStatus = ({ result, id }) => {
       console.log("result", result);
       console.log("id:", id);
 
@@ -309,6 +292,22 @@ const MainPanel = () => {
 
       result.forEach(({ userId, status }) => {
         if (receivers[userId]) setStatus(userId, status);
+      });
+    };
+    const handleGroupUserStatus = ({ result, group_id }) => {
+      console.log("result", result);
+      console.log("group_id:", group_id);
+
+      result.forEach(({ userId, status }) => {
+        queryClient.setQueryData(["groupMembers", group_id], (olderData) => {
+          const members = olderData?.members.map((m) => {
+            return m.id == userId ? { ...m, status } : m;
+          });
+          return {
+            ...olderData,
+            members,
+          };
+        });
       });
     };
     const handleBlockedUsers = ({ result }) => {
@@ -457,11 +456,16 @@ const MainPanel = () => {
         msgAddedOrDeleted[groupId] = true;
       });
     };
+    const handleGroupDeleted = ({ result }) => {
+      console.log("result", result);
 
-    // socket.connect();
-    // socket.on("connect", onConnect);
-    // socket.on("connect_error", onConnectErr);
-    // socket.on("initial", getInitial);
+      result.forEach((groupId) => {
+        socket.emit("leave group", groupId);
+        removeGroup(queryClient, groupId);
+      });
+      navigate("/@me/friends");
+    };
+
     socket.on("receive dms", handleDmNewMessages);
     socket.on("receive msg requests", handleMessageRequests);
     socket.on("receive msg request acceptance", handleMessageRequestAcceptance);
@@ -476,21 +480,16 @@ const MainPanel = () => {
       "receive friend request acceptance",
       handleFriendRequestAcceptance
     );
-    socket.on("receive changed user status", handleUserStatus);
+    socket.on("receive dm changed user status", handleDmUserStatus);
+    socket.on("receive group changed user status", handleGroupUserStatus);
     socket.on("receive user activity", handleUserActivity);
     socket.on("receive group edited msgs", handleGroupEditedMessages);
     socket.on("receive group msgs", handleGroupNewMessages);
     socket.on("receive group deleted msgs", handleGroupDeletedMessages);
     socket.on("receive group pinned msgs", handleGroupPinnedMessages);
-    // socket.on("disconnect", onDisconnect);
-    // socket.on("connect_error", (err) =>
-    //   console.error("⚠️ Connect error:", err)
-    // );
+    socket.on("receive group deleted", handleGroupDeleted);
 
     return () => {
-      // socket.off("connect", onConnect);
-      // socket.off("connect_error", onConnectErr);
-      // socket.off("initial", getInitial);
       socket.off("receive msg requests", handleMessageRequests);
       socket.off(
         "receive msg request acceptance",
@@ -509,12 +508,14 @@ const MainPanel = () => {
         "receive friend request acceptance",
         handleFriendRequestAcceptance
       );
-      socket.off("receive changed user status", handleUserStatus);
+      socket.off("receive dm changed user status", handleDmUserStatus);
+      socket.off("receive group changed user status", handleGroupUserStatus);
       socket.off("receive user activity", handleUserActivity);
       socket.off("receive group edited msgs", handleGroupEditedMessages);
       socket.off("receive group msgs", handleGroupNewMessages);
       socket.off("receive group deleted msgs", handleGroupDeletedMessages);
       socket.off("receive group pinned msgs", handleGroupPinnedMessages);
+      socket.off("receive group deleted", handleGroupDeleted);
 
       // socket.off("disconnect", onDisconnect);
       // socket.disconnect();

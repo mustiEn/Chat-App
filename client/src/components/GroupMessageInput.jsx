@@ -53,7 +53,7 @@ const GroupMessageInput = () => {
 
     addMessage("groupMessages", queryClient, groupId, res.result[0]);
     // socket.auth.serverOffset.dms[chatId] = res.result[0].id;
-    // directMessagesBottomId[chatId] = res.result[0].id;
+    // dmBottomId[chatId] = res.result[0].id;
     msgAddedOrDeleted[groupId] = true;
 
     console.log("Message successful:", res);

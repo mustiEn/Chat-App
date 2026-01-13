@@ -2,8 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Box, Flex, Image, Text } from "@mantine/core";
 import UserStatus from "./UserStatus";
-import styles from "../css/friend_profile.module.css";
 import { useReceiverStore } from "../stores/useReceiverStore";
+import styles from "../css/friend_profile.module.css";
 
 const FriendProfile = ({ showOffset, friend }) => {
   const receivers = useReceiverStore((s) => s.receivers);

@@ -80,7 +80,7 @@ const DmInput = () => {
 
     addMessage("directMessages", queryClient, chatId, res.result[0]);
     // socket.auth.serverOffset.dms[chatId] = res.result[0].id;
-    // directMessagesBottomId[chatId] = res.result[0].id;
+    // dmBottomId[chatId] = res.result[0].id;
     msgAddedOrDeleted[chatId] = true;
 
     console.log("Message successful:", res);

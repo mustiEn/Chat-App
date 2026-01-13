@@ -9,6 +9,7 @@ import { useAuthUserStore } from "../stores/useAuthUserStore.js";
 const UserProfileBarDropdown = ({ open }) => {
   const ref = useRef(null);
   const user = useAuthUserStore((s) => s.authUser);
+  const setAuthUser = useAuthUserStore((s) => s.setAuthUser);
 
   const handleUserStatus = (status) => {
     if (!socket.connected) toast.error("Something went wrong");
@@ -19,7 +20,7 @@ const UserProfileBarDropdown = ({ open }) => {
         return;
       }
 
-      user.status = status;
+      setAuthUser({ ...user, status });
       console.log(res);
     });
   };

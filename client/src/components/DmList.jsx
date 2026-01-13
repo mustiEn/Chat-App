@@ -17,7 +17,6 @@ import { socket } from "../socket.js";
 const DmList = ({}) => {
   const { chatId } = useParams();
   const { scrollElementRef, dmChatRef } = useOutletContext();
-  const { receiverId } = useContext(DmPanelContext);
 
   const pendingMsgs = usePendingMsgStore((s) => s.pendingMsgs.dm);
   const addToHasMoreUp = useHasMoreUpStore((s) => s.addToDmHasMoreUp);
@@ -26,7 +25,7 @@ const DmList = ({}) => {
   const {
     scrollPosition,
     prevTopId,
-    dmPanel: { groupMessagesTopId },
+    dmPanel: { dmTopId },
     msgAddedOrDeleted,
   } = dmChatRef.current;
   const {
@@ -46,7 +45,7 @@ const DmList = ({}) => {
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 70,
     gap: 5,
-    overscan: 1,
+    overscan: 5,
   });
   const { ref, inView } = useInView({
     threshold: 0.6,
@@ -74,8 +73,7 @@ const DmList = ({}) => {
     if (!items.length || !el) return;
 
     const latestTopId = items[0].id;
-    const newMsgsLoaded =
-      groupMessagesTopId[chatId] && groupMessagesTopId[chatId] !== latestTopId;
+    const newMsgsLoaded = dmTopId[chatId] && dmTopId[chatId] !== latestTopId;
     const isNearBottom = rowVirtualizer.range.endIndex >= items.length - 4;
 
     if (scrollPosition[chatId] === undefined) {
@@ -101,7 +99,7 @@ const DmList = ({}) => {
     // }
 
     socket.auth.serverOffset.dms[chatId] = messages.at(-1)?.id ?? 0;
-    groupMessagesTopId[chatId] = latestTopId;
+    dmTopId[chatId] = latestTopId;
   }, [items]);
 
   useLayoutEffect(() => {
@@ -152,7 +150,6 @@ const DmList = ({}) => {
             </div>
           )}
           <div
-            // h={rowVirtualizer.getTotalSize()}
             style={{
               position: "relative",
               minHeight: 355,
@@ -166,9 +163,6 @@ const DmList = ({}) => {
               return (
                 <div
                   key={virtualRow.key}
-                  // w={"100%"}
-                  // top={0}
-                  // left={0}
                   style={{
                     position: "absolute",
                     transform: `translateY(${virtualRow.start}px)`,
@@ -177,11 +171,8 @@ const DmList = ({}) => {
                     left: 0,
                   }}
                   data-index={virtualRow.index}
-                  // ref={rowVirtualizer.measureElement}
+                  ref={rowVirtualizer.measureElement}
                 >
-                  {/* <div w={"100%"} p={"xs"}>
-                    {virtualRow.index}
-                  </div> */}
                   <MsgItem msg={item} />
                 </div>
               );

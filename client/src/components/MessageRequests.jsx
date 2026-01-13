@@ -9,6 +9,8 @@ import styles from "../css/message_requests.module.css";
 import { useMessageRequests } from "../custom-hooks/useMessageRequests.js";
 import { removeReceivedMessageRequest } from "../utils/msgRequests.js";
 import { toast } from "react-hot-toast";
+import { useEffect } from "react";
+import { useHeaderStore } from "../stores/useHeaderStore.js";
 
 const MessageRequests = () => {
   const queryClient = useQueryClient();
@@ -36,6 +38,11 @@ const MessageRequests = () => {
   };
   const { data, isLoading } = useMessageRequests();
   const { receivedMessageRequests = [] } = data ?? {};
+  const setHeader = useHeaderStore((s) => s.setHeader);
+
+  useEffect(() => {
+    setHeader("Message Requests");
+  }, []);
 
   return (
     <>

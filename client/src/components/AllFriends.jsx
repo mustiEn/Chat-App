@@ -59,7 +59,7 @@ const AllFriends = () => {
     overscan: 5,
   });
   const receivers = useReceiverStore((s) => s.receivers);
-  const addToReceivers = useReceiverStore((s) => s.addToReceivers);
+  const addReceiver = useReceiverStore((s) => s.addReceiver);
 
   useEffect(() => {
     if (!isSuccess) return;
@@ -67,7 +67,7 @@ const AllFriends = () => {
     if (dataUpdatedAt === allFriendsLastUpdatedAt.current) return;
 
     allFriendsLastUpdatedAt.current = dataUpdatedAt;
-    newdata.forEach((e) => addToReceivers(e.id, e));
+    newdata.forEach((e) => addReceiver(e.id, e));
   }, [newdata]);
 
   useEffect(() => {

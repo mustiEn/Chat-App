@@ -2,27 +2,20 @@ import GroupList from "../components/GroupList";
 import Header from "../components/Header";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import HeaderProvider from "../contexts/HeaderContext";
 import { Flex } from "@mantine/core";
 import { useAuthUserStore } from "../stores/useAuthUserStore";
 import AuthUserFallback from "../components/AuthUserFallback.jsx";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { returnLocalNow } from "../utils/index.js";
+import { useHeaderStore } from "../stores/useHeaderStore.js";
 import { socket } from "../socket.js";
 
 const Layout = () => {
-  const [header, setHeader] = useState("Friends");
-  const value = setHeader;
+  const header = useHeaderStore((s) => s.header);
   const authUser = useAuthUserStore((s) => s.authUser);
   const setAuthUser = useAuthUserStore((s) => s.setAuthUser);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    console.log("authUser: ", authUser);
-
-    return () => console.log("clean up authUser: ", authUser);
-  }, [authUser]);
 
   useEffect(() => {
     const onConnect = () => {
@@ -36,14 +29,13 @@ const Layout = () => {
 
       socket.auth.user = user;
       // lastActivity.current = now.valueOf();
-      setTimeout(() => {
-        setAuthUser(user);
-      }, 4000);
+      setAuthUser(user);
 
       console.log("user", user);
     };
     const onDisconnect = (reason) => {
       console.log("❌ Socket disconnected, ", reason);
+      // socket.emit()
     };
 
     socket.connect();
@@ -73,13 +65,10 @@ const Layout = () => {
       {authUser?.id ? (
         <>
           <Header content={header} />
-
-          <HeaderProvider value={value}>
-            <Flex h={"calc(100% - var(--header-height))"}>
-              <GroupList />
-              <Outlet />
-            </Flex>
-          </HeaderProvider>
+          <Flex h={"calc(100% - var(--header-height))"}>
+            <GroupList />
+            <Outlet />
+          </Flex>
         </>
       ) : (
         <AuthUserFallback />

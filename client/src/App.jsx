@@ -67,7 +67,6 @@ function App() {
             {
               path: "gc/:groupId",
               element: <GroupChatPanel />,
-              // loader: Loader.loadGroupData(queryClient),
             },
           ],
           loader: Loader.loadGroups(queryClient),

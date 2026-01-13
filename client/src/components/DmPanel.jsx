@@ -19,13 +19,14 @@ import PanelModalNotifier from "./PanelModalNotifier.jsx";
 import styles from "../css/panel.module.css";
 import { useDirectMessages } from "../custom-hooks/useDirectMessages.js";
 import { usePendingMsgStore } from "../stores/usePendingMsgStore.js";
+import { useHeaderStore } from "../stores/useHeaderStore.js";
 
 const DmPanel = () => {
   const queryClient = useQueryClient();
   const { chatId } = useParams();
-
+  const setHeader = useHeaderStore((s) => s.setHeader);
   const receivers = useReceiverStore((s) => s.receivers);
-  const addToReceivers = useReceiverStore((s) => s.addToReceivers);
+  const addReceiver = useReceiverStore((s) => s.addReceiver);
   const { data: initialDmData, isSuccess } = useDmData(chatId);
   const [showOffset, setShowOffset] = useState(false);
   const handleOffsetToggle = () => setShowOffset((prev) => !prev);
@@ -50,7 +51,7 @@ const DmPanel = () => {
     if (!isUserInDmHistory)
       addDmHistoryUsers(queryClient, [{ ...receiver, chatId }]);
     if (!isUserInReceiversObj)
-      addToReceivers(receiver.id, { ...receiver, chatId });
+      addReceiver(receiver.id, { ...receiver, chatId });
     if (friendStatus?.request_state === "pending") {
       friendStatus.user_id == receiver.id
         ? addReceivedFriendRequest(queryClient, [receiver])
@@ -60,6 +61,10 @@ const DmPanel = () => {
     }
     // initialPageParam[recevierId] = nextId;
   }, [initialDmData]);
+
+  useEffect(() => {
+    setHeader("Direct Messages");
+  }, []);
 
   const value = useMemo(
     () => ({ activeMsg, receiverId: initialDmData?.receiver.id }),

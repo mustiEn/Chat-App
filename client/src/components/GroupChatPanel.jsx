@@ -9,6 +9,9 @@ import GroupMessageList from "./GroupMessageList";
 import GroupMembers from "./GroupMembers";
 import styles from "../css/panel.module.css";
 import { useEffect } from "react";
+import { useHeaderStore } from "../stores/useHeaderStore.js";
+import { useGroups } from "../custom-hooks/useGroups.js";
+import { useParams } from "react-router-dom";
 
 const GroupChatPanel = () => {
   const [showOffset, setShowOffset] = useState(false);
@@ -17,29 +20,14 @@ const GroupChatPanel = () => {
     msg: null,
     type: null,
   });
+  const setHeader = useHeaderStore((s) => s.setHeader);
+  const { groupId } = useParams();
+  const { data: groups } = useGroups();
+  const group = groups?.find(({ group_id }) => group_id === groupId) ?? [];
 
-  // useEffect(() => {
-  //   if (!isSuccess) return;
-
-  //   const { receiver, friendStatus } = initialDmData;
-  //   const isUserInReceiversObj = receivers[receiver.id];
-  //   const dmHistoryUsers = queryClient.getQueryData(["dmHistory"]);
-  //   const isUserInDmHistory =
-  //     dmHistoryUsers && dmHistoryUsers.some((e) => e.id == receiver.id);
-
-  //   if (!isUserInDmHistory)
-  //     addDmHistoryUsers(queryClient, [{ ...receiver, chatId }]);
-  //   if (!isUserInReceiversObj)
-  //     addToReceivers(receiver.id, { ...receiver, chatId });
-  //   if (friendStatus?.request_state === "pending") {
-  //     friendStatus.user_id == receiver.id
-  //       ? addReceivedFriendRequest(queryClient, [receiver])
-  //       : addSentFriendRequest(queryClient, [
-  //           { id: receiver.id, username: receiver.username },
-  //         ]);
-  //   }
-  //   // initialPageParam[recevierId] = nextId;
-  // }, [initialDmData]);
+  useEffect(() => {
+    setHeader(group?.group_name);
+  }, []);
 
   const value = useMemo(() => ({ activeMsg }), [activeMsg]);
 

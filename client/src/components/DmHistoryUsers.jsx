@@ -1,6 +1,5 @@
 import React, { memo, useContext, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import HeaderContext from "../contexts/HeaderContext.jsx";
 import DmHistorySkeleton from "./DmHistorySkeleton.jsx";
 import { Box, Button, Flex, Image, Stack, Text } from "@mantine/core";
 import { useDmHistory } from "../custom-hooks/useDmHistory.js";
@@ -13,14 +12,13 @@ import { concatName } from "../utils/index.js";
 
 const DmHistoryUsers = memo(function DmHistoryUsers() {
   const { t, i18n } = useTranslation();
-  const setHeader = useContext(HeaderContext);
   const { data, isLoading, isSuccess } = useDmHistory();
   const [lng, setLng] = useState("en");
   const handleLangSwitch = (lng) => {
     i18n.changeLanguage(lng);
     setLng(lng);
   };
-  const addReceiver = useReceiverStore((s) => s.addToReceivers);
+  const addReceiver = useReceiverStore((s) => s.addReceiver);
   const receivers = useReceiverStore((s) => s.receivers);
 
   useEffect(() => {

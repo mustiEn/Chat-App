@@ -4,7 +4,7 @@ import { immer } from "zustand/middleware/immer";
 export const useReceiverStore = create(
   immer((set) => ({
     receivers: {},
-    addToReceivers: (receiverId, receiver) =>
+    addReceiver: (receiverId, receiver) =>
       set((state) => {
         // if(!state.receivers[receiverId]) state.receivers
         state.receivers[receiverId] = receiver;
@@ -22,7 +22,6 @@ export const useReceiverStore = create(
     setStatus: (receiverId, status) =>
       set((state) => {
         state.receivers[receiverId].status = status;
-        state.receivers[receiverId].okey = 1111;
       }),
   }))
 );

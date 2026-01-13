@@ -45,7 +45,7 @@ const sessionMiddleware = session({
 });
 const server = createServer(app);
 export const io = new Server(server, {
-  connectionStateRecovery: {},
+  // connectionStateRecovery: {},
   cors: {
     origin: "http://localhost:8080",
     credentials: true,

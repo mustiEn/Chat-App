@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { IoPersonAddOutline } from "react-icons/io5";
 import GroupChatSidebarNav from "./GroupChatSidebarNav";
 import { useGroupStore } from "../stores/useGroupStore";
@@ -29,12 +29,12 @@ import { useGroups } from "../custom-hooks/useGroups";
 const GroupChatSidebar = () => {
   const { groupId } = useParams();
   const { data: groups } = useGroups();
-  const group = groups?.find(({ group_id }) => group_id === groupId) ?? [];
   const [opened, { open, close }] = useDisclosure(false);
   const [friendInp, setFriendInp] = useState("");
   const [debounceVal, setDebounceVal] = useState("");
   const { data, isFetching } = useSearchFriends(debounceVal, groupId);
   const debouncedChange = useDebounce((val) => setDebounceVal(val), 700);
+  const group = groups?.find(({ group_id }) => group_id == groupId) ?? [];
   // const showSpinner = useDelayedSpinner(isFetching);
 
   //? dont list those who are alredy in the froup
@@ -63,7 +63,7 @@ const GroupChatSidebar = () => {
         p={"xs"}
         h={"100%"}
       >
-        <GroupChatSidebarNav />
+        <GroupChatSidebarNav group={group} />
       </Flex>
       <Modal
         opened={opened}

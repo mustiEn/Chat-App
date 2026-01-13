@@ -4,12 +4,10 @@ import { IoMdStarOutline } from "react-icons/io";
 import { AiOutlineShop } from "react-icons/ai";
 import { FaRegEnvelope } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
-import HeaderContext from "../contexts/HeaderContext";
 import { Stack, Button, Flex, Text, Box } from "@mantine/core";
 import styles from "../css/dm_sidebar_nav_top.module.css";
 
 const DmSidebarNavTop = () => {
-  const setHeader = useContext(HeaderContext);
   const links = [
     { content: "Friends", icon: <FaUsers />, link: "/@me/friends" },
     { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
@@ -22,12 +20,7 @@ const DmSidebarNavTop = () => {
         <Box>
           <Stack gap={"xs"}>
             {links.map((link, i) => (
-              <NavLink
-                key={i}
-                to={link.link}
-                onClick={() => setHeader(link.content)}
-                end
-              >
+              <NavLink key={i} to={link.link} end>
                 <Button
                   variant={"filled"}
                   color="dark"

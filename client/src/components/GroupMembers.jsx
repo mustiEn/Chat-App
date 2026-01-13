@@ -1,85 +1,121 @@
-import React from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useGroupMembers } from "../custom-hooks/useGroupMembers";
 import { useParams } from "react-router-dom";
-import { Box, Flex, Image, Stack, Text } from "@mantine/core";
-import UserStatus from "./UserStatus";
+import { Text } from "@mantine/core";
 import { PulseLoader } from "react-spinners";
-import { concatName } from "../utils";
+import GroupMemberItem from "./GroupMemberItem";
+import { useAuthUserStore } from "../stores/useAuthUserStore";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { generateUsers } from "../utils";
+import styles from "../css/group_members.module.css";
 
-const GroupMembers = ({ showOffset }) => {
+const arrs = generateUsers();
+
+const GroupMembers = ({ showOffset, setOnlineMembers }) => {
   const { groupId } = useParams();
   const { data, isLoading } = useGroupMembers(groupId);
+  const scrollElementRef = useRef(null);
+  const authUser = useAuthUserStore((s) => s.authUser);
+  const members = useMemo(
+    () =>
+      data?.members.map((m) => {
+        return m.id == authUser.id ? { ...m, status: authUser.status } : m;
+      }) ?? [],
+    [data, authUser.status]
+  );
+
+  const { items, onlineCount, offlineCount } = useMemo(() => {
+    const onlineMembers = [];
+    const offlineMembers = [];
+
+    for (const m of arrs) {
+      if (m.status === "Online") {
+        if (!onlineMembers.length)
+          onlineMembers.push({ id: null, label: "Online" });
+        onlineMembers.push(m);
+      } else {
+        if (!offlineMembers.length)
+          offlineMembers.push({ id: null, label: "Offline" });
+        offlineMembers.push(m);
+      }
+    }
+
+    const items = [...onlineMembers, ...offlineMembers];
+    const onlineCount = onlineMembers.length;
+    const offlineCount = offlineMembers.length;
+    return { items, onlineCount, offlineCount };
+  }, [members]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: () => 45,
+    overscan: 5,
+    gap: 3,
+  });
+  // console.log(items);
 
   return (
     <>
-      {isLoading ? (
-        <PulseLoader color={"white"} />
-      ) : (
-        <Stack>
-          {data.members.map((member) => (
-            <Box
-              key={member.id}
-              color={"dark"}
-              w={"100%"}
-              h={"100%"}
-              justify="flex-start"
-              style={{
-                position: "relative",
-              }}
-            >
-              <Box
-                w={"100%"}
-                h={"100%"}
-                style={{
-                  // backgroundImage: "url(/atomic.gif)",
-                  zIndex: 0,
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  backgroundRepeat: "no-repeat",
-                  backgroundSize: "cover",
-                  backgroundPosition: "100% 30%",
-                  maskImage:
-                    "linear-gradient(to left, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0))",
-                  WebkitMaskImage:
-                    "linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0))",
-                }}
-              ></Box>
-              <Flex
-                align={"center"}
-                gap={"xs"}
-                style={{
-                  position: "absolute",
-                  zIndex: 1,
-                }}
-              >
-                <div
-                  style={{
-                    position: "relative",
-                    width: 32,
-                    height: 32,
-                  }}
-                >
-                  <Image
-                    src={member.profile ?? "https://placehold.co/32"}
-                    radius={"xl"}
-                    alt=""
-                  />
-                  {member.status && (
-                    <UserStatus
-                      status={member.status}
-                      w={12}
-                      h={12}
-                      absolute={true}
-                    />
-                  )}
-                </div>
-                <Text>{concatName(member.display_name)}</Text>
-              </Flex>
-            </Box>
-          ))}
-        </Stack>
-      )}
+      <div
+        color="white"
+        className={`${styles["offCanvas"]} custom-scrollbar ${
+          showOffset ? styles["show"] : ""
+        }`}
+        style={{
+          flexShrink: 0,
+          height: "100%",
+          overflowY: "auto",
+          padding: "1rem",
+        }}
+        id={"scrollableRef"}
+        ref={scrollElementRef}
+      >
+        {isLoading ? (
+          <PulseLoader color={"white"} />
+        ) : (
+          <div
+            // gap={"2.5rem"}
+            style={{
+              position: "relative",
+              height: rowVirtualizer.getTotalSize(),
+            }}
+            // p={"xl"}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const item = items[virtualRow.index];
+              return (
+                <>
+                  <div
+                    key={virtualRow.key}
+                    w={"100%"}
+                    top={0}
+                    left={0}
+                    style={{
+                      width: "100%",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      height: virtualRow.size,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    data-index={virtualRow.index}
+                  >
+                    {item?.label ? (
+                      <Text fw={600}>
+                        {item.label} —{" "}
+                        {item.label === "Online" ? onlineCount : offlineCount}
+                      </Text>
+                    ) : (
+                      <GroupMemberItem member={item} />
+                    )}
+                  </div>
+                </>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </>
   );
 };

@@ -13,10 +13,7 @@ import { closePinnedMsgBox } from "../utils/pinnedMsgBox.js";
 const GroupChatPanelTop = ({ showOffset, handleOffsetToggle }) => {
   const customOverlayRef = useRef();
   const pinnedMsgsBoxRef = useRef(null);
-
   const { groupId } = useParams();
-  const queryClient = useQueryClient();
-  const groups = [];
   const pinnedMsgBoxObj = useShowPinnedMsgBoxStore(
     (s) => s.pinnedMsgBoxObj.group
   );
@@ -46,8 +43,6 @@ const GroupChatPanelTop = ({ showOffset, handleOffsetToggle }) => {
       ></Box>
       <Box className={"panel-top"}>
         <Flex h={"100%"} w={"100%"} c={"white"} pr={10} pl={10}>
-          {/* ! count of Online people */}
-          <Title order={5}>123 people online</Title>
           <GroupChatPanelTopIcons
             showOffset={showOffset}
             handleOffsetToggle={handleOffsetToggle}
