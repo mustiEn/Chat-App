@@ -17,9 +17,11 @@ import { CiLogout } from "react-icons/ci";
 import styles from "../css/group_list.module.css";
 import { useGroups } from "../custom-hooks/useGroups";
 import { useEffect } from "react";
+import { concatFirstGroupLetters } from "../utils";
+import { socket } from "../socket";
 
 const GroupList = memo(function Grouplist() {
-  const { data: groups, isLoading } = useGroups();
+  const { data: groups, isLoading, isSuccess } = useGroups();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [isAppModalOpened, { open: openAppModal, close: closeAppModal }] =
@@ -38,12 +40,6 @@ const GroupList = memo(function Grouplist() {
       modalToggler: openAppModal,
     },
   ];
-  const concatFirstLetters = (name) => {
-    const splitName = name.split(" ");
-    const result = splitName[0][0] + splitName.at(-1)[0];
-
-    return result;
-  };
   const popOverContent = (content) => {
     return (
       <Stack>
@@ -83,7 +79,7 @@ const GroupList = memo(function Grouplist() {
                 radius={"50%"}
               />
             ) : (
-              concatFirstLetters(group?.group_name ?? "jack d")
+              concatFirstGroupLetters(group?.group_name ?? "jack d")
             )
           ) : (
             icon
@@ -115,6 +111,15 @@ const GroupList = memo(function Grouplist() {
       </Button>
     );
   };
+
+  useEffect(() => {
+    if (!isSuccess) return;
+    if (!groups.length) return;
+
+    groups.forEach(({ group_id }) => {
+      socket.auth.serverOffset.groups[group_id] = null;
+    });
+  });
 
   return (
     <>

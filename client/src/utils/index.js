@@ -38,6 +38,12 @@ export const normaliseURL = (str) => {
 export const concatName = (name) => {
   return name?.length > 15 ? name.slice(15).concat("...") : name;
 };
+export const concatFirstGroupLetters = (name) => {
+  const splitName = name.split(" ");
+  const result = splitName[0][0] + splitName.at(-1)[0];
+
+  return result;
+};
 
 // Function to generate random status
 const randomStatus = () => {
