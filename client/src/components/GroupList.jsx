@@ -5,7 +5,7 @@ import { LiaDownloadSolid } from "react-icons/lia";
 import PopoverComponent from "./PopoverComponent";
 import AppsModal from "./AppsModal";
 import AddGroupModal from "./AddGroupModal";
-import { Flex, Stack, Button, Text } from "@mantine/core";
+import { Flex, Stack, Button, Text, Image } from "@mantine/core";
 import {
   Link,
   NavLink as ReactNavLink,
@@ -152,7 +152,7 @@ const GroupList = memo(function Grouplist() {
               trigger={popOverTrigger(
                 `/@me/gc/${group.group_id}`,
                 group,
-                undefined
+                undefined,
               )}
             />
           ))

@@ -2,6 +2,7 @@
   --panel-top-height: rem(58px);
   --header-height: rem(32px);
   --text-muted: #afafaf;
+  --default-group-bg-bottom: #2727270f;
 }
 
 * {

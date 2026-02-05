@@ -49,7 +49,7 @@ export const setUpSocket = (io) => {
       });
       await client.set(
         `user:${userId}:contacts`,
-        JSON.stringify(usersWithInContact)
+        JSON.stringify(usersWithInContact),
       );
     }
     if (!cachedGroups) {
@@ -78,7 +78,6 @@ export const setUpSocket = (io) => {
 
     socket.emit("initial", sender);
     socket.join(userId);
-    logger.log(socket.rooms);
 
     //* in groups,no access to anyone regadless of friendship,only allow a msg input.
     //^ Group link expiry date, and to who, whenever an invite link ent to chat, cheeck it via req, if its invalid,show its invalid
@@ -93,15 +92,18 @@ export const setUpSocket = (io) => {
     });
     allGroupsParsed.forEach(({ group_id }) => {
       socket.join(group_id);
-      logger.log("Joined group = ", group_id);
+      // logger.log("Joined group = ", group_id);
     });
 
     // logger.log(allContactsParsed);
 
     socket.on("join room", async (chatId, done) => {
+      const allContactsStr = await client.get(`user:${userId}:contacts`);
+      const allContactsParsed = JSON.parse(allContactsStr);
       const chatExists = allContactsParsed.some(
-        ({ chat_id }) => chat_id == chatId
+        ({ chat_id }) => chat_id == chatId,
       );
+
       if (!chatExists) {
         const chat = await OneToOneChat.findOne({
           attributes: ["chat_id"],
@@ -111,7 +113,7 @@ export const setUpSocket = (io) => {
           raw: true,
         });
         const newChatsStr = JSON.stringify({
-          ...allContactsStr,
+          ...allContactsParsed,
           ...chat,
         });
         await client.set(`user:${userId}:contacts`, newChatsStr);
@@ -124,16 +126,27 @@ export const setUpSocket = (io) => {
         status: "ok",
       });
     });
-    socket.on("leave room", (chatId, done) => {
+    socket.on("leave room", async (chatId, done) => {
+      const allContactsStr = await client.get(`user:${userId}:groups`);
+      const allContactsParsed = JSON.parse(allContactsStr);
+      const filteredContacts = allContactsParsed.filter(
+        ({ group_id }) => group_id != groupId,
+      );
+      const newContactsStr = JSON.stringify({ ...filteredContacts });
+
+      await client.set(`user:${userId}:groups`, newContactsStr);
       socket.leave(chatId);
       done({
         status: "ok",
       });
     });
     socket.on("join group", async (groupId, done) => {
+      const allGroupsStr = await client.get(`user:${userId}:groups`);
+      const allGroupsParsed = JSON.parse(allGroupsStr);
       const groupExists = allGroupsParsed.some(
-        ({ group_id }) => group_id == groupId
+        ({ group_id }) => group_id == groupId,
       );
+
       if (!groupExists) {
         const group = await GroupChat.findOne({
           attributes: ["id", "group_id", "group_icon", "group_name"],
@@ -142,7 +155,7 @@ export const setUpSocket = (io) => {
           },
           raw: true,
         });
-        const newGroupsStr = JSON.stringify({ ...allGroupsStr, group });
+        const newGroupsStr = JSON.stringify({ ...allGroupsParsed, group });
         await client.set(`user:${userId}:groups`, newGroupsStr);
       }
 
@@ -153,8 +166,17 @@ export const setUpSocket = (io) => {
         status: "ok",
       });
     });
-    socket.on("leave group", (groupId, done) => {
+    socket.on("leave group", async (groupId, done) => {
+      const allGroupsStr = await client.get(`user:${userId}:groups`);
+      const allGroupsParsed = JSON.parse(allGroupsStr);
+      const filteredGroups = allGroupsParsed.filter(
+        ({ group_id }) => group_id != groupId,
+      );
+      const newGroupsStr = JSON.stringify({ ...filteredGroups });
+
+      await client.set(`user:${userId}:groups`, newGroupsStr);
       socket.leave(groupId);
+
       done({
         status: "ok",
       });
@@ -188,7 +210,7 @@ export const setUpSocket = (io) => {
               where: {
                 id: userId,
               },
-            }
+            },
           ),
           client.set(`user:${userId}:status`, status),
         ]);
@@ -237,7 +259,7 @@ export const setUpSocket = (io) => {
             where: {
               id: msg.id,
             },
-          }
+          },
         );
       } catch (error) {
         logger.log("❌ Unexpected error updating message:", error);
@@ -388,7 +410,7 @@ export const setUpSocket = (io) => {
             where: {
               id: answer.msgReq.id,
             },
-          }
+          },
         );
       } catch (error) {
         logger.log(error);
@@ -434,7 +456,7 @@ export const setUpSocket = (io) => {
         const { id } = chat;
         const newMsg = await DirectMessage.create(
           { ...msg, chat_id: id },
-          { raw: true }
+          { raw: true },
         );
 
         const resultSql = `
@@ -509,7 +531,7 @@ export const setUpSocket = (io) => {
             where: {
               id: msg.id,
             },
-          }
+          },
         );
 
         pinnedMessage = await DirectMessage.findByPk(msg.id, { raw: true });
@@ -748,7 +770,7 @@ export const setUpSocket = (io) => {
                   user_id: friendId,
                   friend_id: userId,
                 },
-              }
+              },
             );
             [chat, chatIdCreated] = await OneToOneChat.findCreateFind({
               attributes: ["chat_id"],
@@ -804,7 +826,7 @@ export const setUpSocket = (io) => {
         }
 
         logger.log("friend req accepted");
-      }
+      },
     );
     socket.on("send blocked users", async (blockedUserId, chatId, done) => {
       try {
@@ -849,7 +871,7 @@ export const setUpSocket = (io) => {
           });
 
         usersWithInContact = usersWithInContact.filter(
-          ({ id }) => id != blockedUserId
+          ({ id }) => id != blockedUserId,
         );
       } catch (error) {
         logger.log("error", error.message);
@@ -925,7 +947,7 @@ export const setUpSocket = (io) => {
             where: {
               id: msg.id,
             },
-          }
+          },
         );
         message = await GroupMessage.findByPk(msg.id, { raw: true });
       } catch (error) {
@@ -959,7 +981,7 @@ export const setUpSocket = (io) => {
         });
         const newMsg = await GroupMessage.create(
           { ...msg, group_id: group.id },
-          { raw: true }
+          { raw: true },
         );
 
         const resultSql = `
@@ -1032,7 +1054,7 @@ export const setUpSocket = (io) => {
             where: {
               id: msg.id,
             },
-          }
+          },
         );
 
         pinnedMessage = await GroupMessage.findByPk(msg.id, { raw: true });
@@ -1133,7 +1155,7 @@ export const setUpSocket = (io) => {
             where: {
               group_id: groupId,
             },
-          }
+          },
         );
       } catch (error) {
         logger.log(error);
@@ -1163,14 +1185,11 @@ export const setUpSocket = (io) => {
       try {
         const userLastDisconnect = lastDisconnect.get(userId);
         logger.log("socket recovered");
-        logger.log(userLastDisconnect, !userLastDisconnect);
         // logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
         // logger.log(lastDisconnect.get(userId));
         const { dms, groups } = socket.handshake.auth.serverOffset;
-        logger.log(dms, groups, userLastDisconnect);
 
         if (!userLastDisconnect) return;
-        console.log(11111111);
 
         if (Object.keys(dms).length) {
           for (const chatId in dms) {

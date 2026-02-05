@@ -3,15 +3,23 @@ import * as userController from "../controllers/user.js";
 import { query, body, param, check } from "express-validator";
 import { isAuthenticated } from "../middlewares/check_auth_user.js";
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+import { logger } from "../utils/index.js";
 
-const storage = multer.memoryStorage();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../../client/public/images"));
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
 const fileFilter = (req, file, cb) => {
-  const allowedFileTypes = [
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-    "image/webp",
-  ];
+  const allowedFileTypes = ["image/png", "image/jpeg", "image/webp"];
   allowedFileTypes.includes(file.mimetype)
     ? cb(null, true)
     : cb(new Error("Invalid file type"));
@@ -22,7 +30,7 @@ const router = express.Router();
 router.get(
   "/dm/initial-dm-data/:chatId",
   [isAuthenticated, param("chatId").notEmpty().isString()],
-  userController.getInitialDmData
+  userController.getInitialDmData,
 );
 
 router.get(
@@ -32,13 +40,13 @@ router.get(
     param("chatId").notEmpty().isString(),
     query("nextIdParam").notEmpty().isNumeric(),
   ],
-  userController.getDirectMessages
+  userController.getDirectMessages,
 );
 
 router.get(
   "/dm/pinned-messages/:chatId",
   [isAuthenticated, param("chatId").notEmpty().isString()],
-  userController.getDmPinnedMessages
+  userController.getDmPinnedMessages,
 );
 
 router.get("/dm-history", isAuthenticated, userController.getDmHistory);
@@ -46,7 +54,7 @@ router.get("/dm-history", isAuthenticated, userController.getDmHistory);
 router.get(
   "/message-requests",
   isAuthenticated,
-  userController.getMessageRequests
+  userController.getMessageRequests,
 );
 
 //* Friends
@@ -54,17 +62,17 @@ router.get(
 router.get(
   "/friends/get-all-friends/:offset",
   [isAuthenticated, param("offset").notEmpty().isInt()],
-  userController.getAllFriends
+  userController.getAllFriends,
 );
 router.get(
   "/friends/get-online-friends/:lastFriendId",
   [isAuthenticated, param("lastFriendId").notEmpty().isInt()],
-  userController.getOnlineFriends
+  userController.getOnlineFriends,
 );
 router.get(
   "/friends/get-friend-requests",
   isAuthenticated,
-  userController.getFriendRequests
+  userController.getFriendRequests,
 );
 router.get(
   "/friends/search-friends/:groupId",
@@ -73,9 +81,9 @@ router.get(
     query("q").notEmpty().isLength({
       min: 1,
     }),
-    param("groupId").notEmpty().isInt(),
+    param("groupId").notEmpty().isString(),
   ],
-  userController.searchFriends
+  userController.searchFriends,
 );
 
 //* Group
@@ -83,7 +91,7 @@ router.get(
 router.get(
   "/group/pinned-messages/:groupId",
   [isAuthenticated, param("groupId").notEmpty().isString()],
-  userController.getGroupPinnedMessages
+  userController.getGroupPinnedMessages,
 );
 router.post(
   "/group/add-group",
@@ -92,7 +100,21 @@ router.post(
     upload.single("icon"),
     body("name").notEmpty().isLength({ min: 2, max: 75 }),
   ],
-  userController.addGroup
+  userController.addGroup,
+);
+router.post(
+  "/group/edit-group",
+  [
+    isAuthenticated,
+    upload.single("icon"),
+    body("id").notEmpty().isBoolean(),
+    body("remove_icon").optional().isBoolean(),
+    body("description").notEmpty().isLength({ min: 1, max: 175 }),
+    body("group_name").notEmpty().isLength({ min: 1, max: 75 }),
+    body("group_icon").notEmpty().isLength({ min: 3, max: 100 }),
+    body("background_color").notEmpty().isLength({ min: 2, max: 10 }),
+  ],
+  userController.editGroup,
 );
 router.get("/group/get-groups", isAuthenticated, userController.getGroups);
 router.get(
@@ -102,11 +124,11 @@ router.get(
     param("groupId").notEmpty().isString(),
     query("nextIdParam").notEmpty().isNumeric(),
   ],
-  userController.getGroupMessages
+  userController.getGroupMessages,
 );
 router.get(
   "/group/get-members/:groupId",
   [isAuthenticated, param("groupId").notEmpty().isString()],
-  userController.getGroupMembers
+  userController.getGroupMembers,
 );
 export default router;

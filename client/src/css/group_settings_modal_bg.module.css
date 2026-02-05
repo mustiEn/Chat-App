@@ -1,0 +1,4 @@
+.bg:hover {
+  cursor: pointer;
+  transition: 1s;
+}

@@ -17,6 +17,15 @@ export const GroupChat = sequelize.define(
       type: DataTypes.STRING(75),
       allowNull: false,
     },
+    description: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+    },
+    background_color: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      defaultValue: "black",
+    },
     is_deleted: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
@@ -37,5 +46,5 @@ export const GroupChat = sequelize.define(
         fields: ["group_name"],
       },
     ],
-  }
+  },
 );

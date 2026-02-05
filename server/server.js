@@ -45,7 +45,7 @@ const sessionMiddleware = session({
 });
 const server = createServer(app);
 export const io = new Server(server, {
-  // connectionStateRecovery: {},
+  connectionStateRecovery: {},
   cors: {
     origin: "http://localhost:8080",
     credentials: true,
@@ -89,7 +89,7 @@ app.use(
   cors({
     origin: "http://localhost:8080",
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

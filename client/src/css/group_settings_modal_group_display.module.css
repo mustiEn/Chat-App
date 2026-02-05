@@ -1,0 +1,20 @@
+.group-default-icon {
+  border-radius: 100%;
+  background-color: black;
+  position: absolute;
+  top: rem(-35px);
+  left: rem(15px);
+  width: rem(70px);
+  height: rem(70px);
+  justify-content: center;
+  align-items: center;
+}
+
+.group-icon {
+  border-radius: 100%;
+  position: absolute;
+  top: rem(-35px);
+  left: rem(15px);
+  width: rem(70px);
+  height: rem(70px);
+}

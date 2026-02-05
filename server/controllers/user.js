@@ -475,7 +475,7 @@ export const getAllFriends = async (req, res, next) => {
       },
     });
     const ids = friends.map(({ id }) =>
-      [userId, id].sort((a, b) => a - b).join("-")
+      [userId, id].sort((a, b) => a - b).join("-"),
     );
     const chatIds = await OneToOneChat.findAll({
       attributes: ["chat_id", "chat_key"],
@@ -599,6 +599,54 @@ export const addGroup = async (req, res, next) => {
     next(error);
   }
 };
+export const editGroup = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    const result = validationResult(req);
+
+    if (!result.isEmpty()) throw new Error({ message: result.array() });
+
+    const {
+      id,
+      remove_icon,
+      description,
+      group_name,
+      group_icon,
+      background_color,
+    } = matchedData(req);
+    const icon = req.file;
+    const vals = {
+      description: description === "null" ? null : description,
+      group_name,
+      group_icon: group_icon === "null" ? null : group_icon,
+      background_color,
+    };
+    const group = await GroupChat.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!group) throw new Error("Group not found");
+
+    await GroupChat.update(vals, {
+      where: {
+        id,
+      },
+    });
+
+    res.status(200).json({
+      id,
+      remove_icon,
+      description,
+      group_name,
+      group_icon,
+      background_color,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 export const getGroups = async (req, res, next) => {
   try {
     const userId = req.session.passport.user;
@@ -634,7 +682,10 @@ export const searchFriends = async (req, res, next) => {
     const userId = req.session.passport.user;
     const result = validationResult(req);
 
-    if (!result.isEmpty()) throw new Error({ message: result.array() });
+    if (!result.isEmpty()) {
+      logger.log(result.array());
+      throw new Error("Validation failed");
+    }
 
     const { q, groupId } = matchedData(req);
 
