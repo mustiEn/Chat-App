@@ -8,10 +8,11 @@ import { useAuthUserStore } from "../stores/useAuthUserStore";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { generateUsers } from "../utils";
 import styles from "../css/group_members.module.css";
+import { useState } from "react";
 
-const arrs = generateUsers();
+// const arrs = generateUsers();
 
-const GroupMembers = ({ showOffset, setOnlineMembers }) => {
+const GroupMembers = ({ showOffset }) => {
   const { groupId } = useParams();
   const { data, isLoading } = useGroupMembers(groupId);
   const scrollElementRef = useRef(null);
@@ -21,14 +22,14 @@ const GroupMembers = ({ showOffset, setOnlineMembers }) => {
       data?.members.map((m) => {
         return m.id == authUser.id ? { ...m, status: authUser.status } : m;
       }) ?? [],
-    [data, authUser.status]
+    [data, authUser.status],
   );
 
   const { items, onlineCount, offlineCount } = useMemo(() => {
     const onlineMembers = [];
     const offlineMembers = [];
 
-    for (const m of arrs) {
+    for (const m of members) {
       if (m.status === "Online") {
         if (!onlineMembers.length)
           onlineMembers.push({ id: null, label: "Online" });
@@ -53,6 +54,8 @@ const GroupMembers = ({ showOffset, setOnlineMembers }) => {
     overscan: 5,
     gap: 3,
   });
+  const [isMemberCardOpen, setIsMemberCardOpen] = useState(false);
+
   // console.log(items);
 
   return (
@@ -107,7 +110,11 @@ const GroupMembers = ({ showOffset, setOnlineMembers }) => {
                         {item.label === "Online" ? onlineCount : offlineCount}
                       </Text>
                     ) : (
-                      <GroupMemberItem member={item} />
+                      <GroupMemberItem
+                        member={item}
+                        setIsMemberCardOpen={setIsMemberCardOpen}
+                        isMemberCardOpen={isMemberCardOpen}
+                      />
                     )}
                   </div>
                 </>

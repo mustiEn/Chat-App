@@ -1,0 +1,7 @@
+.member:hover {
+  cursor: pointer;
+  background-color: var(--mantine-color-gray-6);
+}
+.member.active {
+  background-color: var(--mantine-color-gray-4);
+}

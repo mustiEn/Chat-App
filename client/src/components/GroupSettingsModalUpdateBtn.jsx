@@ -15,12 +15,12 @@ const GroupSettingsModalUpdateBtn = ({
   const [isVisible, setIsVisible] = useState(false);
   const queryClient = useQueryClient();
   const mutate = useEditGroupMutation(queryClient);
+
   const fadeDown = () => {
     close();
     setIsVisible(false);
     resetGroupState();
   };
-
   const submit = () => {
     const formData = formDataRef.current;
 

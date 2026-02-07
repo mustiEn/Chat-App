@@ -5,12 +5,10 @@ import GroupSettingsBgs from "./GroupSettingsBgs";
 import GroupSettingsDescription from "./GroupSettingsDescription";
 import GroupSettingsGroupDisplay from "./GroupSettingsGroupDisplay";
 import { useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { useGroupMembers } from "../custom-hooks/useGroupMembers";
-import { useEditGroupMutation } from "../mutations/useEditGroupMutation";
-import styles from "../css/group_settings_modal_content.module.css";
 import GroupSettingsModalUpdateBtn from "./GroupSettingsModalUpdateBtn";
 import { useEffect } from "react";
+import styles from "../css/group_settings_modal_content.module.css";
 
 const GroupSettingsModalContent = ({ group }) => {
   const { groupId } = useParams();
@@ -33,8 +31,6 @@ const GroupSettingsModalContent = ({ group }) => {
     });
     setCroppedPreview(null);
   };
-
-  console.log(groupState);
 
   useEffect(() => {
     const isNameTheSame = group.group_name === groupState.group_name;

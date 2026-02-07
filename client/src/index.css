@@ -82,6 +82,10 @@ a {
   scrollbar-color: rgba(64, 229, 194, 0.862) transparent;
 }
 
+.custom-chat-scrollbar {
+  scrollbar-width: none;
+}
+
 .message-content {
   font-size: 14px;
   word-break: break-all;

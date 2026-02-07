@@ -7,13 +7,15 @@ const GroupSettingsDescription = memo(function GroupSettingsDescription({
   setGroupState,
 }) {
   const setDescription = (e) => {
-    if (groupDesc.length > 175) return;
-
     const val = e.target.value;
+    const slicedVal = val.length > 175 ? val.slice(0, 175) : val;
+    console.log(slicedVal.length);
+
+    if (slicedVal > 175) return;
 
     setGroupState((prev) => ({
       ...prev,
-      description: val == "" ? null : val,
+      description: slicedVal == "" ? null : slicedVal,
     }));
   };
 

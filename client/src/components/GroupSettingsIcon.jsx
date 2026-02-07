@@ -1,24 +1,12 @@
-import {
-  Box,
-  Button,
-  Divider,
-  FileInput,
-  Group,
-  Modal,
-  Stack,
-  Text,
-  TextInput,
-} from "@mantine/core";
+import { Box, Button, Divider, Group, Modal, Stack, Text } from "@mantine/core";
 import React, { useState } from "react";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import "../css/crop.css";
 import { useRef } from "react";
-import { useEditGroupMutation } from "../mutations/useEditGroupMutation";
 import { useQueryClient } from "@tanstack/react-query";
 import { memo } from "react";
 import { useDisclosure } from "@mantine/hooks";
-import toast from "react-hot-toast";
 
 const GroupSettingsIcon = memo(function GroupSettingsIcon({
   setGroupState,
@@ -36,7 +24,6 @@ const GroupSettingsIcon = memo(function GroupSettingsIcon({
     height: 30,
   });
   const queryClient = useQueryClient();
-  const mutation = useEditGroupMutation(queryClient);
   const imgRef = useRef(null);
   const [completedCrop, setCompletedCrop] = useState(null);
 
@@ -128,6 +115,7 @@ const GroupSettingsIcon = memo(function GroupSettingsIcon({
       ...prev,
       group_icon: null,
     }));
+    setCroppedPreview(null);
     close();
   };
 

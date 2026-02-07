@@ -18,8 +18,8 @@ import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { DmPanelContext } from "../contexts/DmPanelContext.jsx";
 import UserStatus from "../components/UserStatus.jsx";
 import DmPanelTopIcons from "./DmPanelTopIcons.jsx";
-import stylesPanelTop from "../css/panel_top.module.css";
 import { closePinnedMsgBox } from "../utils/pinnedMsgBox.js";
+import stylesPanelTop from "../css/panel_top.module.css";
 
 const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
   const { chatId } = useParams();
@@ -44,15 +44,15 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
 
   const pinnedMsgBoxObj = useShowPinnedMsgBoxStore((s) => s.pinnedMsgBoxObj.dm);
   const switchPinnedMsgBox = useShowPinnedMsgBoxStore(
-    (s) => s.switchDmPinnedMsgBox
+    (s) => s.switchDmPinnedMsgBox,
   );
 
   const isFriend = allFriends.some((e) => e.id == receiverId);
   const isFriendRequestSent = sentFriendRequests.some(
-    (e) => e.id == receiverId
+    (e) => e.id == receiverId,
   );
   const isFriendRequestReceived = receivedFriendRequests.some(
-    (e) => e.id == receiverId
+    (e) => e.id == receiverId,
   );
 
   const handleRemoveFriend = () => {
@@ -106,7 +106,7 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
         }
 
         removeReceivedFriendRequest(queryClient, receiverId);
-      }
+      },
     );
   };
   const handleUnblockUser = () => {
@@ -199,8 +199,8 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
           {isFriendRequestReceived
             ? "Looks like somebody wants to be friends..."
             : isFriendRequestSent
-            ? "It shouldn't take too long..."
-            : `You sure you want to
+              ? "It shouldn't take too long..."
+              : `You sure you want to
           ${
             isFriend
               ? " remove this user from your friends"
@@ -251,10 +251,10 @@ const DmPanelTop = ({ showOffset, handleOffsetToggle }) => {
             {isFriendRequestReceived
               ? "Accept"
               : isFriendRequestSent
-              ? "Friend request sent"
-              : isFriend
-              ? "Remove friend"
-              : "Send friend request"}
+                ? "Friend request sent"
+                : isFriend
+                  ? "Remove friend"
+                  : "Send friend request"}
           </Button>
           {isFriendRequestReceived && (
             <Button

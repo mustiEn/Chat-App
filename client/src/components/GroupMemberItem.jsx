@@ -2,9 +2,13 @@ import React from "react";
 import UserStatus from "./UserStatus";
 import { concatName } from "../utils";
 import { useAuthUserStore } from "../stores/useAuthUserStore";
+import styles from "../css/group_member_item.module.css";
+import GroupMemberCard from "./GroupMemberCard";
+import { useState } from "react";
 
-const GroupMemberItem = ({ member }) => {
+const GroupMemberItem = ({ member, setIsMemberCardOpen, isMemberCardOpen }) => {
   const authUser = useAuthUserStore((s) => s.authUser);
+  const [refEl, setRefEl] = React.useState(null);
 
   return (
     <>
@@ -71,6 +75,7 @@ const GroupMemberItem = ({ member }) => {
         </Flex>
       </div> */}
       <div
+        className={styles.member}
         key={member.id}
         style={{
           position: "relative",
@@ -79,6 +84,8 @@ const GroupMemberItem = ({ member }) => {
           justifyContent: "flex-start",
           color: "dark",
         }}
+        onClick={() => setIsMemberCardOpen(member.id)}
+        ref={setRefEl}
       >
         <div
           style={{
@@ -98,7 +105,6 @@ const GroupMemberItem = ({ member }) => {
               "linear-gradient(to left, rgba(0,0,0,1) 60%, rgba(0,0,0,0))",
           }}
         ></div>
-
         <div
           style={{
             position: "absolute",
@@ -122,7 +128,7 @@ const GroupMemberItem = ({ member }) => {
                 borderRadius: "50%",
               }}
             />
-            {member.status && (
+            {member?.status && (
               <UserStatus
                 status={
                   authUser.id == member.id ? authUser.status : member.status
@@ -135,6 +141,13 @@ const GroupMemberItem = ({ member }) => {
           </div>
           <span>{concatName(member.display_name)}</span>
         </div>
+        {isMemberCardOpen == member.id && (
+          <GroupMemberCard
+            member={member}
+            referenceEl={refEl}
+            opened={isMemberCardOpen == member.id}
+          />
+        )}
       </div>
     </>
   );

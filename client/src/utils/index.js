@@ -22,6 +22,9 @@ export const formatDate = (date) => {
   }
   return format;
 };
+export const returnJoinDate = (date) =>
+  dayjs(date).tz(dayjs.tz.guess()).format("DD MMM YYYY");
+
 export const returnLocalNow = () =>
   dayjs().tz(dayjs.tz.guess()).format("YYYY-MM-DD HH:mm:ss");
 export const isURL = (str) => {

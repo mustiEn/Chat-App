@@ -749,6 +749,78 @@ export const searchFriends = async (req, res, next) => {
 //     next(error);
 //   }
 // };
+export const getGroupLastJoins = async (req, res, next) => {
+  try {
+    const result = validationResult(req);
+    const userId = req.session.passport.user;
+
+    if (!result.isEmpty()) {
+      logger.log(result.array());
+      throw new Error("Validation failed");
+    }
+
+    const { groupId } = matchedData(req);
+    const group = await GroupChat.findOne({
+      attributes: ["id"],
+      where: {
+        group_id: groupId,
+      },
+      raw: true,
+    });
+
+    if (!group) throw new Error("Group not found");
+
+    const isMember = GroupMember.findOne({
+      where: {
+        user_id: userId,
+        group_id: group.id,
+      },
+    });
+
+    if (!isMember) throw new Error("Not a member in this group");
+
+    const { id } = group;
+    const lastJoins = await GroupMember.findAll({
+      where: {
+        group_id: id,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+    const pinnedMessagesSql = `
+      SELECT 
+        gm.id,
+        sender.display_name, 
+        sender.username, 
+        sender.profile,
+        gm.group_id,
+        gm.is_pinned,
+        gm.last_pin_action_by_id,
+        gm.clientOffset,
+        gm.message,
+        gm.createdAt created_at,
+        gm.pin_updated_at
+      FROM 
+        group_messages gm 
+        INNER JOIN users sender ON sender.id = gm.from_id 
+        LEFT JOIN group_messages gms ON gm.reply_to_msg_id = gms.id 
+      WHERE 
+        gm.group_id = :id 
+        AND gm.is_pinned = 1
+      ORDER BY 
+        gm.pin_updated_at DESC
+    `;
+    const pinnedMessages = await sequelize.query(pinnedMessagesSql, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        id,
+      },
+    });
+
+    res.status(200).json(sortedPinnedMessages);
+  } catch (error) {
+    next(error);
+  }
+};
 export const getGroupPinnedMessages = async (req, res, next) => {
   try {
     const result = validationResult(req);
@@ -949,10 +1021,13 @@ export const getGroupMembers = async (req, res, next) => {
     const groupMembersSql = ` 
       SELECT 
         u.id, 
-        u.display_name, 
+        u.display_name,
+        u.username, 
         u.profile, 
-        u.status 
-      FROM 
+        u.status,
+        u.createdAt userCreatedAt,
+        gm.createdAt 
+      FROM  
         group_members gm 
         INNER JOIN users u ON u.id = gm.user_id 
       WHERE 
@@ -977,6 +1052,10 @@ export const getGroupMembers = async (req, res, next) => {
       type: QueryTypes.SELECT,
       replacements: { id },
     });
+    const sortedByJoinDate = groupMembers.sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    const lastJoins = sortedByJoinDate.slice(0, 5);
 
     groupMembers.map(async (e) => {
       const cachedStatus = await client.get(`user:${e.id}:status`);
@@ -989,7 +1068,7 @@ export const getGroupMembers = async (req, res, next) => {
       }
     });
 
-    res.status(200).json({ members: groupMembers });
+    res.status(200).json({ members: groupMembers, lastJoins });
   } catch (error) {
     next(error);
   }

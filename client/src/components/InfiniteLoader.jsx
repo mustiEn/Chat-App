@@ -15,7 +15,7 @@ const InfiniteLoader = ({ children }) => {
         }}
         id={"scrollableRef"}
         ref={scrollElementRef}
-        className="custom-scrollbar"
+        className="custom-chat-scrollbar"
       >
         {children}
       </div>
