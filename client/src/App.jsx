@@ -21,6 +21,7 @@ import AddFriend from "./components/AddFriend.jsx";
 import FriendRequests from "./components/FriendRequests.jsx";
 import toast from "react-hot-toast";
 import CommunityGuidelines from "./components/CommunityGuidelines.jsx";
+import GroupInvites from "./components/GroupInvites.jsx";
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -63,6 +64,10 @@ function App() {
             {
               path: "requests",
               element: <MessageRequests />,
+            },
+            {
+              path: "invites",
+              element: <GroupInvites />,
             },
             {
               path: "gc/:groupId",

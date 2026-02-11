@@ -14,11 +14,12 @@ import {
 } from "react-router-dom";
 import { useDisclosure } from "@mantine/hooks";
 import { CiLogout } from "react-icons/ci";
-import styles from "../css/group_list.module.css";
 import { useGroups } from "../custom-hooks/useGroups";
 import { useEffect } from "react";
 import { concatFirstGroupLetters } from "../utils";
 import { socket } from "../socket";
+import { FaReadme } from "react-icons/fa";
+import styles from "../css/group_list.module.css";
 
 const GroupList = memo(function Grouplist() {
   const { data: groups, isLoading, isSuccess } = useGroups();
@@ -165,17 +166,17 @@ const GroupList = memo(function Grouplist() {
           />
         ))}
         <PopoverComponent
+          content={popOverContent("Community Guidelines")}
+          trigger={popOverTrigger(
+            "/community-guidelines",
+            undefined,
+            <FaReadme />,
+          )}
+        />
+        <PopoverComponent
           content={popOverContent("Logout")}
           trigger={popOverTrigger("/logout", undefined, <CiLogout />)}
         />
-        <Link
-          to={"/community-guidelines"}
-          style={{
-            color: "white",
-          }}
-        >
-          Community
-        </Link>
       </Flex>
       <AppsModal
         show={openAppModal}

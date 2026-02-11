@@ -17,13 +17,29 @@ import { IoSearch } from "react-icons/io5";
 import { PulseLoader } from "react-spinners";
 import styles from "../css/group_chat_sidebar.module.css";
 import { useState } from "react";
+import { socket } from "../socket";
+import toast from "react-hot-toast";
 
 const GroupInviteModal = ({ opened, close }) => {
   const { groupId } = useParams();
   const [friendInp, setFriendInp] = useState("");
   const [debounceVal, setDebounceVal] = useState("");
   const { data, isFetching } = useSearchFriends(debounceVal, groupId);
+  const nonMemberFriends = data?.nonMemberFriends ?? [];
+  const [isSending, setIsSending] = useState([]);
   const debouncedChange = useDebounce((val) => setDebounceVal(val), 700);
+  const sendInvite = (receiverId) => {
+    socket.emit("send group invite", groupId, receiverId, (err, res) => {
+      if (err || res.status === "duplicated" || res.status === "error") {
+        console.log("Invite failed:", err, res.error);
+        toast.error(res.error);
+        return;
+      }
+
+      toast.success("Invite sent");
+      setIsSending((prev) => prev.filter((e) => e != receiverId));
+    });
+  };
 
   return (
     <>
@@ -70,9 +86,9 @@ const GroupInviteModal = ({ opened, close }) => {
               <Center mt={"xl"}>
                 <PulseLoader color="white" />
               </Center>
-            ) : data?.nonMemberFriends.length ? (
+            ) : nonMemberFriends.length ? (
               <Stack gap={"xs"}>
-                {data?.nonMemberFriends.map((e) => (
+                {nonMemberFriends.map((e) => (
                   <Flex
                     gap={"xs"}
                     key={e.id}
@@ -87,8 +103,13 @@ const GroupInviteModal = ({ opened, close }) => {
                       h={32}
                     />
                     <Text>{e.display_name}</Text>
-                    <Button size="xs" ms={"auto"}>
-                      Invite
+                    <Button
+                      size="xs"
+                      ms={"auto"}
+                      onClick={() => sendInvite(e.id)}
+                      disabled={isSending.includes(e.id)}
+                    >
+                      {isSending.includes(e.id) ? "Sending" : "Invite"}
                     </Button>
                   </Flex>
                 ))}

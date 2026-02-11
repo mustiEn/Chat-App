@@ -5,15 +5,17 @@ import { AiOutlineShop } from "react-icons/ai";
 import { FaRegEnvelope } from "react-icons/fa6";
 import { NavLink } from "react-router-dom";
 import { Stack, Button, Flex, Text, Box } from "@mantine/core";
-import styles from "../css/dm_sidebar_nav_top.module.css";
+import { HiMiniUserGroup } from "react-icons/hi2";
+
+const links = [
+  { content: "Friends", icon: <FaUsers />, link: "/@me/friends" },
+  { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
+  { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
+  { content: "Requests", icon: <FaRegEnvelope />, link: "requests" },
+  { content: "Invites", icon: <HiMiniUserGroup />, link: "invites" },
+];
 
 const DmSidebarNavTop = () => {
-  const links = [
-    { content: "Friends", icon: <FaUsers />, link: "/@me/friends" },
-    { content: "Bots", icon: <IoMdStarOutline />, link: "bots" },
-    { content: "Shop", icon: <AiOutlineShop />, link: "shop" },
-    { content: "Requests", icon: <FaRegEnvelope />, link: "requests" },
-  ];
   return (
     <>
       <Box w={"100%"}>

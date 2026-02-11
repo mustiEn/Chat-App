@@ -13,6 +13,7 @@ import { BlockedUser } from "../models/BlockedUser.js";
 import { client } from "../server.js";
 import { GroupChat } from "../models/GroupChat.js";
 import { GroupMember } from "../models/GroupMember.js";
+import { GroupInvite } from "../models/GroupInvite.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -688,6 +689,14 @@ export const searchFriends = async (req, res, next) => {
     }
 
     const { q, groupId } = matchedData(req);
+    const group = await GroupChat.findOne({
+      where: {
+        group_id: groupId,
+      },
+      raw: true,
+    });
+
+    if (!group) throw new Error("Group not found");
 
     const nonMemberFriendsSql = `
       WITH friends_temp AS (
@@ -728,7 +737,7 @@ export const searchFriends = async (req, res, next) => {
       replacements: {
         userId,
         q: `%${q}%`,
-        groupId,
+        groupId: group.id,
       },
       type: QueryTypes.SELECT,
     });
@@ -1069,6 +1078,47 @@ export const getGroupMembers = async (req, res, next) => {
     });
 
     res.status(200).json({ members: groupMembers, lastJoins });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getGroupInvites = async (req, res, next) => {
+  try {
+    const userId = req.session.passport.user;
+    const groupInvitesSql = `
+      WITH invites AS (
+        SELECT 
+          gi.group_id, 
+          gi.user_id, 
+          u.display_name 
+        FROM 
+          group_invites gi 
+          INNER JOIN users u ON gi.receiver_id = u.id 
+        WHERE 
+          gi.receiver_id = :userId 
+          AND gi.is_active = TRUE
+      ) 
+      SELECT 
+        gc.group_id, 
+        gc.group_icon, 
+        gc.group_name, 
+        gc.description, 
+        gc.background_color, 
+        i.user_id, 
+        i.display_name, 
+        gc.createdAt 
+      FROM 
+        group_chats gc 
+        INNER JOIN invites i ON gc.id = i.group_id
+    `;
+    const groupInvites = await sequelize.query(groupInvitesSql, {
+      type: QueryTypes.SELECT,
+      replacements: {
+        userId,
+      },
+    });
+
+    res.status(200).json({ groupInvites });
   } catch (error) {
     next(error);
   }

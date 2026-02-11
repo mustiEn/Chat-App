@@ -10,6 +10,8 @@ import { BlockedUser } from "./models/BlockedUser.js";
 import { client } from "./server.js";
 import { GroupMessage } from "./models/GroupMessage.js";
 import { GroupChat } from "./models/GroupChat.js";
+import { GroupInvite } from "./models/GroupInvite.js";
+import { GroupMember } from "./models/GroupMember.js";
 
 export const setUpSocket = (io) => {
   io.on("connection", async (socket) => {
@@ -28,10 +30,11 @@ export const setUpSocket = (io) => {
       ],
       raw: true,
     });
-
     const cachedStatus = await client.get(`user:${userId}:status`);
     const cachedContacts = await client.get(`user:${userId}:contacts`);
     const cachedGroups = await client.get(`user:${userId}:groups`);
+
+    logger.log(`User with id => ${userId} connected`);
 
     if (!cachedStatus) await client.set(`user:${userId}:status`, sender.status);
     if (!cachedContacts) {
@@ -74,8 +77,6 @@ export const setUpSocket = (io) => {
       await client.set(`user:${userId}:groups`, JSON.stringify(groups));
     }
 
-    logger.log(`User with id => ${userId} connected`);
-
     socket.emit("initial", sender);
     socket.join(userId);
 
@@ -92,10 +93,7 @@ export const setUpSocket = (io) => {
     });
     allGroupsParsed.forEach(({ group_id }) => {
       socket.join(group_id);
-      // logger.log("Joined group = ", group_id);
     });
-
-    // logger.log(allContactsParsed);
 
     socket.on("join room", async (chatId, done) => {
       const allContactsStr = await client.get(`user:${userId}:contacts`);
@@ -147,6 +145,8 @@ export const setUpSocket = (io) => {
         ({ group_id }) => group_id == groupId,
       );
 
+      logger.log("Join group socket => allGroupsParsed: ", allGroupsParsed);
+
       if (!groupExists) {
         const group = await GroupChat.findOne({
           attributes: ["id", "group_id", "group_icon", "group_name"],
@@ -155,7 +155,11 @@ export const setUpSocket = (io) => {
           },
           raw: true,
         });
-        const newGroupsStr = JSON.stringify({ ...allGroupsParsed, group });
+        const newGroupsStr = JSON.stringify([...allGroupsParsed, group]);
+        logger.log("Join group socket => Current data being saved: ", [
+          ...allGroupsParsed,
+          group,
+        ]);
         await client.set(`user:${userId}:groups`, newGroupsStr);
       }
 
@@ -172,10 +176,15 @@ export const setUpSocket = (io) => {
       const filteredGroups = allGroupsParsed.filter(
         ({ group_id }) => group_id != groupId,
       );
-      const newGroupsStr = JSON.stringify({ ...filteredGroups });
+      const newGroupsStr = JSON.stringify(filteredGroups);
 
       await client.set(`user:${userId}:groups`, newGroupsStr);
+
       socket.leave(groupId);
+      socket.to(groupId).emit("receive leave group", {
+        userId,
+        groupId,
+      });
 
       done({
         status: "ok",
@@ -1174,6 +1183,95 @@ export const setUpSocket = (io) => {
         groupId,
       });
     });
+    socket.on("send group invite", async (groupId, receiverId, done) => {
+      try {
+        const group = await GroupChat.findOne({
+          where: {
+            group_id: groupId,
+          },
+        });
+
+        if (!group) throw new Error("Group not found");
+
+        await GroupInvite.findOrCreate({
+          where: {
+            group_id: groupId,
+            user_id: userId,
+            receiver_id: userId,
+            is_active: true,
+          },
+          defaults: {
+            group_id: groupId,
+            user_id: userId,
+            recevier_id: receiverId,
+            is_active: true,
+          },
+        });
+
+        socket.to(receiverId).emit("receive group invite", {
+          result: [group],
+        });
+      } catch (error) {
+        logger.log(error);
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+
+      logger.log("Invite sent:", groupId);
+      done({
+        status: "ok",
+        groupId,
+      });
+    });
+    socket.on("send group invite acceptance", async (res, done) => {
+      try {
+        const { senderId, groupId, status } = res;
+        const group = await GroupChat.findOne({
+          where: {
+            group_id: groupId,
+          },
+        });
+        logger.log(res);
+        if (!group) throw new Error("Group not found");
+
+        await GroupInvite.update(
+          { is_active: false },
+          {
+            where: {
+              group_id: group.id,
+              user_id: senderId,
+              receiver_id: userId,
+            },
+          },
+        );
+
+        if (status === "accepted") {
+          await GroupMember.create({
+            group_id: group.id,
+            user_id: userId,
+          });
+        }
+
+        socket.to(groupId).emit("receive group invite acceptance", {
+          result: [groupId],
+        });
+        logger.log("Invite accepted groupId:", groupId);
+      } catch (error) {
+        logger.log(error);
+        return done({
+          status: "error",
+          error: error.message,
+        });
+      }
+
+      done({
+        status: "ok",
+        // groupId,
+      });
+    });
+
     socket.on("disconnect", (reason) => {
       const time = dayjs().format("YYYY-MM-DD HH:mm:ss");
       lastDisconnect.set(userId, time);
@@ -1184,10 +1282,8 @@ export const setUpSocket = (io) => {
     if (!socket.recovered) {
       try {
         const userLastDisconnect = lastDisconnect.get(userId);
-        logger.log("socket recovered");
-        // logger.log("serveroffset recovery :", socket.handshake.auth.serverOffset);
-        // logger.log(lastDisconnect.get(userId));
         const { dms, groups } = socket.handshake.auth.serverOffset;
+        logger.log("socket recovered");
 
         if (!userLastDisconnect) return;
 

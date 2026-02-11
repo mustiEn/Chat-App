@@ -1,9 +1,10 @@
-import { Button, Group, Modal, TextInput } from "@mantine/core";
+import { Button, Group, Modal, Text, TextInput } from "@mantine/core";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket";
 import { removeGroup } from "../utils/groups";
+import { PulseLoader } from "react-spinners";
 
 const GroupLeaveModal = ({ group, groupLeaveOpened, closeGroupLeave }) => {
   const queryClient = useQueryClient();

@@ -118,6 +118,11 @@ router.post(
 );
 router.get("/group/get-groups", isAuthenticated, userController.getGroups);
 router.get(
+  "/group/get-group-invites",
+  isAuthenticated,
+  userController.getGroupInvites,
+);
+router.get(
   "/group/more-data/:groupId",
   [
     isAuthenticated,

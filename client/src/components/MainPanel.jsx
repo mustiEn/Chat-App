@@ -36,6 +36,8 @@ import { useAllFriends } from "../custom-hooks/useAllFriends.js";
 import { PulseLoader } from "react-spinners";
 import { useAuthUserStore } from "../stores/useAuthUserStore.js";
 import { removeGroup } from "../utils/groups.js";
+import { addGroupInvites } from "../utils/groupInvites.js";
+import { removeMembers } from "../utils/groupMembers.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -44,10 +46,10 @@ const MainPanel = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const setDmPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (s) => s.setDmPinnedMsgExists
+    (s) => s.setDmPinnedMsgExists,
   );
   const setGroupPinnedMsgExists = useNewPinnedMsgIndicatorStore(
-    (s) => s.setGroupPinnedMsgExists
+    (s) => s.setGroupPinnedMsgExists,
   );
   const addReceiver = useReceiverStore((s) => s.addReceiver);
   const receivers = useReceiverStore((s) => s.receivers);
@@ -147,7 +149,7 @@ const MainPanel = () => {
           queryClient,
           chatId,
           id,
-          is_pinned
+          is_pinned,
         );
       } else {
         result.forEach((res, i) => {
@@ -172,7 +174,7 @@ const MainPanel = () => {
             queryClient,
             chatId,
             id,
-            is_pinned
+            is_pinned,
           );
         });
       }
@@ -195,7 +197,7 @@ const MainPanel = () => {
         removeSentMessageRequest(queryClient, reqAcceptance.from_id);
 
         const isUserInDmHistory = dmHistoryUsers.some(
-          (i) => i.id == reqAcceptance.from_id
+          (i) => i.id == reqAcceptance.from_id,
         );
         const dmHistoryUser = {
           id: reqAcceptance.from_id,
@@ -214,7 +216,7 @@ const MainPanel = () => {
 
       result.forEach((req, i) => {
         const isUserInDmHistory = dmHistoryUsers.some(
-          ({ id }) => id == req.from_id
+          ({ id }) => id == req.from_id,
         );
         const dmHistoryUser = {
           id: req.from_id,
@@ -244,14 +246,14 @@ const MainPanel = () => {
         ]);
 
         const isMsgPinned = isPinnedMsgQueryFetched?.findIndex(
-          ({ id }) => id == deletedMsgId
+          ({ id }) => id == deletedMsgId,
         );
         if (isMsgPinned)
           removePinnedMessage(
             "dmPinnedMessages",
             queryClient,
             chatId,
-            deletedMsgId
+            deletedMsgId,
           );
 
         deleteMessage("directMessages", queryClient, chatId, deletedMsgId);
@@ -384,7 +386,7 @@ const MainPanel = () => {
             "groupPinnedMessages",
             queryClient,
             groupId,
-            result
+            result,
           );
           setGroupPinnedMsgExists(groupId, val); //* if the modal is open,dont notify the user, if not, do it
         } else {
@@ -396,7 +398,7 @@ const MainPanel = () => {
           queryClient,
           groupId,
           id,
-          is_pinned
+          is_pinned,
         );
       } else {
         result.forEach((res, i) => {
@@ -417,7 +419,7 @@ const MainPanel = () => {
               "groupPinnedMessages",
               queryClient,
               groupId,
-              id
+              id,
             );
           }
 
@@ -426,7 +428,7 @@ const MainPanel = () => {
             queryClient,
             groupId,
             id,
-            is_pinned
+            is_pinned,
           );
         });
       }
@@ -442,14 +444,14 @@ const MainPanel = () => {
         ]);
 
         const isMsgPinned = isPinnedMsgQueryFetched?.findIndex(
-          ({ id }) => id == deletedMsgId
+          ({ id }) => id == deletedMsgId,
         );
         if (isMsgPinned)
           removePinnedMessage(
             "groupPinnedMessages",
             queryClient,
             groupId,
-            deletedMsgId
+            deletedMsgId,
           );
 
         deleteMessage("groupMessages", queryClient, groupId, deletedMsgId);
@@ -465,6 +467,24 @@ const MainPanel = () => {
       });
       navigate("/@me/friends");
     };
+    const handleGroupInvite = ({ result }) => {
+      console.log("result", result);
+
+      result.forEach((group) => {
+        addGroupInvites(queryClient, group);
+      });
+    };
+    const handleGroupInviteAcceptance = ({ result }) => {
+      console.log("result", result);
+
+      queryClient.refetchQueries({ queryKey: ["groupMembers", result[0]] });
+    };
+    const handleLeaveGroup = ({ userId, groupId }) => {
+      console.log("userId", userId);
+
+      removeMembers(queryClient, userId, groupId);
+      //? leaving a group on when offline, update the server admin ??
+    };
 
     socket.on("receive dms", handleDmNewMessages);
     socket.on("receive msg requests", handleMessageRequests);
@@ -478,7 +498,7 @@ const MainPanel = () => {
     socket.on("receive unblocked users", handleUnblockedUsers);
     socket.on(
       "receive friend request acceptance",
-      handleFriendRequestAcceptance
+      handleFriendRequestAcceptance,
     );
     socket.on("receive dm changed user status", handleDmUserStatus);
     socket.on("receive group changed user status", handleGroupUserStatus);
@@ -488,12 +508,15 @@ const MainPanel = () => {
     socket.on("receive group deleted msgs", handleGroupDeletedMessages);
     socket.on("receive group pinned msgs", handleGroupPinnedMessages);
     socket.on("receive group deleted", handleGroupDeleted);
+    socket.on("receive group invite", handleGroupDeleted);
+    socket.on("receive group invite acceptance", handleGroupInviteAcceptance);
+    socket.on("receive leave group", handleLeaveGroup);
 
     return () => {
       socket.off("receive msg requests", handleMessageRequests);
       socket.off(
         "receive msg request acceptance",
-        handleMessageRequestAcceptance
+        handleMessageRequestAcceptance,
       );
       socket.off("receive dms", handleDmNewMessages);
 
@@ -506,7 +529,7 @@ const MainPanel = () => {
       socket.off("receive unblocked users", handleUnblockedUsers);
       socket.off(
         "receive friend request acceptance",
-        handleFriendRequestAcceptance
+        handleFriendRequestAcceptance,
       );
       socket.off("receive dm changed user status", handleDmUserStatus);
       socket.off("receive group changed user status", handleGroupUserStatus);
@@ -516,12 +539,12 @@ const MainPanel = () => {
       socket.off("receive group deleted msgs", handleGroupDeletedMessages);
       socket.off("receive group pinned msgs", handleGroupPinnedMessages);
       socket.off("receive group deleted", handleGroupDeleted);
-
-      // socket.off("disconnect", onDisconnect);
-      // socket.disconnect();
-
-      // queryClient.removeQueries();
-      // console.log("SOCKET DISCONNECTED layout");
+      socket.off("receive group invite", handleGroupInvite);
+      socket.off(
+        "receive group invite acceptance",
+        handleGroupInviteAcceptance,
+      );
+      socket.off("receive leave group", handleLeaveGroup);
     };
   }, []);
 

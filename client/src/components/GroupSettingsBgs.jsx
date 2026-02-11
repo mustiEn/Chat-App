@@ -23,6 +23,7 @@ const GroupSettingsBgs = memo(function GroupSettingsBgs({ setGroupState }) {
       background_color: bg,
     }));
   };
+  const toUpper = (bg) => bg.slice(0, 1).toUpperCase() + bg.slice(1);
 
   return (
     <>
@@ -33,7 +34,7 @@ const GroupSettingsBgs = memo(function GroupSettingsBgs({ setGroupState }) {
             <Grid.Col span={6}>
               <PopoverComponent
                 key={i}
-                content={bg}
+                content={() => toUpper(bg)}
                 trigger={
                   <Box
                     style={{

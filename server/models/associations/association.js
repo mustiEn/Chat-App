@@ -7,6 +7,7 @@ import { OneToOneChat } from "../OneToOneChat.js";
 import { BlockedUser } from "../BlockedUser.js";
 import { DirectMessageHistory } from "../DirectMessageHistory.js";
 import { GroupMember } from "../GroupMember.js";
+import { GroupInvite } from "../GroupInvite.js";
 
 export const setUpAssociation = () => {
   //* DirectMessages
@@ -127,5 +128,19 @@ export const setUpAssociation = () => {
     foreignKey: "user_id",
     otherKey: "receiver_id",
     timestamps: true,
+  });
+
+  //* GroupInvites
+  User.belongsToMany(User, {
+    through: GroupInvite,
+    as: "groupInvites",
+    foreignKey: "user_id",
+    otherKey: "receiver_id",
+  });
+  GroupInvite.belongsTo(GroupChat, {
+    foreignKey: "group_id",
+  });
+  GroupChat.hasMany(GroupInvite, {
+    foreignKey: "group_id",
   });
 };
